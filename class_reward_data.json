@@ -1,0 +1,541 @@
+{
+  "version": "4.3",
+  "classes": [
+    {
+      "id": "c1788349917592e06a",
+      "name": "一年级1班",
+      "groups": [
+        {
+          "id": "g1788349917592d5e30c",
+          "name": "探索组",
+          "directPoints": 1
+        },
+        {
+          "id": "g1788349917592f4bf6a",
+          "name": "智慧组",
+          "directPoints": 57
+        }
+      ],
+      "students": [
+        {
+          "id": "s17883499175922da231",
+          "studentId": "01",
+          "name": "李小乐",
+          "groupId": "",
+          "earnedPoints": 25,
+          "redeemedPoints": 0,
+          "doublePointsUntil": 0,
+          "items": [],
+          "transactions": [
+            {
+              "timestamp": 1788263517.5928411,
+              "type": "earn",
+              "points": 20,
+              "description": "课堂",
+              "groupId": "g1788349917592d5e30c"
+            },
+            {
+              "timestamp": 1788177117.5928411,
+              "type": "earn",
+              "points": 15,
+              "description": "听写",
+              "groupId": "g1788349917592d5e30c"
+            },
+            {
+              "timestamp": 1788364874.9266703,
+              "type": "earn",
+              "points": 4,
+              "description": "课堂",
+              "groupId": "g1788349917592d5e30c"
+            },
+            {
+              "timestamp": 1788449317.6962438,
+              "type": "earn",
+              "points": 1,
+              "description": "课堂",
+              "groupId": ""
+            }
+          ]
+        },
+        {
+          "id": "s178834991759250577a",
+          "studentId": "02",
+          "name": "赵小琪",
+          "groupId": "",
+          "earnedPoints": 6,
+          "redeemedPoints": 0,
+          "doublePointsUntil": 0,
+          "items": [],
+          "transactions": [
+            {
+              "timestamp": 1788363633.936446,
+              "type": "undo",
+              "points": 0,
+              "description": "撤回上一步",
+              "groupId": "g1788349917592f4bf6a"
+            },
+            {
+              "timestamp": 1788364874.9483166,
+              "type": "earn",
+              "points": 4,
+              "description": "课堂",
+              "groupId": "g1788349917592f4bf6a"
+            },
+            {
+              "timestamp": 1788448278.6798525,
+              "type": "earn",
+              "points": 1,
+              "description": "考试",
+              "groupId": ""
+            },
+            {
+              "timestamp": 1788449321.2164452,
+              "type": "earn",
+              "points": 1,
+              "description": "听写",
+              "groupId": ""
+            }
+          ]
+        }
+      ],
+      "rewards": [
+        {
+          "id": "r1788349917592a379",
+          "name": "英语课换座券",
+          "cost": 5,
+          "category": "普通",
+          "description": "换同桌体验，一节课的新鲜感。",
+          "blindBoxExcluded": false
+        },
+        {
+          "id": "r178834991759208a2",
+          "name": "问题转移券",
+          "cost": 5,
+          "category": "普通",
+          "description": "巧妙化解提问尴尬。",
+          "blindBoxExcluded": false
+        },
+        {
+          "id": "r17883499175929366",
+          "name": "听写预知券",
+          "cost": 5,
+          "category": "普通",
+          "description": "提前知道3个词，满分更容易。",
+          "blindBoxExcluded": false
+        },
+        {
+          "id": "r1788349917592dbc5",
+          "name": "水火救援券",
+          "cost": 5,
+          "category": "普通",
+          "description": "英雄救美（同学）的好机会。",
+          "blindBoxExcluded": false
+        },
+        {
+          "id": "r178834991759218cd",
+          "name": "夸夸券",
+          "cost": 5,
+          "category": "普通",
+          "description": "让爸妈听到老师的表扬，全家开心。",
+          "blindBoxExcluded": false
+        },
+        {
+          "id": "r1788349917592a51a",
+          "name": "免死金牌",
+          "cost": 10,
+          "category": "稀有",
+          "description": "一次\"免罪\"机会，护身符般存在。",
+          "blindBoxExcluded": false
+        },
+        {
+          "id": "r17883499175924d1c",
+          "name": "有福同享券",
+          "cost": 10,
+          "category": "稀有",
+          "description": "和朋友分享快乐，友谊加倍。",
+          "blindBoxExcluded": false
+        },
+        {
+          "id": "r1788349917592bb5b",
+          "name": "作业减半券",
+          "cost": 10,
+          "category": "稀有",
+          "description": "少写一半作业，省时又省力。",
+          "blindBoxExcluded": false
+        },
+        {
+          "id": "r1788349917592a7b0",
+          "name": "免背书券",
+          "cost": 10,
+          "category": "稀有",
+          "description": "逃过一次背诵，轻松过关。",
+          "blindBoxExcluded": false
+        },
+        {
+          "id": "r17883499175926892",
+          "name": "班干部体验券",
+          "cost": 10,
+          "category": "稀有",
+          "description": "当一天小干部，过把\"官瘾\"。",
+          "blindBoxExcluded": false
+        },
+        {
+          "id": "r1788349917592f9bc",
+          "name": "谈心沟通券",
+          "cost": 10,
+          "category": "稀有",
+          "description": "和老师一对一聊心事。",
+          "blindBoxExcluded": false
+        },
+        {
+          "id": "r1788349917592db31",
+          "name": "小组加分券",
+          "cost": 15,
+          "category": "史诗",
+          "description": "直接给小组加5分。",
+          "blindBoxExcluded": false
+        },
+        {
+          "id": "r1788349917592b661",
+          "name": "心愿券",
+          "cost": 15,
+          "category": "史诗",
+          "description": "打电话给爸妈，实现一个小愿望！",
+          "blindBoxExcluded": false
+        },
+        {
+          "id": "r1788349917592e767",
+          "name": "作业免除券",
+          "cost": 15,
+          "category": "史诗",
+          "description": "这次的英语作业不用做啦！",
+          "blindBoxExcluded": false
+        },
+        {
+          "id": "r17883499175925a01",
+          "name": "双倍积分卡",
+          "cost": 15,
+          "category": "史诗",
+          "description": "使用后一周内所有加分翻倍。",
+          "blindBoxExcluded": false
+        },
+        {
+          "id": "r17883499175923285",
+          "name": "提早下课券",
+          "cost": 20,
+          "category": "传说",
+          "description": "提前5分钟下课！（需老师同意）",
+          "blindBoxExcluded": false
+        },
+        {
+          "id": "r1788349917592e167",
+          "name": "盲盒券",
+          "cost": 10,
+          "category": "稀有",
+          "description": "随机抽取一张奖励。",
+          "blindBoxExcluded": true
+        }
+      ]
+    },
+    {
+      "id": "c1788356595321c3b8",
+      "name": "五年级1班",
+      "groups": [
+        {
+          "id": "g17883565953214b1715",
+          "name": "默认组",
+          "directPoints": 0
+        }
+      ],
+      "students": [],
+      "rewards": [
+        {
+          "id": "r17883565953211024",
+          "name": "英语课换座券",
+          "cost": 5,
+          "category": "普通",
+          "description": "换同桌体验，一节课的新鲜感。",
+          "blindBoxExcluded": false
+        },
+        {
+          "id": "r1788356595321403f",
+          "name": "问题转移券",
+          "cost": 5,
+          "category": "普通",
+          "description": "巧妙化解提问尴尬。",
+          "blindBoxExcluded": false
+        },
+        {
+          "id": "r1788356595321805f",
+          "name": "听写预知券",
+          "cost": 5,
+          "category": "普通",
+          "description": "提前知道3个词，满分更容易。",
+          "blindBoxExcluded": false
+        },
+        {
+          "id": "r17883565953210742",
+          "name": "水火救援券",
+          "cost": 5,
+          "category": "普通",
+          "description": "英雄救美（同学）的好机会。",
+          "blindBoxExcluded": false
+        },
+        {
+          "id": "r1788356595321ee58",
+          "name": "夸夸券",
+          "cost": 5,
+          "category": "普通",
+          "description": "让爸妈听到老师的表扬，全家开心。",
+          "blindBoxExcluded": false
+        },
+        {
+          "id": "r1788356595321f9cb",
+          "name": "免死金牌",
+          "cost": 10,
+          "category": "稀有",
+          "description": "一次\"免罪\"机会，护身符般存在。",
+          "blindBoxExcluded": false
+        },
+        {
+          "id": "r17883565953211ac6",
+          "name": "有福同享券",
+          "cost": 10,
+          "category": "稀有",
+          "description": "和朋友分享快乐，友谊加倍。",
+          "blindBoxExcluded": false
+        },
+        {
+          "id": "r17883565953210e17",
+          "name": "作业减半券",
+          "cost": 10,
+          "category": "稀有",
+          "description": "少写一半作业，省时又省力。",
+          "blindBoxExcluded": false
+        },
+        {
+          "id": "r1788356595321e66d",
+          "name": "免背书券",
+          "cost": 10,
+          "category": "稀有",
+          "description": "逃过一次背诵，轻松过关。",
+          "blindBoxExcluded": false
+        },
+        {
+          "id": "r17883565953213ee2",
+          "name": "班干部体验券",
+          "cost": 10,
+          "category": "稀有",
+          "description": "当一天小干部，过把\"官瘾\"。",
+          "blindBoxExcluded": false
+        },
+        {
+          "id": "r17883565953212339",
+          "name": "谈心沟通券",
+          "cost": 10,
+          "category": "稀有",
+          "description": "和老师一对一聊心事。",
+          "blindBoxExcluded": false
+        },
+        {
+          "id": "r1788356595321514c",
+          "name": "小组加分券",
+          "cost": 15,
+          "category": "史诗",
+          "description": "直接给小组加5分。",
+          "blindBoxExcluded": false
+        },
+        {
+          "id": "r17883565953215ed2",
+          "name": "心愿券",
+          "cost": 15,
+          "category": "史诗",
+          "description": "打电话给爸妈，实现一个小愿望！",
+          "blindBoxExcluded": false
+        },
+        {
+          "id": "r1788356595321d4c0",
+          "name": "作业免除券",
+          "cost": 15,
+          "category": "史诗",
+          "description": "这次的英语作业不用做啦！",
+          "blindBoxExcluded": false
+        },
+        {
+          "id": "r1788356595321d1fa",
+          "name": "双倍积分卡",
+          "cost": 15,
+          "category": "史诗",
+          "description": "使用后一周内所有加分翻倍。",
+          "blindBoxExcluded": false
+        },
+        {
+          "id": "r17883565953211fb4",
+          "name": "提早下课券",
+          "cost": 20,
+          "category": "传说",
+          "description": "提前5分钟下课！（需老师同意）",
+          "blindBoxExcluded": false
+        },
+        {
+          "id": "r17883565953210bac",
+          "name": "盲盒券",
+          "cost": 10,
+          "category": "稀有",
+          "description": "随机抽取一张奖励。",
+          "blindBoxExcluded": true
+        }
+      ]
+    },
+    {
+      "id": "c17883612392404cfe",
+      "name": "三年级1班",
+      "groups": [
+        {
+          "id": "g178836123924020c5a9",
+          "name": "默认组",
+          "directPoints": 0
+        }
+      ],
+      "students": [],
+      "rewards": [
+        {
+          "id": "r17883612392408944",
+          "name": "英语课换座券",
+          "cost": 5,
+          "category": "普通",
+          "description": "换同桌体验，一节课的新鲜感。",
+          "blindBoxExcluded": false
+        },
+        {
+          "id": "r178836123924037aa",
+          "name": "问题转移券",
+          "cost": 5,
+          "category": "普通",
+          "description": "巧妙化解提问尴尬。",
+          "blindBoxExcluded": false
+        },
+        {
+          "id": "r17883612392404627",
+          "name": "听写预知券",
+          "cost": 5,
+          "category": "普通",
+          "description": "提前知道3个词，满分更容易。",
+          "blindBoxExcluded": false
+        },
+        {
+          "id": "r1788361239240171b",
+          "name": "水火救援券",
+          "cost": 5,
+          "category": "普通",
+          "description": "英雄救美（同学）的好机会。",
+          "blindBoxExcluded": false
+        },
+        {
+          "id": "r178836123924078b7",
+          "name": "夸夸券",
+          "cost": 5,
+          "category": "普通",
+          "description": "让爸妈听到老师的表扬，全家开心。",
+          "blindBoxExcluded": false
+        },
+        {
+          "id": "r1788361239240b66a",
+          "name": "免死金牌",
+          "cost": 10,
+          "category": "稀有",
+          "description": "一次\"免罪\"机会，护身符般存在。",
+          "blindBoxExcluded": false
+        },
+        {
+          "id": "r178836123924092ac",
+          "name": "有福同享券",
+          "cost": 10,
+          "category": "稀有",
+          "description": "和朋友分享快乐，友谊加倍。",
+          "blindBoxExcluded": false
+        },
+        {
+          "id": "r1788361239240c364",
+          "name": "作业减半券",
+          "cost": 10,
+          "category": "稀有",
+          "description": "少写一半作业，省时又省力。",
+          "blindBoxExcluded": false
+        },
+        {
+          "id": "r1788361239240fb97",
+          "name": "免背书券",
+          "cost": 10,
+          "category": "稀有",
+          "description": "逃过一次背诵，轻松过关。",
+          "blindBoxExcluded": false
+        },
+        {
+          "id": "r1788361239240f643",
+          "name": "班干部体验券",
+          "cost": 10,
+          "category": "稀有",
+          "description": "当一天小干部，过把\"官瘾\"。",
+          "blindBoxExcluded": false
+        },
+        {
+          "id": "r1788361239240dc5e",
+          "name": "谈心沟通券",
+          "cost": 10,
+          "category": "稀有",
+          "description": "和老师一对一聊心事。",
+          "blindBoxExcluded": false
+        },
+        {
+          "id": "r17883612392406036",
+          "name": "小组加分券",
+          "cost": 15,
+          "category": "史诗",
+          "description": "直接给小组加5分。",
+          "blindBoxExcluded": false
+        },
+        {
+          "id": "r1788361239240dc0a",
+          "name": "心愿券",
+          "cost": 15,
+          "category": "史诗",
+          "description": "打电话给爸妈，实现一个小愿望！",
+          "blindBoxExcluded": false
+        },
+        {
+          "id": "r17883612392401a6d",
+          "name": "作业免除券",
+          "cost": 15,
+          "category": "史诗",
+          "description": "这次的英语作业不用做啦！",
+          "blindBoxExcluded": false
+        },
+        {
+          "id": "r1788361239240bf14",
+          "name": "双倍积分卡",
+          "cost": 15,
+          "category": "史诗",
+          "description": "使用后一周内所有加分翻倍。",
+          "blindBoxExcluded": false
+        },
+        {
+          "id": "r17883612392405815",
+          "name": "提早下课券",
+          "cost": 20,
+          "category": "传说",
+          "description": "提前5分钟下课！（需老师同意）",
+          "blindBoxExcluded": false
+        },
+        {
+          "id": "r1788361239240d2e6",
+          "name": "盲盒券",
+          "cost": 10,
+          "category": "稀有",
+          "description": "随机抽取一张奖励。",
+          "blindBoxExcluded": true
+        }
+      ]
+    }
+  ]
+}

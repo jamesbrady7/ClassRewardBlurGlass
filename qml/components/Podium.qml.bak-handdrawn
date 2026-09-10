@@ -1,0 +1,546 @@
+import QtQuick
+
+// 领奖台（纯展示）：暗场舞台 + 红色幕布（顶部帷幔 + 两侧束带侧帘，参考照片样式）
+// + 顶部三盏射灯灯具（原标题位置）+ 三座金属台（顶面梯形与正面矩形一体绘制、严格共边）+ 暗红底座。
+Item {
+    id: root
+
+    property var g1: null
+    property var g2: null
+    property var g3: null
+    property int topGap: 48      // 台体上方留白带（面板顶到 Podium 顶）：放射灯灯具与幕布帷幔
+
+    width: parent ? parent.width : 660
+    height: 224
+
+    readonly property int bw: 148
+    readonly property int topDepth: 15
+    readonly property int stageTopH: 16
+    readonly property int stageFrontH: 24
+    readonly property int stageBottomY: height - 12
+    // 台子底边对齐底座正面顶边：stage.top + stageTopH
+    readonly property int containerBottomY: (height - 12 - stageTopH - stageFrontH - 2) + stageTopH
+
+    function blockH(rank) { return rank === 1 ? 122 : rank === 2 ? 84 : 52 }
+    function blockTopY(r) { return root.containerBottomY - (blockH(r) + root.topDepth) }
+    // —— 统一宽幅渐变（参照亚军的明暗跨度）——
+    function fTop(r) { return r === 1 ? "#ffe296" : r === 2 ? "#eaf0f7" : "#f7c99e" }
+    function fBot(r) { return r === 1 ? "#e69c22" : r === 2 ? "#b3c2d5" : "#cb7031" }
+    function tCol(r) { return r === 1 ? "#ffcd5a" : r === 2 ? "#bfd0e2" : "#e5a06b" }
+    function medal(r)  { return r === 1 ? "🥇" : r === 2 ? "🥈" : "🥉" }
+    function plateBorder(r) { return r === 1 ? "#e8c166" : r === 2 ? "#9fb2c8" : "#dda072" }
+
+    // ===== 红色幕布：顶部帷幔 + 两侧落地褶帘（褶皱=渐变块面不描线，参照 幕布3.jpg）=====
+    Canvas {
+        id: curtainCv
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.top: parent.top
+        anchors.topMargin: -root.topGap
+        height: root.topGap + root.height + 18
+        onPaint: {
+            var ctx = getContext("2d")
+            ctx.reset()
+            var W = width
+            var s = root.topGap
+            var bot = s + root.height + 12
+            // 褶单元（宽, 高光亮带位置, 是否强亮）：侧帘与帷幔共用 → 同一块布
+            var unit = [[12, 0.70, 0], [20, 0.45, 1], [11, 0.60, 0],
+                        [22, 0.45, 1], [12, 0.60, 0], [25, 0.40, 1]]
+            function foldSeams(xEnd) {
+                var xs = [0], acc = 0, i = 0
+                while (acc < xEnd) { acc += unit[i % unit.length][0]; xs.push(Math.min(acc, xEnd)); i++ }
+                return xs
+            }
+            // 「流动褶」：相邻带共享同一条起伏缝曲线、下摆略张——直线条 → 垂坠布
+            function flowBands(xEnd, yBot, amp, spread, seed) {
+                var xs = foldSeams(xEnd)
+                function ctrlX(i) { return xs[i] + Math.sin(i * 2.1 + seed) * amp }
+                function botX(i) { return xs[i] * (1 + spread) + Math.sin(i * 1.7 + seed) * amp * 0.5 }
+                for (var i = 0; i < xs.length - 1; i++) {
+                    var u = unit[i % unit.length]
+                    var g = ctx.createLinearGradient(xs[i], 0, xs[i + 1], 0)
+                    g.addColorStop(0.0, "#57080d")
+                    g.addColorStop(u[1], u[2] ? "#d5474c" : "#ab1f24")
+                    g.addColorStop(1.0, "#5c0a10")
+                    ctx.fillStyle = g
+                    ctx.beginPath()
+                    ctx.moveTo(xs[i] - 0.4, 0)
+                    ctx.lineTo(xs[i + 1] + 0.4, 0)
+                    ctx.quadraticCurveTo(ctrlX(i + 1), yBot * 0.55, botX(i + 1), yBot + 18)
+                    ctx.lineTo(botX(i), yBot + 18)
+                    ctx.quadraticCurveTo(ctrlX(i), yBot * 0.55, xs[i] - 0.4, 0)
+                    ctx.closePath()
+                    ctx.fill()
+                }
+            }
+            drawSide(0)
+            drawSide(1)
+            drawValance()
+
+            // —— 一侧侧帘（k=1 镜像画右侧）——
+            function drawSide(k) {
+                var cw = 230
+                ctx.save()
+                if (k === 1) { ctx.translate(W, 0); ctx.scale(-1, 1) }
+                var xs = foldSeams(cw)
+                // 裾边：一褶一小弧下垂、褶缝收小尖
+                ctx.beginPath()
+                ctx.moveTo(0, 0)
+                ctx.lineTo(cw, 0)
+                ctx.bezierCurveTo(cw - 6, bot * 0.45, cw + 2, bot * 0.8, cw, bot - 10 - ((xs.length - 1) % 3) * 1.5)
+                for (var i = xs.length - 1; i > 0; i--) {
+                    var a = xs[i - 1], b = xs[i]
+                    var yA = bot - 10 - ((i - 1) % 3) * 1.5
+                    var yB = bot - 10 - (i % 3) * 1.5
+                    var sag = 3 + (b - a) * 0.13
+                    ctx.quadraticCurveTo((a + b) / 2, Math.max(yA, yB) + sag * 2, a, yA)
+                }
+                ctx.closePath()
+                ctx.clip()
+                flowBands(cw, bot, 5, 0.10, 0.7 + k * 1.3)
+                // 底缘堆积阴影（布落地的沉色）
+                var gb = ctx.createLinearGradient(0, bot - 84, 0, bot)
+                gb.addColorStop(0.0, "rgba(35,2,5,0)")
+                gb.addColorStop(1.0, "rgba(35,2,5,0.5)")
+                ctx.fillStyle = gb
+                ctx.fillRect(0, bot - 84, cw + 8, 84)
+                // 内缘收暗（向舞台一侧渐深）
+                var gi = ctx.createLinearGradient(cw - 40, 0, cw + 6, 0)
+                gi.addColorStop(0.0, "rgba(30,2,5,0)")
+                gi.addColorStop(1.0, "rgba(30,2,5,0.45)")
+                ctx.fillStyle = gi
+                ctx.fillRect(cw - 40, 0, 46, bot)
+                ctx.restore()
+            }
+
+            // —— 顶部帷幔：角部垂脚压住侧帘 + 斜弦边兜 + 水平中兜，褶=绕各兜弦心的同心弧 ——
+            function drawValance() {
+                var holdY = 42, tailY = 104
+                ctx.save()
+                ctx.beginPath()
+                ctx.moveTo(0, 0)
+                ctx.lineTo(W, 0)
+                ctx.lineTo(W, tailY)
+                ctx.quadraticCurveTo(W * 0.86, tailY + 118, W * 0.72, holdY)
+                ctx.quadraticCurveTo(W * 0.5, holdY + 156, W * 0.28, holdY)
+                ctx.quadraticCurveTo(W * 0.14, tailY + 118, 0, tailY)
+                ctx.closePath()
+                ctx.clip()
+                flowBands(W, tailY + 64, 3, 0.012, 2.2)
+                // 兜：以弦两端点为界的斜半椭圆，逐层同心弧；depth 略超出轮廓让底缘由 clip 裁出
+                function swagTilt(x0, y0, x1, y1, depth, phase) {
+                    var cx = (x0 + x1) / 2, cy = (y0 + y1) / 2
+                    var dx = x1 - x0, dy = y1 - y0
+                    var a = Math.sqrt(dx * dx + dy * dy) / 2
+                    var n = 16
+                    ctx.save()
+                    ctx.translate(cx, cy)
+                    ctx.rotate(Math.atan2(dy, dx))
+                    ctx.scale(1, depth)
+                    for (var j = 0; j < n; j++) {
+                        var t = j / n
+                        var wv = 0.5 + 0.5 * Math.cos(t * 7.2 + phase)
+                        var e = (1 - t) * (0.32 + 0.68 * wv)
+                        ctx.beginPath()
+                        ctx.arc(0, 0, a * (1 - t), 0, Math.PI, false)
+                        ctx.closePath()
+                        ctx.fillStyle = Qt.rgba(0.30 + 0.55 * e, 0.04 + 0.27 * e, 0.06 + 0.28 * e, 1)
+                        ctx.fill()
+                    }
+                    ctx.restore()
+                }
+                swagTilt(W, tailY, W * 0.72, holdY, 0.44, 0.8)       // 右斜兜
+                swagTilt(0, tailY, W * 0.28, holdY, 0.44, 0.8)       // 左斜兜（对称同相位）
+                swagTilt(W * 0.72, holdY, W * 0.28, holdY, 0.30, 0) // 中兜（大，垂得最低）
+                // 兜底整体沉积（垂坠感）
+                var gsh = ctx.createLinearGradient(0, holdY, 0, tailY + 44)
+                gsh.addColorStop(0.0, "rgba(40,4,8,0)")
+                gsh.addColorStop(1.0, "rgba(40,4,8,0.30)")
+                ctx.fillStyle = gsh
+                ctx.fillRect(0, holdY, W, tailY + 44 - holdY)
+                // 悬挂点收束阴影（褶在扣点汇聚成暗结）
+                function gather(hx, hy) {
+                    ctx.save()
+                    ctx.translate(hx, hy - 4)
+                    ctx.scale(1, 1.7)
+                    var gg = ctx.createRadialGradient(0, 0, 0, 0, 0, 13)
+                    gg.addColorStop(0.0, "rgba(35,2,5,0.55)")
+                    gg.addColorStop(1.0, "rgba(35,2,5,0)")
+                    ctx.fillStyle = gg
+                    ctx.beginPath()
+                    ctx.arc(0, 0, 13, 0, Math.PI * 2)
+                    ctx.fill()
+                    ctx.restore()
+                }
+                gather(0, tailY); gather(W * 0.28, holdY); gather(W * 0.72, holdY); gather(W, tailY)
+                ctx.restore()
+            }
+        }
+        onWidthChanged: requestPaint()
+    }
+
+    // ===== 顶部三盏射灯（灯具在原标题所在的顶带，光锥照向各自台子）=====
+    Canvas {
+        id: lights
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.top: parent.top
+        anchors.topMargin: -root.topGap
+        height: root.topGap + root.height
+        onPaint: {
+            var ctx = getContext("2d")
+            ctx.reset()
+            var cx = width / 2
+            var topY = root.topGap
+            var spots = [
+                { x: cx - root.bw * 0.90, r: 2, a: 0.16, rx: 82 },
+                { x: cx,                   r: 1, a: 0.30, rx: 92 },
+                { x: cx + root.bw * 0.90,  r: 3, a: 0.16, rx: 82 }
+            ]
+            var lensY = 27
+            for (var i = 0; i < spots.length; i++) {
+                var s = spots[i]
+                var landY = topY + root.blockTopY(s.r) + 8
+                // —— 光锥 ——
+                var g = ctx.createLinearGradient(0, lensY + 1, 0, landY)
+                g.addColorStop(0.0, "rgba(255,243,214," + (s.a) + ")")
+                g.addColorStop(0.65, "rgba(255,243,214," + (s.a * 0.45) + ")")
+                g.addColorStop(1.0, "rgba(255,243,214,0)")
+                ctx.beginPath()
+                ctx.moveTo(s.x - 9, lensY + 1)
+                ctx.lineTo(s.x + 9, lensY + 1)
+                ctx.lineTo(s.x + s.rx, landY)
+                ctx.lineTo(s.x - s.rx, landY)
+                ctx.closePath()
+                ctx.fillStyle = g
+                ctx.fill()
+                // —— 落点光斑（椭圆）——
+                ctx.save()
+                ctx.translate(s.x, landY)
+                ctx.scale(1, 0.32)
+                var sp = ctx.createRadialGradient(0, 0, 0, 0, 0, s.rx)
+                sp.addColorStop(0.0, "rgba(255,238,200," + (s.a * 1.15) + ")")
+                sp.addColorStop(1.0, "rgba(255,238,200,0)")
+                ctx.beginPath()
+                ctx.arc(0, 0, s.rx, 0, Math.PI * 2)
+                ctx.fillStyle = sp
+                ctx.fill()
+                ctx.restore()
+                // —— 灯具 ——
+                // 吸顶座 + 吊杆
+                ctx.fillStyle = "#262d3a"
+                ctx.fillRect(s.x - 13, 3, 26, 4)
+                ctx.fillRect(s.x - 2, 6, 4, 4)
+                // 筒身（金属渐变）
+                var gb = ctx.createLinearGradient(0, 9, 0, 26)
+                gb.addColorStop(0.0, "#3f4a59")
+                gb.addColorStop(1.0, "#1e242e")
+                ctx.fillStyle = gb
+                ctx.fillRect(s.x - 11, 9, 22, 17)
+                ctx.fillStyle = "rgba(255,255,255,0.10)"
+                ctx.fillRect(s.x - 11, 9, 22, 3)
+                // 两侧轭臂
+                ctx.fillStyle = "#161b24"
+                ctx.fillRect(s.x - 13, 12, 2, 11)
+                ctx.fillRect(s.x + 11, 12, 2, 11)
+                // 灯口（与筒身等宽：金圈 + 暖白镜片 + 白芯）
+                ctx.beginPath()
+                ctx.ellipse(s.x, lensY, 11.5, 4.5, 0, 0, Math.PI * 2)
+                var glens = ctx.createLinearGradient(0, lensY - 4, 0, lensY + 4)
+                glens.addColorStop(0.0, "#fff7e2")
+                glens.addColorStop(1.0, "#ffd98f")
+                ctx.fillStyle = glens
+                ctx.fill()
+                ctx.strokeStyle = "#c9a24a"
+                ctx.lineWidth = 2.2
+                ctx.stroke()
+                ctx.beginPath()
+                ctx.ellipse(s.x, lensY - 0.5, 6, 2.2, 0, 0, Math.PI * 2)
+                ctx.fillStyle = "rgba(255,255,255,0.85)"
+                ctx.fill()
+                // 灯口辉光
+                var gl = ctx.createRadialGradient(s.x, lensY, 0, s.x, lensY, 26)
+                gl.addColorStop(0.0, "rgba(255,246,220," + Math.min(0.7, s.a * 2.2) + ")")
+                gl.addColorStop(1.0, "rgba(255,246,220,0)")
+                ctx.beginPath()
+                ctx.arc(s.x, lensY, 26, 0, Math.PI * 2)
+                ctx.fillStyle = gl
+                ctx.fill()
+            }
+        }
+        onWidthChanged: requestPaint()
+    }
+
+    // ===== 深色底座（顶面+正面一体绘制，对齐无缝）=====
+    Rectangle {
+        id: stage
+        width: 3 * root.bw + 76
+        height: root.stageTopH + root.stageFrontH + 2
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: 12
+        anchors.horizontalCenter: parent.horizontalCenter
+        color: "transparent"
+        Canvas {
+            anchors.fill: parent
+            onPaint: {
+                var ctx = getContext("2d")
+                ctx.reset()
+                var w = width, hTop = root.stageTopH
+                // 顶面（暗红舞台）：底边在 hTop，收口提亮成棱线
+                var gt = ctx.createLinearGradient(0, 0, 0, hTop)
+                gt.addColorStop(0.0, "#6e2020")
+                gt.addColorStop(1.0, "#a03636")
+                ctx.beginPath()
+                ctx.moveTo(30, 0)
+                ctx.lineTo(w - 30, 0)
+                ctx.lineTo(w, hTop)
+                ctx.lineTo(0, hTop)
+                ctx.closePath()
+                ctx.fillStyle = gt
+                ctx.fill()
+                // 正面：暗红，顶边比台面收口深一档
+                var gf = ctx.createLinearGradient(0, hTop, 0, height)
+                gf.addColorStop(0.0, "#8c2d2d")
+                gf.addColorStop(1.0, "#4a1616")
+                ctx.fillStyle = gf
+                ctx.fillRect(0, hTop, w, height - hTop)
+                // 底部暗线
+                ctx.fillStyle = "#40000000"
+                ctx.fillRect(0, height - 2, w, 2)
+            }
+            onWidthChanged: requestPaint()
+        }
+    }
+
+    // ===== 三座台 =====
+    Item {
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: stage.top
+        anchors.bottomMargin: -root.stageTopH
+        height: root.blockH(1) + root.topDepth
+
+        PodiumBlock { rank: 2; delay: 180; cx: root.width / 2 - root.bw * 0.90
+            g: root.g2 }
+        PodiumBlock { rank: 3; delay: 260; cx: root.width / 2 + root.bw * 0.90
+            g: root.g3 }
+        PodiumBlock { rank: 1; delay: 80;  cx: root.width / 2
+            g: root.g1 }
+    }
+
+    // ===== 底座两端射灯（灯座 + 斜向光锥，掠过台面，画在最上层）=====
+    Canvas {
+        id: sideLights
+        anchors.fill: parent
+        z: 20
+        onPaint: {
+            var ctx = getContext("2d")
+            ctx.reset()
+            var cx = width / 2
+            var srcY = root.containerBottomY - 4
+            var half = (3 * root.bw + 76) / 2
+            var tgtY = root.blockTopY(1) + 26
+            var lamps = [
+                { sx: cx - half + 26, tx: cx - 60, dir: 1 },
+                { sx: cx + half - 26, tx: cx + 60, dir: -1 }
+            ]
+            for (var i = 0; i < lamps.length; i++) {
+                var L = lamps[i]
+                var dx = L.tx - L.sx
+                var dy = tgtY - srcY
+                var len = Math.sqrt(dx * dx + dy * dy)
+                var ang = Math.atan2(dy, dx)
+                ctx.save()
+                ctx.translate(L.sx, srcY)
+                ctx.rotate(ang)
+                // 光锥（暖白，掠过台子）
+                var g = ctx.createLinearGradient(0, 0, len, 0)
+                g.addColorStop(0.0, "rgba(255,234,196,0.27)")
+                g.addColorStop(0.6, "rgba(255,234,196,0.12)")
+                g.addColorStop(1.0, "rgba(255,234,196,0)")
+                ctx.beginPath()
+                ctx.moveTo(0, -5)
+                ctx.lineTo(len, -66)
+                ctx.lineTo(len, 66)
+                ctx.lineTo(0, 5)
+                ctx.closePath()
+                ctx.fillStyle = g
+                ctx.fill()
+                ctx.restore()
+                // 灯座（朝目标微倾的小筒灯）
+                ctx.save()
+                ctx.translate(L.sx, srcY)
+                ctx.rotate(ang)
+                ctx.fillStyle = "#1c232e"
+                ctx.fillRect(-16, -7, 16, 14)
+                ctx.strokeStyle = "#c9a24a"
+                ctx.lineWidth = 1.5
+                ctx.beginPath()
+                ctx.moveTo(0, -7); ctx.lineTo(0, 7)
+                ctx.stroke()
+                ctx.restore()
+                // 灯口辉光
+                var gl = ctx.createRadialGradient(L.sx, srcY, 0, L.sx, srcY, 18)
+                gl.addColorStop(0.0, "rgba(255,242,210,0.85)")
+                gl.addColorStop(1.0, "rgba(255,242,210,0)")
+                ctx.beginPath()
+                ctx.arc(L.sx, srcY, 18, 0, Math.PI * 2)
+                ctx.fillStyle = gl
+                ctx.fill()
+            }
+        }
+        onWidthChanged: requestPaint()
+    }
+
+    // 一座台：顶面+正面一体 Canvas（严格对齐），叠接触阴影/名牌/数字
+    component PodiumBlock: Item {
+        id: blk
+        property int rank: 1
+        property var g: null
+        property real cx: 0
+        property int delay: 100
+        width: root.bw
+        height: root.blockH(rank) + root.topDepth
+        x: cx - width / 2
+        anchors.bottom: parent.bottom
+        opacity: 0
+
+        // 一体块体（梯形底边 = 矩形顶边，严格共线）
+        Canvas {
+            id: bodyCv
+            width: parent.width
+            height: root.blockH(blk.rank) + root.topDepth
+            anchors.bottom: parent.bottom
+            onPaint: {
+                var ctx = getContext("2d")
+                ctx.reset()
+                var w = width
+                var faceTopY = root.topDepth
+                // 顶面梯形：底边就在 faceTopY，收口提亮（与正面形成受光棱线）
+                var gt = ctx.createLinearGradient(0, 0, 0, faceTopY)
+                gt.addColorStop(0.0, Qt.darker(root.tCol(blk.rank), 1.12))
+                gt.addColorStop(1.0, Qt.lighter(root.fTop(blk.rank), 1.12))
+                ctx.beginPath()
+                ctx.moveTo(13, 0)
+                ctx.lineTo(w - 13, 0)
+                ctx.lineTo(w, faceTopY)
+                ctx.lineTo(0, faceTopY)
+                ctx.closePath()
+                ctx.fillStyle = gt
+                ctx.fill()
+                // 正面矩形：顶边从 faceTopY 起，起始比顶面收口深一档 → 棱线立体感
+                var gf = ctx.createLinearGradient(0, faceTopY, 0, height)
+                gf.addColorStop(0.0, Qt.darker(root.fTop(blk.rank), 1.07))
+                gf.addColorStop(1.0, root.fBot(blk.rank))
+                ctx.fillStyle = gf
+                ctx.fillRect(0, faceTopY, w, height - faceTopY)
+            }
+            onWidthChanged: requestPaint()
+        }
+        // 与冠军台相接一侧的接触阴影（侧台才有）
+        Rectangle {
+            visible: blk.rank !== 1
+            width: 30; height: root.blockH(blk.rank)
+            anchors.top: bodyCv.top
+            anchors.topMargin: root.topDepth
+            anchors.left: blk.rank === 2 ? parent.right : undefined
+            anchors.right: blk.rank === 3 ? parent.left : undefined
+            anchors.leftMargin: blk.rank === 2 ? -width : 0
+            anchors.rightMargin: blk.rank === 3 ? -width : 0
+            z: 2
+            gradient: Gradient {
+                orientation: Gradient.Horizontal
+                GradientStop { position: blk.rank === 2 ? 0.0 : 1.0; color: "#00000000" }
+                GradientStop { position: blk.rank === 2 ? 1.0 : 0.0; color: "#38000000" }
+            }
+        }
+
+        // 雕刻名次「No.x」：刻痕色调跟随本台金属色（深一档刻体 + 亮一档槽光）
+        property string noHtml: "No.<span style=\"font-size:" + (blk.rank === 1 ? 50 : 32)
+                                + "px; font-weight:bold\">" + blk.rank + "</span>"
+        property color engraveDark: Qt.darker(root.fBot(blk.rank), 1.55)
+        property color engraveLight: Qt.lighter(root.fTop(blk.rank), 1.35)
+        Text { // 下缘高光（槽壁反光，取本台提亮色）
+            anchors.centerIn: bodyCv
+            anchors.verticalCenterOffset: 9.5
+            textFormat: Text.RichText
+            text: blk.noHtml
+            font.pixelSize: blk.rank === 1 ? 22 : 16
+            font.bold: true
+            font.family: Theme.fontFamily
+            color: Qt.alpha(blk.engraveLight, 0.88)
+        }
+        Text { // 上缘暗影（槽口背光）
+            anchors.centerIn: bodyCv
+            anchors.verticalCenterOffset: 5.5
+            textFormat: Text.RichText
+            text: blk.noHtml
+            font.pixelSize: blk.rank === 1 ? 22 : 16
+            font.bold: true
+            font.family: Theme.fontFamily
+            color: Qt.alpha(blk.engraveDark, 0.35)
+        }
+        Text { // 主体：本台深色刻痕
+            anchors.centerIn: bodyCv
+            anchors.verticalCenterOffset: 7.5
+            textFormat: Text.RichText
+            text: blk.noHtml
+            font.pixelSize: blk.rank === 1 ? 22 : 16
+            font.bold: true
+            font.family: Theme.fontFamily
+            color: Qt.alpha(blk.engraveDark, 0.8)
+        }
+
+        // 铭牌（坐在台面上）
+        Rectangle {
+            width: Math.min(root.bw - 10, plateRow.implicitWidth + 22)
+            height: 26
+            radius: 7
+            color: "#2d3846"
+            border.color: root.plateBorder(blk.rank)
+            border.width: 1.5
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.bottom: bodyCv.top
+            anchors.bottomMargin: -6
+            Row {
+                id: plateRow
+                anchors.centerIn: parent
+                spacing: 5
+                Text {
+                    text: root.medal(blk.rank)
+                    font.pixelSize: 11
+                    font.family: Theme.fontFamily
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+                Text {
+                    text: blk.g ? blk.g.name : "—"
+                    color: "#f2f5f8"
+                    font.pixelSize: 12
+                    font.bold: true
+                    font.family: Theme.fontFamily
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+                Text {
+                    text: blk.g ? blk.g.points + " 分" : ""
+                    color: "#f0cf8a"
+                    font.pixelSize: 11
+                    font.bold: true
+                    font.family: Theme.fontFamily
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+            }
+        }
+
+        transform: Translate { id: tr; y: 30 }
+        Component.onCompleted: rise.start()
+        ParallelAnimation {
+            id: rise
+            PauseAnimation { duration: blk.delay }
+            ParallelAnimation {
+                NumberAnimation { target: tr; property: "y"; to: 0; duration: 460; easing.type: Easing.OutBack; easing.period: 0.5 }
+                NumberAnimation { target: blk; property: "opacity"; to: 1; duration: 260 }
+            }
+        }
+    }
+}
