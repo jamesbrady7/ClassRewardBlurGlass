@@ -1,24 +1,33 @@
 import QtQuick
 
-// 左侧纵向导航：白色圆角卡片。选中态=一颗无边框「漂浮胶囊」随选项滑动，
-// 移动时轻微挤压回弹；序号与文字单层就地变色/缩放（无双层交叠的虚影），节奏统一。
+// 左侧导航：**照搬毛玻璃原型 NavRail 的效果**——"灯从玻璃后亮起"。
+//   静止=灭；悬停=半亮(0.48)；点击=最亮(1.0)。没有实底胶囊，选中靠**光**表达。
+// 外壳仍是毛玻璃（本应用的内容区没有外层玻璃面板，所以导航自带一块）。
 Item {
     id: root
 
     property var titles: []
     property int currentIndex: 0
-    // 毛玻璃的模糊源（由 Main.qml 传 backgroundLayer）：外壳由"不透明白卡"改为玻璃后，
-    // 背后的渐变色块会透出来 —— 这是"玻璃感"最直接的来源
-    property Item blurSource: null
+    property Item blurSource: null      // 毛玻璃的模糊源（Main.qml 传 backgroundLayer）
     signal activated(int index)
 
-    readonly property real rowH: 46
-    readonly property real rowGap: 6
-    readonly property real topPad: 12
+    // 点亮/熄灭时长：700ms InOutQuad = 能看清"由暗到明"的过程，像拧调光旋钮
+    property int rampMs: 700
+    property real hoverLit: 0.48        // 悬停档位（点击=1，静止=0）
+    property int hoverRampMs: 500       // 悬停"点亮"单独用更短时长（滑过时亮得快一点）
 
-    // 玻璃外壳（原为不透明 Theme.surface 纯白卡片）：
-    //   · 半透明 tint → 背景色透出来，不再是"一张白纸"
-    //   · 自带柔和投影 → 与背景拉开层次（原来靠描边，现在靠光影）
+    // 每个 tab 的图标与配色（icon 取自 CanvasIcon 的矢量图标集）
+    readonly property var metas: [
+        { icon: "user",    soft: "#fdeee1", deep: "#d0803f" },   // 花名册
+        { icon: "trophy",  soft: "#e2f5ec", deep: "#37a184" },   // 小组榜
+        { icon: "sparkle", soft: "#ebe9fc", deep: "#6f66d8" },   // 随机抽取
+        { icon: "sliders", soft: "#e5effc", deep: "#4a7fd6" },   // 批量操作
+        { icon: "gift",    soft: "#fde9f2", deep: "#c85f96" },   // 积分商店
+        { icon: "check",   soft: "#fdf3e0", deep: "#c08a2e" },   // 每日历史
+        { icon: "chart",   soft: "#e9f3f6", deep: "#3f7f96" }    // 数据分析
+    ]
+
+    // ── 毛玻璃外壳（本应用的内容区没有外层玻璃面板，导航自带一块）──
     FrostedPanel {
         id: shell
         anchors.fill: parent
@@ -26,11 +35,10 @@ Item {
         radius: Theme.radius
         tint: "#8cffffff"
         blur: 1.0
-        glassBlur: !systemGlass      // 穿透模式：模糊交给 DWM，这里只留半透明 tint
+        glassBlur: !systemGlass       // 穿透模式：模糊交给 DWM，这里只留半透明 tint
         shadow: true
         shadowColor: "#33202830"
     }
-    // 细描边：FrostedPanel 不带描边，保留原设计那圈界定感
     Rectangle {
         anchors.fill: parent
         radius: Theme.radius
@@ -39,144 +47,117 @@ Item {
         border.width: 1
     }
 
-    // ===== 漂浮胶囊：选中框 + 左竖条一体滑动 =====
-    Rectangle {
-        id: selPill
-        objectName: "selPill"
-        property bool settled: false
-        x: 12
-        width: parent.width - 24
-        height: rowH
-        y: topPad + Math.max(0, root.currentIndex) * (rowH + rowGap)
-        radius: Theme.radiusSmall
-        // 毛玻璃选中药囊：原来是不透明的绿渐变 → 改**半透明**（透出背后的内容/桌面），
-        // 再配身后一团柔光晕，读作"玻璃被点亮"，而不是"糊了一块实色"
-        gradient: Gradient {
-            orientation: Gradient.Vertical
-            GradientStop { position: 0.0; color: "#a6e2f4ee" }
-            GradientStop { position: 1.0; color: "#8fcfece2" }
-        }
-        // 灯：从玻璃后透出来的柔光（径向渐变、边缘羽化；跟着胶囊一起滑动）
-        SoftShadow {
-            anchors.fill: parent
-            anchors.margins: -16
-            centerY: 0.5
-            softColor: Qt.rgba(0.20, 0.74, 0.60, 0.22)
-        }
-        transform: Scale { id: pillSquish; xScale: 1; yScale: 1 }
-        Component.onCompleted: settled = true
-
-        Behavior on y {
-            NumberAnimation { duration: 320; easing.type: Easing.OutQuint }
-        }
-        onYChanged: if (settled) glide.restart()
-
-        // 果冻节奏：起步挤压 → 途中微过拉伸长 → 落定回正（与 y 的 320ms 同步）
-        SequentialAnimation {
-            id: glide
-            ParallelAnimation {
-                NumberAnimation { target: pillSquish; property: "xScale"; to: 0.965; duration: 110; easing.type: Easing.InQuad }
-                NumberAnimation { target: pillSquish; property: "yScale"; to: 0.93;  duration: 110; easing.type: Easing.InQuad }
-            }
-            ParallelAnimation {
-                NumberAnimation { target: pillSquish; property: "xScale"; to: 1.02; duration: 130; easing.type: Easing.OutSine }
-                NumberAnimation { target: pillSquish; property: "yScale"; to: 1.04; duration: 130; easing.type: Easing.OutSine }
-            }
-            ParallelAnimation {
-                NumberAnimation { target: pillSquish; property: "xScale"; to: 1.0; duration: 150; easing.type: Easing.OutCubic }
-                NumberAnimation { target: pillSquish; property: "yScale"; to: 1.0; duration: 150; easing.type: Easing.OutCubic }
-            }
-        }
-
-        // 前导竖条（胶囊的子件，一体移动；软圆角无硬边）
-        Rectangle {
-            width: 4; height: 18; radius: 2
-            color: Theme.accent
-            anchors.left: parent.left
-            anchors.leftMargin: -7
-            anchors.verticalCenter: parent.verticalCenter
-            opacity: 0.9
-        }
-    }
-
     Column {
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.leftMargin: root.topPad
-        anchors.rightMargin: root.topPad
-        anchors.top: parent.top
-        anchors.topMargin: root.topPad
-        spacing: root.rowGap
+        anchors.fill: parent
+        anchors.topMargin: 10
+        spacing: 4
 
         Repeater {
-            model: root.titles
-            delegate: Item {
-                id: box
-                property bool sel: index === root.currentIndex
-                property bool hov: false
-                width: parent.width
-                height: root.rowH
+            model: root.titles.length
 
-                // 悬停淡底（选中行不叠加，胶囊自带反馈）
-                Rectangle {
+            delegate: Item {
+                id: navItem
+                required property int index
+                readonly property var meta: root.metas[index % root.metas.length]
+                readonly property bool selected: root.currentIndex === index
+                readonly property bool hovered: navMa.containsMouse
+
+                width: parent.width
+                height: 44
+
+                // 灯从玻璃后亮起：用**两条各自固定时长的动画**取大（不是一个会变的 duration）
+                property real hoverP: 0
+                property int hoverMs: root.hoverRampMs
+                Behavior on hoverP {
+                    NumberAnimation { duration: navItem.hoverMs; easing.type: Easing.InOutQuad }
+                }
+                function syncHover() {
+                    var on = navItem.hovered && !navItem.selected
+                    navItem.hoverMs = on ? root.hoverRampMs : root.rampMs
+                    navItem.hoverP = on ? 1 : 0
+                }
+                onHoveredChanged: navItem.syncHover()
+                onSelectedChanged: navItem.syncHover()
+                property real selP: navItem.selected ? 1 : 0
+                Behavior on selP {
+                    NumberAnimation { duration: root.rampMs; easing.type: Easing.InOutQuad }
+                }
+                // 点亮进度 = 悬停档 与 选中档 取大；它同时决定亮度与光晕半径
+                readonly property real glowP: Math.max(navItem.hoverP * root.hoverLit, navItem.selP)
+
+                Canvas {
+                    id: navGlow
                     anchors.fill: parent
-                    radius: Theme.radiusSmall
-                    color: "#f3f8f6"
-                    opacity: box.hov && !box.sel ? 1 : 0
-                    Behavior on opacity { NumberAnimation { duration: 180 } }
+                    property real p: navItem.glowP
+                    onPChanged: requestPaint()      // 半径随 p 变，必须重绘
+                    opacity: navItem.glowP
+                    onPaint: {
+                        var ctx = getContext("2d"); ctx.reset()
+                        var w = width, h = height
+                        if (w < 4 || h < 4) return
+                        if (p <= 0.002) return       // 完全无光，不必构造退化渐变
+                        // 形状固定为满尺寸（圆角矩形裁切），只有里面的光在涨：
+                        // p 小=中间一小团虚边光斑，p=1=铺满整条并"填实"
+                        var k = p
+                        var r = 12
+                        ctx.beginPath()
+                        ctx.moveTo(r, 0); ctx.lineTo(w - r, 0); ctx.quadraticCurveTo(w, 0, w, r)
+                        ctx.lineTo(w, h - r); ctx.quadraticCurveTo(w, h, w - r, h)
+                        ctx.lineTo(r, h); ctx.quadraticCurveTo(0, h, 0, h - r)
+                        ctx.lineTo(0, r); ctx.quadraticCurveTo(0, 0, r, 0)
+                        ctx.closePath(); ctx.clip()
+                        var cMain = "rgba(255,255,255,0.74)"
+                        var cMid  = "rgba(230,234,255,0.24)"
+                        var cLamp = "rgba(255,255,255,0.50)"
+                        var R = w * 0.64 * k
+                        var g = ctx.createRadialGradient(w / 2, h / 2, R * (0.09 + 0.26 * k), w / 2, h / 2, R)
+                        g.addColorStop(0, cMain)
+                        g.addColorStop(0.55, cMid)
+                        g.addColorStop(1, "rgba(255,255,255,0)")
+                        ctx.fillStyle = g; ctx.fillRect(0, 0, w, h)
+                        // 底部灯芯亮核（灯自下亮起向上晕）
+                        var g2 = ctx.createRadialGradient(w / 2, h, 0, w / 2, h, w * 0.42 * k)
+                        g2.addColorStop(0, cLamp)
+                        g2.addColorStop(1, "rgba(255,255,255,0)")
+                        ctx.fillStyle = g2; ctx.fillRect(0, 0, w, h)
+                    }
                 }
 
                 Row {
-                    anchors.left: parent.left
-                    anchors.leftMargin: 22
-                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.fill: parent
+                    anchors.leftMargin: 10
                     spacing: 10
 
-                    // 序号方块：底色渐变过渡 + 数字颜色/缩放就地动效
-                    Item {
-                        width: 26; height: 26
+                    Rectangle {      // 图标方片（与原型同尺寸同圆角）
                         anchors.verticalCenter: parent.verticalCenter
-                        Rectangle {
-                            anchors.fill: parent
-                            radius: 8
-                            color: box.sel ? Theme.accent : (box.hov ? "#bfe6d9" : "#d9efe8")
-                            Behavior on color { ColorAnimation { duration: 240 } }
-                        }
-                        Text {
+                        width: 26; height: 26
+                        radius: 8
+                        color: navItem.meta.soft
+                        CanvasIcon {
                             anchors.centerIn: parent
-                            text: index + 1
-                            color: box.sel ? "#ffffff" : Theme.textSecondary
-                            font.pixelSize: Theme.fontSmall
-                            font.bold: true
-                            font.family: Theme.fontFamily
-                            scale: box.sel ? 1.14 : (box.hov ? 1.06 : 1.0)
-                            Behavior on color { ColorAnimation { duration: 240 } }
-                            Behavior on scale { NumberAnimation { duration: 280; easing.type: Easing.OutBack } }
+                            name: navItem.meta.icon
+                            width: 15; height: 15
+                            color: navItem.meta.deep
                         }
                     }
-
-                    // 板块名：颜色 + 放大（选中明显、悬停次之），随胶囊同步
-                    Text {
+                    Text {           // 板块名：颜色 + 字重随选中变
                         anchors.verticalCenter: parent.verticalCenter
-                        text: modelData
-                        color: box.sel ? Theme.accentDark : (box.hov ? "#2c8f77" : Theme.textSecondary)
-                        font.pixelSize: 14
-                        font.bold: box.sel
+                        text: root.titles[index]
+                        font.pixelSize: 13
                         font.family: Theme.fontFamily
-                        scale: box.sel ? 1.14 : (box.hov ? 1.06 : 1.0)
-                        transformOrigin: Item.Center
-                        Behavior on color { ColorAnimation { duration: 240 } }
-                        Behavior on scale { NumberAnimation { duration: 300; easing.type: Easing.OutBack } }
+                        font.weight: navItem.selected ? Font.DemiBold : Font.Medium
+                        color: navItem.selected ? Theme.textPrimary : Theme.textSecondary
+                        opacity: navItem.selected ? 1.0 : 0.75
+                        Behavior on color { ColorAnimation { duration: 140 } }
                     }
                 }
 
                 MouseArea {
+                    id: navMa
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-                    onEntered: box.hov = true
-                    onExited: box.hov = false
-                    onClicked: root.activated(index)
+                    onClicked: root.activated(navItem.index)
                 }
             }
         }
