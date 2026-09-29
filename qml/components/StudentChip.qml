@@ -69,7 +69,8 @@ Item {
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
             text: chip.idText
-            font.pixelSize: 10
+            // 字号随方块尺寸走（原型方块 42px，里面要放两行）
+            font.pixelSize: Math.max(8, Math.round(chip.width * 0.22))
             font.family: Theme.fontFamily
             // 未选中=次要色；选中=mist 是浅色面 → 用深字（原型同规则），按 sel 平滑插值
             color: chip.mixc(Theme.textMuted, "#3f4660", chip.sel)
@@ -77,7 +78,7 @@ Item {
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
             text: chip.label
-            font.pixelSize: Theme.fontSmall
+            font.pixelSize: Math.max(9, Math.round(chip.width * 0.27))
             font.family: Theme.fontFamily
             font.weight: chip.selected ? Font.DemiBold : Font.Normal
             color: chip.mixc(Theme.textPrimary, "#3f4660", chip.sel)
@@ -88,15 +89,15 @@ Item {
     Rectangle {
         anchors.right: parent.right
         anchors.top: parent.top
-        width: 16; height: 16
-        radius: 8
+        width: Math.round(chip.width * 0.38); height: width
+        radius: width / 2
         color: "#22bd8e"
         opacity: chip.selected ? 1 : 0
         Behavior on opacity { NumberAnimation { duration: 130 } }
         CanvasIcon {
             anchors.centerIn: parent
             name: "check"
-            width: 10; height: 10
+            width: Math.round(chip.width * 0.24); height: width
             color: "white"
         }
     }

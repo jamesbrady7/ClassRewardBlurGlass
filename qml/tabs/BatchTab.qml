@@ -32,32 +32,31 @@ Column {
         Item { width: 1; height: 1 }
     }
 
-    // 学生徽章网格（带淡色底）
+    // 学生方块区：**照搬原型的平铺规则** —— Grid 固定 10 列、方块正方形 42px、间距 18、整块居中
+    // （原型 rows=5 / cols=10 / chipSize=42 / chipGap=18，正好 5 行 × 10 列 = 50 个）
     Card {
+        id: badgeCard
         width: parent.width
-        height: 170
+        height: grid.height + 28          // 高度随行数自适应（满班 5 行时 ≈ 282 + 28）
         radius: Theme.radius
         cardColor: "#4dffffff"
         Flickable {
             id: badges
             anchors.fill: parent
-            anchors.margins: 10
-            // ⚠️ 原来是 contentWidth: grid.implicitWidth + Flow.width: parent.width → **自我引用**：
-            //    parent 就是 Flickable 的 contentItem，而它的宽度=contentWidth=grid.implicitWidth
-            //    → Flow 的宽度被算成"一格宽"，方块全被挤成一列。改为用 Flickable 自身宽度。
+            anchors.margins: 14
             contentWidth: width
             contentHeight: grid.height
             clip: true
-            Flow {
+            Grid {
                 id: grid
-                width: badges.width
-                spacing: 6
+                anchors.horizontalCenter: parent.horizontalCenter   // 整块居中（同原型）
+                columns: 10                                          // 固定 10 列（同原型）
+                spacing: 18                                          // chipGap（同原型）
                 Repeater {
                     model: reward.students
-                    // 平铺的学生方块：照搬原型的 StudentChip（圆角方形玻璃面 + 选中彩色高亮 + 薄荷绿勾）
                     delegate: StudentChip {
                         id: badge
-                        width: 56; height: 48
+                        width: 42; height: 42                        // 正方形（同原型 chipSize）
                         idText: modelData.studentId
                         label: modelData.name.length > 3 ? modelData.name.slice(0, 3) : modelData.name
                         selected: root.contains(modelData.id)
@@ -103,7 +102,10 @@ Column {
         Repeater {
             model: reward.categories
             delegate: CuteButton {
-                tone: root.cat === modelData ? "soft" : "secondary"
+                // ⚠️ 原来是 soft/secondary 两档 —— CuteButton 重写后两者都渲染成半透明玻璃，
+                //    选中根本看不出来。改用"选中=彩色实底(primary 的杂糅渐变) / 未选=玻璃"，
+                //    点击后一眼可辨（加减分前必须先选分类，这个高亮是操作前提）
+                tone: root.cat === modelData ? "primary" : "secondary"
                 text: modelData
                 onClicked: root.cat = modelData
             }
