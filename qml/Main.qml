@@ -213,45 +213,24 @@ Window {
             anchors.left: parent.left
             anchors.verticalCenter: parent.verticalCenter
             spacing: 8
-            Repeater {
-                model: reward.classes
-                delegate: Rectangle {
-                    id: clsPill
-                    width: clsTxt.implicitWidth + 30
-                    height: 32
-                    radius: Theme.radiusPill
-                    color: "transparent"
-                    // 底色恒定、只动透明度（避免透明→色 插值发灰）
-                    Rectangle {
-                        anchors.fill: parent
-                        radius: Theme.radiusPill
-                        color: Theme.accentSoft
-                        opacity: modelData.current || mcls.containsMouse ? 1 : 0
-                        Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
-                    }
-                    Text {
-                        id: clsTxt
-                        text: modelData.name
-                        anchors.centerIn: parent
-                        color: modelData.current ? Theme.accentDark
-                             : mcls.containsMouse ? "#1f7a66" : Theme.textSecondary
-                        font.pixelSize: Theme.fontBody
-                        font.bold: modelData.current || mcls.containsMouse
-                        font.family: Theme.fontFamily
-                    }
-                    MouseArea {
-                        id: mcls
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        acceptedButtons: Qt.LeftButton | Qt.RightButton
-                        cursorShape: Qt.PointingHandCursor
-                        onPressed: function(mouse) {
-                            if (mouse.button === Qt.RightButton)
-                                mainWin.openClassMenu(clsPill, modelData.id, modelData.name)
-                            else
-                                reward.setCurrentClass(modelData.id)
-                        }
-                    }
+            // 班级切换：**照搬原型的分段 Tab**（底槽 + 滑动白胶囊 + 移动时拉伸形变）
+            SegmentedTabs {
+                id: classTabs
+                anchors.verticalCenter: parent.verticalCenter
+                labels: {
+                    var a = []
+                    for (var i = 0; i < reward.classes.length; i++) a.push(reward.classes[i].name)
+                    return a
+                }
+                currentIndex: {
+                    for (var i = 0; i < reward.classes.length; i++)
+                        if (reward.classes[i].current) return i
+                    return 0
+                }
+                onActivated: function(i) { reward.setCurrentClass(reward.classes[i].id) }
+                // 右键改名/删除：原型没有这个，是本应用原有的能力，保留
+                onRightClicked: function(i, item) {
+                    mainWin.openClassMenu(item, reward.classes[i].id, reward.classes[i].name)
                 }
             }
             RoundBtn {

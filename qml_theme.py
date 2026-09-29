@@ -171,6 +171,15 @@ class Theme(QObject):
     def fontBig(self):
         return 15
 
+    # ---- 分段 tab 配色（照搬原型的 SegmentedTabs：底槽 + 滑动胶囊）----
+    @Property(str, constant=True)
+    def fillShell(self):
+        return '#52ffffff'    # 底槽：32% 白
+
+    @Property(str, constant=True)
+    def fillPill(self):
+        return '#ffffff'      # 滑动胶囊：实白
+
     # ---- 加减按钮配色（取自毛玻璃原型「圆形按钮 16 / 15」的主色）----
     # 那两个按钮本身是多色杂糅；这里只取其代表色 —— 形状与渲染都不变，只换颜色
     @Property(str, constant=True)
