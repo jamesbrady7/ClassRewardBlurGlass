@@ -13,6 +13,13 @@ Item {
     property string glyph: ""         // 未提供 icon 时显示的字符
     property real iconSpan: 16        // 图标画布边长（越大图形越大）
     property real iconWeight: 1.6     // 线宽
+    // 彩色杂糅面（= 原型 CircleButton 的 accent 模式）：多色弥散渐变，代替单一底色
+    property bool accent: false
+    property string scheme: "mint"
+    // 图标/文字取色：accent 时按"浅色面用深字"的规则自动决定（原型同规则）
+    property color effFg: root.accent
+                         ? (fill.lightFace ? "#3f4660" : "#ffffff")
+                         : root.fg
     property color borderOverride: "transparent"   // 指定外圈描边色
     property real borderW: 1
     property string hint: ""                       // 悬停说明文字
@@ -49,15 +56,33 @@ Item {
         Behavior on color { ColorAnimation { duration: 140 } }
         Behavior on border.width { NumberAnimation { duration: 120 } }
 
+        // accent：多色杂糅弥散渐变面（盖在半透明玻璃面之上）
+        IridescentFill {
+            id: fill
+            anchors.fill: parent
+            rad: width / 2
+            scheme: root.scheme
+            visible: root.accent
+            hovered: mouse.containsMouse
+            pressed: mouse.pressed
+        }
+
         Canvas {
+            id: ico
             visible: root.icon !== ""
             anchors.centerIn: parent
             width: root.iconSpan
             height: width
+            // ⚠️ effFg 是 root 的属性，处理器**必须挂在 root 上**：
+            //    在本 Canvas 里直接写 onEffFgChanged 会被当成"Canvas 自己没这个属性"→ 组件加载失败
+            Connections {
+                target: root
+                function onEffFgChanged() { ico.requestPaint() }
+            }
             onPaint: {
                 var ctx = getContext("2d")
                 ctx.reset()
-                ctx.strokeStyle = root.fg
+                ctx.strokeStyle = root.effFg
                 ctx.lineWidth = root.iconWeight
                 ctx.lineCap = "round"
                 ctx.lineJoin = "round"
@@ -104,7 +129,7 @@ Item {
             visible: root.icon === ""
             text: root.glyph
             anchors.centerIn: parent
-            color: root.fg
+            color: root.effFg
             font.pixelSize: root.glyphSize
             font.family: Theme.fontFamily
         }

@@ -15,6 +15,7 @@ Row {
 
     CuteButton {
         text: "−"
+        tone: "primary"; schemeOverride: "crimson"   // 减号：原型圆形按钮 15
         implicitWidth: 30
         implicitHeight: root.heightSize
         onClicked: { root.value = Math.max(root.min, root.value - root.step); root.changed() }
@@ -37,6 +38,7 @@ Row {
     }
     CuteButton {
         text: "＋"
+        tone: "primary"; schemeOverride: "aurora"    // 加号：原型圆形按钮 16
         implicitWidth: 30
         implicitHeight: root.heightSize
         onClicked: { root.value = Math.min(root.max, root.value + root.step); root.changed() }

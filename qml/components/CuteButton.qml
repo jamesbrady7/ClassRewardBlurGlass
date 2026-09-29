@@ -16,8 +16,10 @@ Item {
     implicitWidth: txt.implicitWidth + 40
     implicitHeight: 38
 
+    property string schemeOverride: ""    // 指定则覆盖 tone→scheme 的映射
     // tone → 原型的 scheme（未列出的 tone 走默认 mint）
-    readonly property string scheme: tone === "pink" ? "orchid"
+    readonly property string scheme: schemeOverride !== "" ? schemeOverride
+                                    : tone === "pink" ? "orchid"
                                     : tone === "blue" ? "marine"
                                     : tone === "danger" ? "scarlet"
                                     : "mint"

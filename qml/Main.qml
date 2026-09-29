@@ -256,8 +256,8 @@ Window {
             }
             RoundBtn {
                 size: 34
-                bg: Theme.accent
-                fg: "#ffffff"
+                accent: true
+                scheme: "aurora"      // 加号：原型圆形按钮 16
                 icon: "plus"
                 hint: "新建班级"
                 anchors.verticalCenter: parent.verticalCenter
