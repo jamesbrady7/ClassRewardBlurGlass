@@ -162,7 +162,8 @@ ColumnLayout {
             width: list.width
             height: 64
             radius: Theme.radius
-            cardColor: "transparent"      // 底色由下面的组色渐变提供
+            // 底色 = 原型卡片那种**半透明白玻璃**（原来这里是 transparent，只靠组色渐变）
+            cardColor: "#b8ffffff"
             borderColor: "transparent"    // 原来就是无边框
             shadow: true
             liftOnHover: true
