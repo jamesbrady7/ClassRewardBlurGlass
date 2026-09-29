@@ -162,24 +162,13 @@ ColumnLayout {
             width: list.width
             height: 64
             radius: Theme.radius
-            // 底色 = 原型卡片那种**半透明白玻璃**（原来这里是 transparent，只靠组色渐变）
-            cardColor: "#b8ffffff"
-            borderColor: "transparent"    // 原来就是无边框
+            // 底色 = 半透明白玻璃。
+            // ⚠️ 浓度必须低：玻璃感来自"能透出背后"，72% 白等于一块实心白卡、玻璃感全无。
+            //    30% 白时背后被 DWM 糊化的桌面会透上来，才是玻璃。
+            cardColor: "#4dffffff"
+            borderColor: "transparent"
             shadow: true
             liftOnHover: true
-
-            // 组色渐变：由左实渐隐到右虚（圆角、无边框）
-            Rectangle {
-                anchors.fill: parent
-                radius: Theme.radius
-                gradient: Gradient {
-                    GradientStop { position: 0.00; color: root.edgeColor(card.student.groupColor, 0.00) }
-                    GradientStop { position: 0.20; color: root.edgeColor(card.student.groupColor, 0.20) }
-                    GradientStop { position: 0.45; color: root.edgeColor(card.student.groupColor, 0.45) }
-                    GradientStop { position: 0.72; color: root.edgeColor(card.student.groupColor, 0.72) }
-                    GradientStop { position: 1.00; color: root.edgeColor(card.student.groupColor, 1.00) }
-                }
-            }
 
             Row {
                 anchors.left: parent.left; anchors.leftMargin: 14
