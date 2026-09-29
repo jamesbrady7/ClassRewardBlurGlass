@@ -113,7 +113,10 @@ Column {
             width: list.width
             height: 360
             radius: Theme.radius
-            cardColor: "#f2f8f5"   // 分析卡底色（淡薄荷），与页面区分
+            // 毛玻璃：半透明淡薄荷（透出背后的桌面）+ 悬停轻微上浮
+            cardColor: "#d9f2f8f5"
+            shadow: true
+            liftOnHover: true
             Column {
                 anchors.fill: parent
                 anchors.margins: 14
