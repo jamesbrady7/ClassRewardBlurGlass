@@ -256,7 +256,7 @@ Window {
             }
             RoundBtn {
                 size: 34
-                bg: Theme.aurora      // 加号：原型圆形按钮 16 的颜色
+                accent: true; scheme: "aurora"   // 加号：原型圆形按钮 16（极光杂糅）
                 fg: "#ffffff"
                 icon: "plus"
                 hint: "新建班级"
