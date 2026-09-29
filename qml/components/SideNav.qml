@@ -7,17 +7,33 @@ Item {
 
     property var titles: []
     property int currentIndex: 0
+    // 毛玻璃的模糊源（由 Main.qml 传 backgroundLayer）：外壳由"不透明白卡"改为玻璃后，
+    // 背后的渐变色块会透出来 —— 这是"玻璃感"最直接的来源
+    property Item blurSource: null
     signal activated(int index)
 
     readonly property real rowH: 46
     readonly property real rowGap: 6
     readonly property real topPad: 12
 
-    Rectangle {
+    // 玻璃外壳（原为不透明 Theme.surface 纯白卡片）：
+    //   · 半透明 tint → 背景色透出来，不再是"一张白纸"
+    //   · 自带柔和投影 → 与背景拉开层次（原来靠描边，现在靠光影）
+    FrostedPanel {
         id: shell
         anchors.fill: parent
+        source: root.blurSource
         radius: Theme.radius
-        color: Theme.surface
+        tint: "#8cffffff"
+        blur: 1.0
+        shadow: true
+        shadowColor: "#33202830"
+    }
+    // 细描边：FrostedPanel 不带描边，保留原设计那圈界定感
+    Rectangle {
+        anchors.fill: parent
+        radius: Theme.radius
+        color: "transparent"
         border.color: Theme.border
         border.width: 1
     }

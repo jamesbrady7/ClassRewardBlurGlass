@@ -293,6 +293,7 @@ Window {
             id: appTabs
             width: 180
             height: contentRow.height
+            blurSource: backgroundLayer      // 玻璃外壳的模糊源
             titles: ["花名册", "小组榜", "随机抽取", "批量操作", "积分商店", "每日历史", "数据分析"]
             currentIndex: 0
             onActivated: function(idx) { appTabs.currentIndex = idx }
