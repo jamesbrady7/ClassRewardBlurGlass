@@ -37,78 +37,31 @@ Column {
         width: parent.width
         height: 170
         radius: Theme.radius
-        cardColor: "#e9eff7"
+        cardColor: "#4dffffff"
         Flickable {
+            id: badges
             anchors.fill: parent
             anchors.margins: 10
-            contentWidth: grid.implicitWidth
-            contentHeight: grid.implicitHeight
+            // ⚠️ 原来是 contentWidth: grid.implicitWidth + Flow.width: parent.width → **自我引用**：
+            //    parent 就是 Flickable 的 contentItem，而它的宽度=contentWidth=grid.implicitWidth
+            //    → Flow 的宽度被算成"一格宽"，方块全被挤成一列。改为用 Flickable 自身宽度。
+            contentWidth: width
+            contentHeight: grid.height
             clip: true
             Flow {
                 id: grid
-                width: parent.width
+                width: badges.width
                 spacing: 6
                 Repeater {
                     model: reward.students
-                    delegate: Rectangle {
+                    // 平铺的学生方块：照搬原型的 StudentChip（圆角方形玻璃面 + 选中彩色高亮 + 薄荷绿勾）
+                    delegate: StudentChip {
                         id: badge
-                        property bool hov: false
-                        property bool sel: root.contains(modelData.id)
                         width: 56; height: 48
-                        radius: Theme.radiusSmall
-                        // 选中=整块主色实底填充；未选中=白底，与面板 #e9eff7 明显区分
-                        color: badge.sel ? Theme.accent : (badge.hov ? "#f4f8ff" : Theme.surface)
-                        border.color: badge.sel ? Theme.accentDark : Theme.border
-                        border.width: 1
-                        Behavior on color { ColorAnimation { duration: 140 } }
-                        Column {
-                            anchors.centerIn: parent
-                            spacing: 1
-                            Text {
-                                text: modelData.studentId
-                                color: badge.sel ? "#c9f3ea" : Theme.textMuted
-                                font.pixelSize: 10
-                                font.family: Theme.fontFamily
-                                anchors.horizontalCenter: parent.horizontalCenter
-                            }
-                            Text {
-                                text: modelData.name.length > 3 ? modelData.name.slice(0, 3) : modelData.name
-                                color: badge.sel ? "#ffffff" : Theme.textPrimary
-                                font.pixelSize: Theme.fontSmall
-                                font.bold: true
-                                font.family: Theme.fontFamily
-                                anchors.horizontalCenter: parent.horizontalCenter
-                            }
-                        }
-                        // 选中角标：右上角白圆 + 翡翠 ✓
-                        Rectangle {
-                            visible: badge.sel
-                            width: 13; height: 13; radius: 7
-                            color: "#ffffff"
-                            anchors.top: parent.top; anchors.topMargin: 2
-                            anchors.right: parent.right; anchors.rightMargin: 2
-                            Canvas {
-                                width: 13; height: 13
-                                anchors.centerIn: parent
-                                onPaint: {
-                                    var c = getContext("2d"); c.reset()
-                                    c.strokeStyle = Theme.accent
-                                    c.lineWidth = 1.8
-                                    c.lineCap = "round"
-                                    c.beginPath()
-                                    c.moveTo(3.6, 7); c.lineTo(5.8, 9.2); c.lineTo(9.6, 4)
-                                    c.stroke()
-                                }
-                            }
-                        }
-                        MouseArea {
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onEntered: badge.hov = true
-                            onExited: badge.hov = false
-                            onClicked: root.toggle(modelData.id)
-                        }
+                        idText: modelData.studentId
+                        label: modelData.name.length > 3 ? modelData.name.slice(0, 3) : modelData.name
+                        selected: root.contains(modelData.id)
+                        onToggled: root.toggle(modelData.id)
                     }
                 }
             }
@@ -120,7 +73,7 @@ Column {
         width: parent.width
         height: 56
         radius: Theme.radius
-        cardColor: "#eef3fb"
+        cardColor: "#4dffffff"
         Row {
             anchors.fill: parent
             anchors.margins: 10
