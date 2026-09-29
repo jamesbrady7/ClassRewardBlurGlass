@@ -8,6 +8,11 @@ Item {
     id: root
     property var labels: []
     property int currentIndex: 0
+    // 可选：每一格的主色（分类色这类**有语义**的颜色）。传了之后：
+    //   · 滑动胶囊取"当前格"的颜色（切格时颜色跟着渐变）
+    //   · 未选中的标签用各自的主色 → 5 个分类色依然一眼可辨，分类功能不丢
+    // 不传则保持原型原样（白胶囊 + 常规文字色）
+    property var colors: []
     // 每格宽度：默认按最长标签自动撑开（原型是固定 96，本应用班名长短不一）
     property real seg: autoSeg
     signal activated(int index)
@@ -37,6 +42,7 @@ Item {
     readonly property real frac: pos - Math.floor(pos)
     // pow(,0.6) 让峰值更"平台"：形变升得快、保持久（OutCubic 下 pos=0.5 只在前 20% 出现，否则一闪而过）
     readonly property real stretch: Math.pow(4 * frac * (1 - frac), 0.6)
+    readonly property bool useColors: colors !== undefined && colors.length === labels.length
 
     // 底槽
     Rectangle {
@@ -52,7 +58,9 @@ Item {
         y: 4
         height: parent.height - 8
         radius: height / 2
-        color: Theme.fillPill
+        color: root.useColors ? root.colors[root.currentIndex] : Theme.fillPill
+        // 切换分类时胶囊颜色跟着渐变（不是主题色，不需要跟 nightT 同步，故可放心挂动画）
+        Behavior on color { ColorAnimation { duration: 260 } }
         width: root.seg + root.stretch * 36
         x: 4 + root.pos * root.seg - root.stretch * 18
     }
@@ -74,7 +82,9 @@ Item {
                     font.pixelSize: Theme.fontBody
                     font.family: Theme.fontFamily
                     font.weight: root.currentIndex === tab.index ? Font.DemiBold : Font.Normal
-                    color: root.currentIndex === tab.index ? Theme.textPrimary : Theme.textSecondary
+                    color: root.currentIndex === tab.index
+                           ? (root.useColors ? "#ffffff" : Theme.textPrimary)
+                           : (root.useColors ? root.colors[tab.index] : Theme.textSecondary)
                     Behavior on color { ColorAnimation { duration: 160 } }
                 }
                 MouseArea {

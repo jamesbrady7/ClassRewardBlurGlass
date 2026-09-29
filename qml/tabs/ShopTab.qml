@@ -93,45 +93,14 @@ Column {
         }
     }
 
-    // 分类筛选：文字与整块配色跟随等级（选中=实底反白，未选中=该等级淡底+同色文字）
-    Row {
-        width: parent.width
-        spacing: 6
-        Repeater {
-            model: ["all", "普通", "稀有", "史诗", "传说"]
-            delegate: Rectangle {
-                id: fb
-                property bool hov: false
-                property bool act: root.cat === modelData
-                // 底色=各分类色（全部=正文深灰）；未选中=半透明彩底，选中=全彩+白色描边圈
-                function col() { return modelData === "all" ? Theme.textPrimary : root.catFg(modelData) }
-                function tinted(hex) { return "#" + hex + fb.col().slice(1) }
-                width: txt.implicitWidth + 34
-                height: 36
-                radius: Theme.radiusSmall
-                color: fb.act ? fb.col() : (fb.hov ? fb.tinted("d6") : fb.tinted("a8"))
-                border.width: fb.act ? 2 : 0
-                border.color: "#ffffff"
-                Behavior on color { ColorAnimation { duration: 150 } }
-                Text {
-                    id: txt
-                    text: modelData === "all" ? "全部" : modelData
-                    anchors.centerIn: parent
-                    color: "#ffffff"
-                    font.pixelSize: Theme.fontBody
-                    font.bold: true
-                    font.family: Theme.fontFamily
-                }
-                MouseArea {
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onEntered: fb.hov = true
-                    onExited: fb.hov = false
-                    onClicked: root.cat = modelData
-                }
-            }
-        }
+    // 分类筛选：换用原型的**分段 Tab**（底槽 + 滑动胶囊 + 移动拉伸形变），
+    // 但**保留各分类的颜色**（颜色本身是分类标识）：
+    //   滑动胶囊取当前分类色、切分类时颜色渐变；未选中的标签用各自分类色 → 5 色一眼可辨
+    SegmentedTabs {
+        labels: ["全部", "普通", "稀有", "史诗", "传说"]
+        colors: [Theme.textPrimary, Theme.blue, Theme.purple, Theme.amber, Theme.red]
+        currentIndex: Math.max(0, ["all", "普通", "稀有", "史诗", "传说"].indexOf(root.cat))
+        onActivated: function(i) { root.cat = ["all", "普通", "稀有", "史诗", "传说"][i] }
     }
 
     // 奖励列表
