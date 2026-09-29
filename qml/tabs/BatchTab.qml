@@ -53,14 +53,21 @@ Column {
                 columns: 10                                          // 固定 10 列（同原型）
                 spacing: 18                                          // chipGap（同原型）
                 Repeater {
-                    model: reward.students
-                    delegate: StudentChip {
-                        id: badge
+                    // **固定 50 格 = 5 行 × 10 列**（同原型）：前 N 格是学生，多出来的留空占位
+                    model: 50
+                    delegate: Item {
                         width: 42; height: 42                        // 正方形（同原型 chipSize）
-                        idText: modelData.studentId
-                        label: modelData.name.length > 3 ? modelData.name.slice(0, 3) : modelData.name
-                        selected: root.contains(modelData.id)
-                        onToggled: root.toggle(modelData.id)
+                        readonly property var stu: index < reward.students.length
+                                                   ? reward.students[index] : null
+                        StudentChip {
+                            anchors.fill: parent
+                            visible: parent.stu !== null
+                            idText: parent.stu ? parent.stu.studentId : ""
+                            label: parent.stu ? (parent.stu.name.length > 3
+                                                 ? parent.stu.name.slice(0, 3) : parent.stu.name) : ""
+                            selected: parent.stu ? root.contains(parent.stu.id) : false
+                            onToggled: if (parent.stu) root.toggle(parent.stu.id)
+                        }
                     }
                 }
             }
@@ -107,7 +114,8 @@ Column {
                 //    点击后一眼可辨（加减分前必须先选分类，这个高亮是操作前提）
                 tone: root.cat === modelData ? "primary" : "secondary"
                 text: modelData
-                onClicked: root.cat = modelData
+                // 再次点击同一个分类 = 取消选中（op() 会提示"请先选择操作分类标签"）
+                onClicked: root.cat = (root.cat === modelData ? "" : modelData)
             }
         }
     }
