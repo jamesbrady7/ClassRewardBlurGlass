@@ -1,8 +1,10 @@
 import QtQuick
-import QtQuick.Effects
 
-// 主题化按钮：primary(翡翠主操作) / secondary(白底细边) / danger(红) / soft(浅绿)
-Rectangle {
+// 主题化按钮：**照搬原型的 GlassButton 逻辑**
+//   主级(filled) = 多色杂糅弥散渐变（IridescentFill）；次级 = 半透明白玻璃
+//   悬停：面增亮 + 投影加深；按压：整体缩到 0.97；零描边；投影为径向柔光晕
+// tone 保持原语义，映射到原型的配色方案：primary→mint / pink→orchid / blue→marine / danger→scarlet
+Item {
     id: root
 
     property string tone: "secondary"
@@ -14,63 +16,64 @@ Rectangle {
     implicitWidth: txt.implicitWidth + 40
     implicitHeight: 38
 
-    function baseColor() {
-        return tone === "primary" ? Theme.accent
-             : tone === "pink" ? Theme.pink
-             : tone === "blue" ? Theme.blue
-             : tone === "danger" ? Theme.red
-             : tone === "soft" ? Theme.accentSoft
-             : Theme.surface
-    }
-    function hoverColor() {
-        return tone === "primary" ? "#0d947d"
-             : tone === "pink" ? Qt.lighter(Theme.pink, 1.08)
-             : tone === "blue" ? Qt.lighter(Theme.blue, 1.08)
-             : tone === "danger" ? Qt.lighter(Theme.red, 1.1)
-             : tone === "soft" ? Qt.lighter(Theme.accentSoft, 1.03)
-             : Theme.bgTop
-    }
-    function pressedColor() {
-        return tone === "primary" ? Theme.accentDark
-             : tone === "pink" ? Qt.darker(Theme.pink, 1.1)
-             : tone === "blue" ? Qt.darker(Theme.blue, 1.1)
-             : tone === "danger" ? Qt.darker(Theme.red, 1.1)
-             : tone === "soft" ? Qt.darker(Theme.accentSoft, 1.05)
-             : "#e6ecf3"
-    }
-    function borderColor() {
-        return tone === "secondary" ? Theme.inputBorder
-             : tone === "soft" ? "#d6efe7"
-             : "transparent"
-    }
-    function fgColor() {
-        return (tone === "primary" || tone === "pink" || tone === "blue" || tone === "danger") ? "#ffffff"
-             : tone === "soft" ? Theme.accentDark
-             : Theme.textPrimary
+    // tone → 原型的 scheme（未列出的 tone 走默认 mint）
+    readonly property string scheme: tone === "pink" ? "orchid"
+                                    : tone === "blue" ? "marine"
+                                    : tone === "danger" ? "scarlet"
+                                    : "mint"
+    // 有彩色底 = 主级；secondary/soft 走半透明玻璃面
+    readonly property bool filled: tone !== "secondary" && tone !== "soft"
+
+    readonly property bool hovered: mouse.containsMouse
+    readonly property bool pressed: mouse.pressed
+
+    // 按压缩放（与原型的 0.97 一致）
+    scale: (root.usable && pressed) ? 0.97 : 1.0
+    opacity: root.usable ? 1 : 0.6
+    Behavior on scale { NumberAnimation { duration: 110; easing.type: Easing.OutQuad } }
+
+    // 径向柔光晕投影（主级偏紫调、次级偏灰调；悬停加深）
+    SoftShadow {
+        anchors.fill: parent
+        anchors.margins: -16
+        anchors.topMargin: -8
+        anchors.bottomMargin: -8
+        softColor: root.filled
+                   ? Qt.rgba(0.42, 0.40, 0.82, hovered ? 0.34 : 0.26)
+                   : Qt.rgba(0.30, 0.33, 0.48, hovered ? 0.22 : 0.15)
     }
 
-    radius: Theme.radiusSmall
-    color: !root.usable ? "#eef1f5"
-         : mouse.pressed ? root.pressedColor()
-         : mouse.containsMouse ? root.hoverColor()
-         : root.baseColor()
-    border.color: !root.usable ? Theme.border
-                : mouse.containsMouse ? Theme.accent
-                : root.borderColor()
-    border.width: 1
-    opacity: root.usable ? 1 : 0.6
-    Behavior on color { ColorAnimation { duration: 120 } }
-    Behavior on border.color { ColorAnimation { duration: 120 } }
+    // 次级：均匀半透明白（悬停增亮）——原型 fillGlass / fillGlassHover
+    Rectangle {
+        anchors.fill: parent
+        radius: height / 2
+        opacity: root.filled ? 0 : 1
+        color: hovered ? "#bdffffff" : "#80ffffff"
+        Behavior on color { ColorAnimation { duration: 140 } }
+        Behavior on opacity { NumberAnimation { duration: 140 } }
+    }
+
+    // 主级：多色杂糅弥散渐变
+    IridescentFill {
+        id: fill
+        anchors.fill: parent
+        rad: height / 2
+        scheme: root.scheme
+        opacity: root.filled ? 1 : 0
+        hovered: root.hovered
+        pressed: root.pressed
+        Behavior on opacity { NumberAnimation { duration: 140 } }
+    }
 
     Text {
         id: txt
         text: root.text
         anchors.centerIn: parent
-        color: root.fgColor()
+        // 浅色面上白字对比不足 → 用深字（与原型同一条规则，由 IridescentFill.lightFace 判定）
+        color: root.filled ? (fill.lightFace ? "#3f4660" : "#ffffff") : Theme.textPrimary
         font.pixelSize: root.fontSize
-        font.bold: true
+        font.weight: Font.DemiBold
         font.family: Theme.fontFamily
-        opacity: root.usable ? 1 : 0.7
     }
 
     MouseArea {
