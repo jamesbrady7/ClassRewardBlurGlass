@@ -84,19 +84,21 @@ Window {
             spacing: 12
             z: 2
 
-            Rectangle {
-                width: 36; height: 36; radius: 11
-                gradient: Gradient {
-                    GradientStop { position: 0; color: "#16b69b" }
-                    GradientStop { position: 1; color: "#0c8f7a" }
+            // Logo 图标：照搬原型——底色用原型"圆形按钮 13"的配色（marine 蓝潮薄荷心），
+            // 中间是原型的四芒星矢量图标（原来是文字"★"，靠字体渲染、不可靠）
+            Item {
+                width: 36; height: 36
+                IridescentFill {
+                    anchors.fill: parent
+                    rad: 11
+                    scheme: "marine"
                 }
-                Text {
-                    text: "★"
+                CanvasIcon {
                     anchors.centerIn: parent
-                    color: "#ffffff"
-                    font.pixelSize: 20
-                    font.bold: true
-                    font.family: Theme.fontFamily
+                    name: "sparkle"
+                    width: 20; height: 20
+                    // marine 是浅色面 → 用深色图标（原型的浅色面规则，白图标会看不清）
+                    color: "#3f4660"
                 }
             }
             Column {
