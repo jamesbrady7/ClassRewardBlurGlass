@@ -99,15 +99,17 @@ Flickable {
             spacing: 12
             Repeater {
                 model: reward.groups
-                delegate: Rectangle {
+                // 小组卡片：与学生卡片同一套 Card 设计（半透明白玻璃 + 柔和投影 + 悬停上浮）
+                delegate: Card {
                     id: gCard
                     property string valText: "1"
                     function val() { return Math.max(1, Math.min(999, parseInt(gCard.valText) || 1)) }
                     width: 300
                     radius: Theme.radius
-                    color: Theme.surface
-                    border.color: Theme.border
-                    border.width: 1
+                    cardColor: "#4dffffff"
+                    borderColor: "transparent"
+                    shadow: true
+                    liftOnHover: true
 
                     // 组员(学号+姓名)全量展示：卡片随组员行数自动长高，不裁剪
                     Column {
@@ -115,7 +117,10 @@ Flickable {
                         anchors.left: parent.left
                         anchors.right: parent.right
                         anchors.top: parent.top
-                        anchors.topMargin: 12
+                        // 原来只有 topMargin，左右贴边 → 文字紧挨卡片边缘。补足四周内边距
+                        anchors.leftMargin: 16
+                        anchors.rightMargin: 16
+                        anchors.topMargin: 14
                         spacing: 6
                         Text { // 组名
                             width: parent.width
@@ -205,8 +210,8 @@ Flickable {
                             RoundBtn { size: 28; accent: true; scheme: "crimson"; icon: "minus"; onClicked: reward.subtractGroupPoints(modelData.id, gCard.val()) }
                         }
                     }
-                    // 卡片高度随内容自动（上 12 + 内容 + 下 12）
-                    height: gBody.implicitHeight + 24
+                    // 卡片高度随内容自动（上 14 + 内容 + 下 16，与新内边距一致）
+                    height: gBody.implicitHeight + 30
 
                     // 右键菜单（整卡右键）
                     MouseArea {
