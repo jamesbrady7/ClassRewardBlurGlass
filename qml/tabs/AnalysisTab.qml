@@ -116,8 +116,8 @@ Column {
             width: list.width
             height: 360
             radius: Theme.radius
-            // 毛玻璃：半透明淡薄荷（透出背后的桌面）+ 悬停轻微上浮
-            cardColor: "#d9f2f8f5"
+            // 底色与学生卡片一致：半透明白玻璃（浓度要低才透得出背后，见 RosterTab 的说明）
+            cardColor: "#4dffffff"
             shadow: true
             liftOnHover: true
             Column {
