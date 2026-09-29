@@ -49,10 +49,19 @@ Item {
         height: rowH
         y: topPad + Math.max(0, root.currentIndex) * (rowH + rowGap)
         radius: Theme.radiusSmall
+        // 毛玻璃选中药囊：原来是不透明的绿渐变 → 改**半透明**（透出背后的内容/桌面），
+        // 再配身后一团柔光晕，读作"玻璃被点亮"，而不是"糊了一块实色"
         gradient: Gradient {
             orientation: Gradient.Vertical
-            GradientStop { position: 0.0; color: "#e2f4ee" }
-            GradientStop { position: 1.0; color: "#cfece2" }
+            GradientStop { position: 0.0; color: "#a6e2f4ee" }
+            GradientStop { position: 1.0; color: "#8fcfece2" }
+        }
+        // 灯：从玻璃后透出来的柔光（径向渐变、边缘羽化；跟着胶囊一起滑动）
+        SoftShadow {
+            anchors.fill: parent
+            anchors.margins: -16
+            centerY: 0.5
+            softColor: Qt.rgba(0.20, 0.74, 0.60, 0.22)
         }
         transform: Scale { id: pillSquish; xScale: 1; yScale: 1 }
         Component.onCompleted: settled = true
