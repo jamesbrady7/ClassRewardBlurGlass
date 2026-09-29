@@ -1,0 +1,8 @@
+
+# 运行时 / 验证产物（不进版本库）
+_run.log
+_run.log.1
+_s*/
+_base_shots/
+_glasschk*
+__pycache__/
