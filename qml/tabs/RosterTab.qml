@@ -154,21 +154,30 @@ ColumnLayout {
         clip: true
         spacing: 8
         model: root.filteredStudents
-        delegate: Rectangle {
+        // 学生行：改用 **Card 的设计**（毛玻璃圆角 + 柔和投影 + 悬停轻微上浮），
+        // 组色渐变**原样保留**在卡片内部当底色 —— 那是分组配色编码，不能丢
+        delegate: Card {
             id: card
             property var student: modelData
             width: list.width
             height: 64
             radius: Theme.radius
-            // 底色：组色由左实渐隐到右虚（圆角、无边框）
-            color: "transparent"
-            border.width: 0
-            gradient: Gradient {
-                GradientStop { position: 0.00; color: root.edgeColor(card.student.groupColor, 0.00) }
-                GradientStop { position: 0.20; color: root.edgeColor(card.student.groupColor, 0.20) }
-                GradientStop { position: 0.45; color: root.edgeColor(card.student.groupColor, 0.45) }
-                GradientStop { position: 0.72; color: root.edgeColor(card.student.groupColor, 0.72) }
-                GradientStop { position: 1.00; color: root.edgeColor(card.student.groupColor, 1.00) }
+            cardColor: "transparent"      // 底色由下面的组色渐变提供
+            borderColor: "transparent"    // 原来就是无边框
+            shadow: true
+            liftOnHover: true
+
+            // 组色渐变：由左实渐隐到右虚（圆角、无边框）
+            Rectangle {
+                anchors.fill: parent
+                radius: Theme.radius
+                gradient: Gradient {
+                    GradientStop { position: 0.00; color: root.edgeColor(card.student.groupColor, 0.00) }
+                    GradientStop { position: 0.20; color: root.edgeColor(card.student.groupColor, 0.20) }
+                    GradientStop { position: 0.45; color: root.edgeColor(card.student.groupColor, 0.45) }
+                    GradientStop { position: 0.72; color: root.edgeColor(card.student.groupColor, 0.72) }
+                    GradientStop { position: 1.00; color: root.edgeColor(card.student.groupColor, 1.00) }
+                }
             }
 
             Row {
