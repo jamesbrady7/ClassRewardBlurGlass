@@ -153,6 +153,9 @@ ColumnLayout {
         Layout.fillHeight: true
         clip: true
         spacing: 8
+        // 上下留出空间：ListView 开了 clip，首行悬停上浮（4px）与投影会被裁掉
+        topMargin: 10
+        bottomMargin: 10
         model: root.filteredStudents
         // 学生行：改用 **Card 的设计**（毛玻璃圆角 + 柔和投影 + 悬停轻微上浮），
         // 组色渐变**原样保留**在卡片内部当底色 —— 那是分组配色编码，不能丢

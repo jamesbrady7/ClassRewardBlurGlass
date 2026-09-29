@@ -106,6 +106,9 @@ Column {
         height: parent.height - 44
         clip: true
         spacing: 12
+        // 上下留空间：卡片悬停会上浮 4px，clip 会把首/末卡裁掉
+        topMargin: 10
+        bottomMargin: 10
         model: root.items
 
         delegate: Card {

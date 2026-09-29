@@ -33,16 +33,23 @@ Item {
         softColor: Qt.rgba(0.12, 0.15, 0.22, 0.16 + 0.14 * root.lift)
     }
 
-    // 卡片本体（上浮的是它，投影不动）
-    Rectangle {
-        id: bg
+    // 上浮的是**"卡片本体 + 卡片上的所有内容"这一整坨**（投影不跟着，反向位移留在地面）。
+    // ⚠️ 内容必须和 bg 在同一个位移容器里：先前只给 bg 挂了 Translate，
+    //    结果卡片面浮上去、上面的组件留在原地，两者分离了。
+    Item {
+        id: mover
         anchors.fill: parent
-        radius: root.radius
-        color: root.cardColor
-        border.color: root.borderColor
-        border.width: 1
         transform: Translate { y: -root.liftPx * root.lift }
-    }
 
-    Item { id: host; anchors.fill: parent }
+        Rectangle {
+            id: bg
+            anchors.fill: parent
+            radius: root.radius
+            color: root.cardColor
+            border.color: root.borderColor
+            border.width: 1
+        }
+
+        Item { id: host; anchors.fill: parent }
+    }
 }
