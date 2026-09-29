@@ -67,6 +67,11 @@ Item {
 
     Row {
         anchors.fill: parent
+        // ⚠️ 必须和胶囊用同一套坐标系：胶囊是 `x = 4 + pos*seg`（外壳内有 4px 边距），
+        //    而 Row 默认从 0 铺 → 文字会比胶囊中心偏左 4px（就是"没和文字居中对齐"）。
+        //    这里补上同样的 4px 边距，n*seg 正好等于 width-8，右边也不会溢出。
+        anchors.leftMargin: 4
+        anchors.rightMargin: 4
         Repeater {
             model: root.labels
             delegate: Item {
