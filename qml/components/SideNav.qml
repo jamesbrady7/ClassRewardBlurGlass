@@ -39,13 +39,6 @@ Item {
         shadow: true
         shadowColor: "#33202830"
     }
-    Rectangle {
-        anchors.fill: parent
-        radius: Theme.radius
-        color: "transparent"
-        border.color: Theme.border
-        border.width: 1
-    }
 
     Column {
         anchors.fill: parent
@@ -143,9 +136,10 @@ Item {
                     Text {           // 板块名：颜色 + 字重随选中变
                         anchors.verticalCenter: parent.verticalCenter
                         text: root.titles[index]
-                        font.pixelSize: 13
+                        font.pixelSize: 15
                         font.family: Theme.fontFamily
-                        font.weight: navItem.selected ? Font.DemiBold : Font.Medium
+                        // 只有**选中**才加粗；未选中用常规字重（原来写 Medium 会显得整体都偏粗）
+                        font.weight: navItem.selected ? Font.DemiBold : Font.Normal
                         color: navItem.selected ? Theme.textPrimary : Theme.textSecondary
                         opacity: navItem.selected ? 1.0 : 0.75
                         Behavior on color { ColorAnimation { duration: 140 } }
