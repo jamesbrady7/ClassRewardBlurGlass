@@ -201,8 +201,8 @@ Flickable {
                                 font.family: Theme.fontFamily
                             }
                             Item { width: 2; height: 1 }
-                            RoundBtn { size: 28; bg: Theme.accent; fg: "#ffffff"; icon: "plus"; onClicked: reward.addGroupPoints(modelData.id, gCard.val()) }
-                            RoundBtn { size: 28; bg: Theme.pink; fg: "#ffffff"; icon: "minus"; onClicked: reward.subtractGroupPoints(modelData.id, gCard.val()) }
+                            RoundBtn { size: 28; bg: Theme.aurora; fg: "#ffffff"; icon: "plus"; onClicked: reward.addGroupPoints(modelData.id, gCard.val()) }
+                            RoundBtn { size: 28; bg: Theme.crimson; fg: "#ffffff"; icon: "minus"; onClicked: reward.subtractGroupPoints(modelData.id, gCard.val()) }
                         }
                     }
                     // 卡片高度随内容自动（上 12 + 内容 + 下 12）

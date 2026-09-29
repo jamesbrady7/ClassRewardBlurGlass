@@ -171,6 +171,16 @@ class Theme(QObject):
     def fontBig(self):
         return 15
 
+    # ---- 加减按钮配色（取自毛玻璃原型「圆形按钮 16 / 15」的主色）----
+    # 那两个按钮本身是多色杂糅；这里只取其代表色 —— 形状与渲染都不变，只换颜色
+    @Property(str, constant=True)
+    def aurora(self):
+        return '#6a7ce8'      # 原型 16 aurora（极光杂糅：浅紫→蓝→青）的主色
+
+    @Property(str, constant=True)
+    def crimson(self):
+        return '#e63226'      # 原型 15 crimson（深红黑晕）的主色
+
     # ---- 尺寸 ----
     @Property(int, constant=True)
     def radius(self):

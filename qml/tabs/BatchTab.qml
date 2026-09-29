@@ -131,8 +131,8 @@ Column {
             Text { text: "分值"; anchors.verticalCenter: parent.verticalCenter; color: Theme.textSecondary; font.family: Theme.fontFamily }
             Stepper { id: points; value: 1; max: 999; anchors.verticalCenter: parent.verticalCenter }
             Item { width: 4; height: 1 }
-            RoundBtn { size: 34; bg: Theme.accent; fg: "#ffffff"; icon: "plus"; hint: "按分值给所选学生加分"; anchors.verticalCenter: parent.verticalCenter; onClicked: root.op(true) }
-            RoundBtn { size: 34; bg: Theme.pink; fg: "#ffffff"; icon: "minus"; hint: "按分值给所选学生扣分"; anchors.verticalCenter: parent.verticalCenter; onClicked: root.op(false) }
+            RoundBtn { size: 34; bg: Theme.aurora; fg: "#ffffff"; icon: "plus"; hint: "按分值给所选学生加分"; anchors.verticalCenter: parent.verticalCenter; onClicked: root.op(true) }
+            RoundBtn { size: 34; bg: Theme.crimson; fg: "#ffffff"; icon: "minus"; hint: "按分值给所选学生扣分"; anchors.verticalCenter: parent.verticalCenter; onClicked: root.op(false) }
             Item { width: 4; height: 1 }
             Pill {
                 text: "已选 " + (root.sel ? root.sel.split(',').length : 0) + " 人"
