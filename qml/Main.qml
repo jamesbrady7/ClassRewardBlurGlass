@@ -96,9 +96,8 @@ Window {
                 CanvasIcon {
                     anchors.centerIn: parent
                     name: "sparkle"
-                    width: 20; height: 20
-                    // marine 是浅色面 → 用深色图标（原型的浅色面规则，白图标会看不清）
-                    color: "#3f4660"
+                    width: 24; height: 24
+                    color: "#ffffff"     // 按用户要求用白星（实心白，压得住底色）
                 }
             }
             Column {
