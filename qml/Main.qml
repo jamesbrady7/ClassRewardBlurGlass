@@ -139,62 +139,31 @@ Window {
                     font.family: Theme.fontFamily
                 }
             }
-            Rectangle { // 最小化
-                property bool hov: false
-                width: 32; height: 32; radius: 16
-                color: hov ? "#e6ecf3" : "transparent"
-                Text {
-                    text: "—"
-                    anchors.centerIn: parent
-                    color: Theme.textSecondary
-                    font.pixelSize: 14
-                    font.family: Theme.fontFamily
-                }
-                MouseArea {
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    onEntered: parent.hov = true
-                    onExited: parent.hov = false
-                    onClicked: mainWin.showMinimized()
-                }
+            // 窗口按钮：照搬原型的做法 —— CircleButton + raised（圆外双球立体）
+            //   最小化 / 放大·还原 / 关闭 同一套逻辑，只有图标不同
+            CircleButton {
+                size: 30
+                raised: true
+                shadow: false
+                icon: "minus"
+                anchors.verticalCenter: parent.verticalCenter
+                onClicked: mainWin.showMinimized()
             }
-            Rectangle { // 最大化 / 还原
-                property bool hov: false
-                width: 32; height: 32; radius: 16
-                color: hov ? "#e6ecf3" : "transparent"
-                Text {
-                    text: mainWin.visibility === Window.Maximized ? "❐" : "□"
-                    anchors.centerIn: parent
-                    color: Theme.textSecondary
-                    font.pixelSize: 13
-                    font.family: Theme.fontFamily
-                }
-                MouseArea {
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    onEntered: parent.hov = true
-                    onExited: parent.hov = false
-                    onClicked: mainWin.visibility === Window.Maximized ? mainWin.showNormal() : mainWin.showMaximized()
-                }
+            CircleButton {
+                size: 30
+                raised: true
+                shadow: false
+                icon: mainWin.visibility === Window.Maximized ? "restore" : "maximize"
+                anchors.verticalCenter: parent.verticalCenter
+                onClicked: mainWin.visibility === Window.Maximized ? mainWin.showNormal() : mainWin.showMaximized()
             }
-            Rectangle { // 关闭
-                property bool hov: false
-                width: 32; height: 32; radius: 16
-                color: hov ? "#f7d7d4" : "transparent"
-                Text {
-                    text: "✕"
-                    anchors.centerIn: parent
-                    color: parent.hov ? "#c0503f" : Theme.textSecondary
-                    font.pixelSize: 14
-                    font.family: Theme.fontFamily
-                }
-                MouseArea {
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    onEntered: parent.hov = true
-                    onExited: parent.hov = false
-                    onClicked: mainWin.close()
-                }
+            CircleButton {
+                size: 30
+                raised: true
+                shadow: false
+                icon: "close"
+                anchors.verticalCenter: parent.verticalCenter
+                onClicked: mainWin.close()
             }
         }
     }

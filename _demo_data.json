@@ -1,1563 +1,1948 @@
 {
-  "version": "4.3",
-  "classes": [
+ "version": "4.3",
+ "classes": [
+  {
+   "id": "c17884490113219397",
+   "name": "三年级四班",
+   "groups": [
     {
-      "id": "c17884490113219397",
-      "name": "三年级四班",
-      "groups": [
-        {
-          "id": "g17884490113215ec86c",
-          "name": "探索组",
-          "directPoints": 0
-        },
-        {
-          "id": "g178844901132164be28",
-          "name": "智慧组",
-          "directPoints": 0
-        },
-        {
-          "id": "g178844901132189b42a",
-          "name": "梦想组",
-          "directPoints": 0
-        },
-        {
-          "id": "g178844901132121813b",
-          "name": "先锋组",
-          "directPoints": 0
-        }
-      ],
-      "students": [
-        {
-          "id": "s17884490113217d2060",
-          "studentId": "01",
-          "name": "陈果",
-          "groupId": "g17884490113215ec86c",
-          "earnedPoints": 9,
-          "redeemedPoints": 10,
-          "doublePointsUntil": 0,
-          "items": [
-            {
-              "id": "demo_it01",
-              "rewardId": "r17884490113219cd4",
-              "name": "免死金牌",
-              "acquiredTime": 1788449011.3216312
-            }
-          ],
-          "transactions": [
-            {
-              "timestamp": 1788360704.3216312,
-              "type": "earn",
-              "points": 2,
-              "description": "考试",
-              "groupId": "g17884490113215ec86c"
-            },
-            {
-              "timestamp": 1788275434.3216312,
-              "type": "earn",
-              "points": 2,
-              "description": "听写",
-              "groupId": "g17884490113215ec86c"
-            },
-            {
-              "timestamp": 1788102649.3216312,
-              "type": "earn",
-              "points": 3,
-              "description": "作业",
-              "groupId": "g17884490113215ec86c"
-            },
-            {
-              "timestamp": 1787757640.3216312,
-              "type": "earn",
-              "points": 2,
-              "description": "听写",
-              "groupId": "g17884490113215ec86c"
-            },
-            {
-              "timestamp": 1787239265.3216312,
-              "type": "deduct",
-              "points": 2,
-              "description": "听写",
-              "groupId": "g17884490113215ec86c"
-            },
-            {
-              "timestamp": 1786891391.3216312,
-              "type": "earn",
-              "points": 1,
-              "description": "课堂",
-              "groupId": "g17884490113215ec86c"
-            },
-            {
-              "timestamp": 1786806454.3216312,
-              "type": "earn",
-              "points": 1,
-              "description": "考试",
-              "groupId": "g17884490113215ec86c"
-            },
-            {
-              "timestamp": 1788445411.3216312,
-              "type": "redeem",
-              "points": 10,
-              "description": "兑换 免死金牌",
-              "groupId": "g17884490113215ec86c"
-            }
-          ]
-        },
-        {
-          "id": "s1788449011321e96e06",
-          "studentId": "02",
-          "name": "林小满",
-          "groupId": "g178844901132164be28",
-          "earnedPoints": 7,
-          "redeemedPoints": 0,
-          "doublePointsUntil": 0,
-          "items": [],
-          "transactions": [
-            {
-              "timestamp": 1788187554.3216312,
-              "type": "earn",
-              "points": 1,
-              "description": "作业",
-              "groupId": "g178844901132164be28"
-            },
-            {
-              "timestamp": 1788102371.3216312,
-              "type": "deduct",
-              "points": 1,
-              "description": "纪律",
-              "groupId": "g178844901132164be28"
-            },
-            {
-              "timestamp": 1787670970.3216312,
-              "type": "earn",
-              "points": 1,
-              "description": "作业",
-              "groupId": "g178844901132164be28"
-            },
-            {
-              "timestamp": 1787584738.3216312,
-              "type": "earn",
-              "points": 1,
-              "description": "纪律",
-              "groupId": "g178844901132164be28"
-            },
-            {
-              "timestamp": 1787498609.3216312,
-              "type": "earn",
-              "points": 3,
-              "description": "课堂",
-              "groupId": "g178844901132164be28"
-            },
-            {
-              "timestamp": 1787323886.3216312,
-              "type": "deduct",
-              "points": 2,
-              "description": "听写",
-              "groupId": "g178844901132164be28"
-            },
-            {
-              "timestamp": 1787237784.3216312,
-              "type": "earn",
-              "points": 3,
-              "description": "背诵",
-              "groupId": "g178844901132164be28"
-            },
-            {
-              "timestamp": 1787152198.3216312,
-              "type": "earn",
-              "points": 2,
-              "description": "作业",
-              "groupId": "g178844901132164be28"
-            },
-            {
-              "timestamp": 1787065232.3216312,
-              "type": "earn",
-              "points": 1,
-              "description": "纪律",
-              "groupId": "g178844901132164be28"
-            },
-            {
-              "timestamp": 1786806860.3216312,
-              "type": "deduct",
-              "points": 2,
-              "description": "听写",
-              "groupId": "g178844901132164be28"
-            }
-          ]
-        },
-        {
-          "id": "s17884490113215e65a1",
-          "studentId": "03",
-          "name": "王浩然",
-          "groupId": "g178844901132189b42a",
-          "earnedPoints": 0,
-          "redeemedPoints": 0,
-          "doublePointsUntil": 0,
-          "items": [],
-          "transactions": [
-            {
-              "timestamp": 1787843734.3216312,
-              "type": "earn",
-              "points": 1,
-              "description": "背诵",
-              "groupId": "g178844901132189b42a"
-            },
-            {
-              "timestamp": 1787757810.3216312,
-              "type": "deduct",
-              "points": 1,
-              "description": "作业",
-              "groupId": "g178844901132189b42a"
-            },
-            {
-              "timestamp": 1787583766.3216312,
-              "type": "earn",
-              "points": 2,
-              "description": "课堂",
-              "groupId": "g178844901132189b42a"
-            },
-            {
-              "timestamp": 1787497748.3216312,
-              "type": "deduct",
-              "points": 2,
-              "description": "考试",
-              "groupId": "g178844901132189b42a"
-            },
-            {
-              "timestamp": 1787323448.3216312,
-              "type": "earn",
-              "points": 2,
-              "description": "背诵",
-              "groupId": "g178844901132189b42a"
-            },
-            {
-              "timestamp": 1787151203.3216312,
-              "type": "deduct",
-              "points": 1,
-              "description": "纪律",
-              "groupId": "g178844901132189b42a"
-            },
-            {
-              "timestamp": 1786978998.3216312,
-              "type": "earn",
-              "points": 1,
-              "description": "考试",
-              "groupId": "g178844901132189b42a"
-            },
-            {
-              "timestamp": 1786893442.3216312,
-              "type": "deduct",
-              "points": 2,
-              "description": "听写",
-              "groupId": "g178844901132189b42a"
-            }
-          ]
-        },
-        {
-          "id": "s1788449011321701d26",
-          "studentId": "04",
-          "name": "张曦",
-          "groupId": "g178844901132121813b",
-          "earnedPoints": 7,
-          "redeemedPoints": 0,
-          "doublePointsUntil": 0,
-          "items": [],
-          "transactions": [
-            {
-              "timestamp": 1788360755.3216312,
-              "type": "earn",
-              "points": 1,
-              "description": "作业",
-              "groupId": "g178844901132121813b"
-            },
-            {
-              "timestamp": 1788189256.3216312,
-              "type": "earn",
-              "points": 2,
-              "description": "课堂",
-              "groupId": "g178844901132121813b"
-            },
-            {
-              "timestamp": 1788102780.3216312,
-              "type": "deduct",
-              "points": 1,
-              "description": "考试",
-              "groupId": "g178844901132121813b"
-            },
-            {
-              "timestamp": 1787843434.3216312,
-              "type": "earn",
-              "points": 3,
-              "description": "作业",
-              "groupId": "g178844901132121813b"
-            },
-            {
-              "timestamp": 1787670606.3216312,
-              "type": "earn",
-              "points": 2,
-              "description": "课堂",
-              "groupId": "g178844901132121813b"
-            },
-            {
-              "timestamp": 1787583035.3216312,
-              "type": "earn",
-              "points": 1,
-              "description": "考试",
-              "groupId": "g178844901132121813b"
-            },
-            {
-              "timestamp": 1787498417.3216312,
-              "type": "earn",
-              "points": 1,
-              "description": "听写",
-              "groupId": "g178844901132121813b"
-            },
-            {
-              "timestamp": 1787237807.3216312,
-              "type": "deduct",
-              "points": 1,
-              "description": "纪律",
-              "groupId": "g178844901132121813b"
-            },
-            {
-              "timestamp": 1787064600.3216312,
-              "type": "earn",
-              "points": 1,
-              "description": "考试",
-              "groupId": "g178844901132121813b"
-            },
-            {
-              "timestamp": 1786806894.3216312,
-              "type": "deduct",
-              "points": 2,
-              "description": "作业",
-              "groupId": "g178844901132121813b"
-            }
-          ]
-        },
-        {
-          "id": "s17884490113219144b5",
-          "studentId": "05",
-          "name": "李思远",
-          "groupId": "g17884490113215ec86c",
-          "earnedPoints": 4,
-          "redeemedPoints": 0,
-          "doublePointsUntil": 0,
-          "items": [],
-          "transactions": [
-            {
-              "timestamp": 1788362308.3216312,
-              "type": "earn",
-              "points": 2,
-              "description": "纪律",
-              "groupId": "g17884490113215ec86c"
-            },
-            {
-              "timestamp": 1788189744.3216312,
-              "type": "deduct",
-              "points": 1,
-              "description": "考试",
-              "groupId": "g17884490113215ec86c"
-            },
-            {
-              "timestamp": 1788016764.3216312,
-              "type": "deduct",
-              "points": 1,
-              "description": "背诵",
-              "groupId": "g17884490113215ec86c"
-            },
-            {
-              "timestamp": 1787496474.3216312,
-              "type": "earn",
-              "points": 1,
-              "description": "背诵",
-              "groupId": "g17884490113215ec86c"
-            },
-            {
-              "timestamp": 1787409795.3216312,
-              "type": "deduct",
-              "points": 1,
-              "description": "作业",
-              "groupId": "g17884490113215ec86c"
-            },
-            {
-              "timestamp": 1787151734.3216312,
-              "type": "earn",
-              "points": 3,
-              "description": "考试",
-              "groupId": "g17884490113215ec86c"
-            },
-            {
-              "timestamp": 1787064161.3216312,
-              "type": "deduct",
-              "points": 2,
-              "description": "听写",
-              "groupId": "g17884490113215ec86c"
-            },
-            {
-              "timestamp": 1786979936.3216312,
-              "type": "earn",
-              "points": 1,
-              "description": "背诵",
-              "groupId": "g17884490113215ec86c"
-            },
-            {
-              "timestamp": 1786893252.3216312,
-              "type": "earn",
-              "points": 1,
-              "description": "作业",
-              "groupId": "g17884490113215ec86c"
-            },
-            {
-              "timestamp": 1786805556.3216312,
-              "type": "deduct",
-              "points": 2,
-              "description": "纪律",
-              "groupId": "g17884490113215ec86c"
-            },
-            {
-              "timestamp": 1786720829.3216312,
-              "type": "earn",
-              "points": 3,
-              "description": "课堂",
-              "groupId": "g17884490113215ec86c"
-            }
-          ]
-        },
-        {
-          "id": "s1788449011321604ae7",
-          "studentId": "06",
-          "name": "周子涵",
-          "groupId": "g178844901132164be28",
-          "earnedPoints": 5,
-          "redeemedPoints": 0,
-          "doublePointsUntil": 0,
-          "items": [],
-          "transactions": [
-            {
-              "timestamp": 1788362081.3216312,
-              "type": "earn",
-              "points": 3,
-              "description": "课堂",
-              "groupId": "g178844901132164be28"
-            },
-            {
-              "timestamp": 1788274770.3216312,
-              "type": "earn",
-              "points": 1,
-              "description": "考试",
-              "groupId": "g178844901132164be28"
-            },
-            {
-              "timestamp": 1788101703.3216312,
-              "type": "deduct",
-              "points": 2,
-              "description": "背诵",
-              "groupId": "g178844901132164be28"
-            },
-            {
-              "timestamp": 1788014964.3216312,
-              "type": "deduct",
-              "points": 2,
-              "description": "作业",
-              "groupId": "g178844901132164be28"
-            },
-            {
-              "timestamp": 1787929045.3216312,
-              "type": "earn",
-              "points": 2,
-              "description": "纪律",
-              "groupId": "g178844901132164be28"
-            },
-            {
-              "timestamp": 1787841718.3216312,
-              "type": "deduct",
-              "points": 2,
-              "description": "课堂",
-              "groupId": "g178844901132164be28"
-            },
-            {
-              "timestamp": 1787410620.3216312,
-              "type": "earn",
-              "points": 1,
-              "description": "纪律",
-              "groupId": "g178844901132164be28"
-            },
-            {
-              "timestamp": 1787323432.3216312,
-              "type": "earn",
-              "points": 3,
-              "description": "课堂",
-              "groupId": "g178844901132164be28"
-            },
-            {
-              "timestamp": 1787237195.3216312,
-              "type": "earn",
-              "points": 1,
-              "description": "考试",
-              "groupId": "g178844901132164be28"
-            },
-            {
-              "timestamp": 1787065341.3216312,
-              "type": "deduct",
-              "points": 2,
-              "description": "背诵",
-              "groupId": "g178844901132164be28"
-            },
-            {
-              "timestamp": 1786980120.3216312,
-              "type": "earn",
-              "points": 1,
-              "description": "作业",
-              "groupId": "g178844901132164be28"
-            },
-            {
-              "timestamp": 1786805420.3216312,
-              "type": "earn",
-              "points": 1,
-              "description": "课堂",
-              "groupId": "g178844901132164be28"
-            }
-          ]
-        },
-        {
-          "id": "s1788449011321ab596d",
-          "studentId": "07",
-          "name": "吴明轩",
-          "groupId": "g178844901132189b42a",
-          "earnedPoints": 8,
-          "redeemedPoints": 0,
-          "doublePointsUntil": 0,
-          "items": [],
-          "transactions": [
-            {
-              "timestamp": 1788101601.3216312,
-              "type": "earn",
-              "points": 1,
-              "description": "作业",
-              "groupId": "g178844901132189b42a"
-            },
-            {
-              "timestamp": 1788015672.3216312,
-              "type": "deduct",
-              "points": 1,
-              "description": "纪律",
-              "groupId": "g178844901132189b42a"
-            },
-            {
-              "timestamp": 1787929798.3216312,
-              "type": "earn",
-              "points": 1,
-              "description": "课堂",
-              "groupId": "g178844901132189b42a"
-            },
-            {
-              "timestamp": 1787843334.3216312,
-              "type": "deduct",
-              "points": 1,
-              "description": "考试",
-              "groupId": "g178844901132189b42a"
-            },
-            {
-              "timestamp": 1787756515.3216312,
-              "type": "earn",
-              "points": 2,
-              "description": "听写",
-              "groupId": "g178844901132189b42a"
-            },
-            {
-              "timestamp": 1787498349.3216312,
-              "type": "deduct",
-              "points": 2,
-              "description": "纪律",
-              "groupId": "g178844901132189b42a"
-            },
-            {
-              "timestamp": 1787411519.3216312,
-              "type": "earn",
-              "points": 1,
-              "description": "课堂",
-              "groupId": "g178844901132189b42a"
-            },
-            {
-              "timestamp": 1787237716.3216312,
-              "type": "deduct",
-              "points": 1,
-              "description": "听写",
-              "groupId": "g178844901132189b42a"
-            },
-            {
-              "timestamp": 1787150989.3216312,
-              "type": "earn",
-              "points": 2,
-              "description": "背诵",
-              "groupId": "g178844901132189b42a"
-            },
-            {
-              "timestamp": 1787064758.3216312,
-              "type": "earn",
-              "points": 3,
-              "description": "作业",
-              "groupId": "g178844901132189b42a"
-            },
-            {
-              "timestamp": 1786891323.3216312,
-              "type": "earn",
-              "points": 1,
-              "description": "课堂",
-              "groupId": "g178844901132189b42a"
-            },
-            {
-              "timestamp": 1786719561.3216312,
-              "type": "earn",
-              "points": 2,
-              "description": "听写",
-              "groupId": "g178844901132189b42a"
-            }
-          ]
-        },
-        {
-          "id": "s178844901132140b973",
-          "studentId": "08",
-          "name": "郑乐瑶",
-          "groupId": "g178844901132121813b",
-          "earnedPoints": 9,
-          "redeemedPoints": 10,
-          "doublePointsUntil": 0,
-          "items": [
-            {
-              "id": "demo_it08",
-              "rewardId": "r17884490113219cd4",
-              "name": "免死金牌",
-              "acquiredTime": 1788449011.3216312
-            }
-          ],
-          "transactions": [
-            {
-              "timestamp": 1788187949.3216312,
-              "type": "earn",
-              "points": 1,
-              "description": "作业",
-              "groupId": "g178844901132121813b"
-            },
-            {
-              "timestamp": 1788016039.3216312,
-              "type": "earn",
-              "points": 1,
-              "description": "课堂",
-              "groupId": "g178844901132121813b"
-            },
-            {
-              "timestamp": 1787930139.3216312,
-              "type": "deduct",
-              "points": 2,
-              "description": "考试",
-              "groupId": "g178844901132121813b"
-            },
-            {
-              "timestamp": 1787842019.3216312,
-              "type": "earn",
-              "points": 3,
-              "description": "听写",
-              "groupId": "g178844901132121813b"
-            },
-            {
-              "timestamp": 1787757492.3216312,
-              "type": "earn",
-              "points": 1,
-              "description": "背诵",
-              "groupId": "g178844901132121813b"
-            },
-            {
-              "timestamp": 1787669465.3216312,
-              "type": "deduct",
-              "points": 1,
-              "description": "作业",
-              "groupId": "g178844901132121813b"
-            },
-            {
-              "timestamp": 1787496421.3216312,
-              "type": "earn",
-              "points": 1,
-              "description": "课堂",
-              "groupId": "g178844901132121813b"
-            },
-            {
-              "timestamp": 1787411284.3216312,
-              "type": "deduct",
-              "points": 1,
-              "description": "考试",
-              "groupId": "g178844901132121813b"
-            },
-            {
-              "timestamp": 1787237280.3216312,
-              "type": "earn",
-              "points": 3,
-              "description": "背诵",
-              "groupId": "g178844901132121813b"
-            },
-            {
-              "timestamp": 1787151400.3216312,
-              "type": "deduct",
-              "points": 1,
-              "description": "作业",
-              "groupId": "g178844901132121813b"
-            },
-            {
-              "timestamp": 1787065694.3216312,
-              "type": "earn",
-              "points": 3,
-              "description": "纪律",
-              "groupId": "g178844901132121813b"
-            },
-            {
-              "timestamp": 1786892222.3216312,
-              "type": "earn",
-              "points": 1,
-              "description": "考试",
-              "groupId": "g178844901132121813b"
-            },
-            {
-              "timestamp": 1788445411.3216312,
-              "type": "redeem",
-              "points": 10,
-              "description": "兑换 免死金牌",
-              "groupId": "g178844901132121813b"
-            }
-          ]
-        },
-        {
-          "id": "s178844901132187c467",
-          "studentId": "09",
-          "name": "孙一诺",
-          "groupId": "g17884490113215ec86c",
-          "earnedPoints": 9,
-          "redeemedPoints": 10,
-          "doublePointsUntil": 0,
-          "items": [
-            {
-              "id": "demo_it09",
-              "rewardId": "r17884490113219cd4",
-              "name": "免死金牌",
-              "acquiredTime": 1788449011.3216312
-            }
-          ],
-          "transactions": [
-            {
-              "timestamp": 1788274153.3216312,
-              "type": "earn",
-              "points": 2,
-              "description": "作业",
-              "groupId": "g17884490113215ec86c"
-            },
-            {
-              "timestamp": 1788187912.3216312,
-              "type": "earn",
-              "points": 1,
-              "description": "纪律",
-              "groupId": "g17884490113215ec86c"
-            },
-            {
-              "timestamp": 1788016506.3216312,
-              "type": "deduct",
-              "points": 2,
-              "description": "考试",
-              "groupId": "g17884490113215ec86c"
-            },
-            {
-              "timestamp": 1787842942.3216312,
-              "type": "deduct",
-              "points": 1,
-              "description": "背诵",
-              "groupId": "g17884490113215ec86c"
-            },
-            {
-              "timestamp": 1787756739.3216312,
-              "type": "earn",
-              "points": 1,
-              "description": "作业",
-              "groupId": "g17884490113215ec86c"
-            },
-            {
-              "timestamp": 1787669984.3216312,
-              "type": "deduct",
-              "points": 1,
-              "description": "纪律",
-              "groupId": "g17884490113215ec86c"
-            },
-            {
-              "timestamp": 1787496885.3216312,
-              "type": "earn",
-              "points": 2,
-              "description": "考试",
-              "groupId": "g17884490113215ec86c"
-            },
-            {
-              "timestamp": 1787412095.3216312,
-              "type": "earn",
-              "points": 1,
-              "description": "听写",
-              "groupId": "g17884490113215ec86c"
-            },
-            {
-              "timestamp": 1787239268.3216312,
-              "type": "earn",
-              "points": 1,
-              "description": "作业",
-              "groupId": "g17884490113215ec86c"
-            },
-            {
-              "timestamp": 1786978284.3216312,
-              "type": "deduct",
-              "points": 1,
-              "description": "考试",
-              "groupId": "g17884490113215ec86c"
-            },
-            {
-              "timestamp": 1786805289.3216312,
-              "type": "earn",
-              "points": 3,
-              "description": "背诵",
-              "groupId": "g17884490113215ec86c"
-            },
-            {
-              "timestamp": 1786719209.3216312,
-              "type": "earn",
-              "points": 3,
-              "description": "作业",
-              "groupId": "g17884490113215ec86c"
-            },
-            {
-              "timestamp": 1788445411.3216312,
-              "type": "redeem",
-              "points": 10,
-              "description": "兑换 免死金牌",
-              "groupId": "g17884490113215ec86c"
-            }
-          ]
-        },
-        {
-          "id": "s1788449011321499f14",
-          "studentId": "10",
-          "name": "黄嘉豪",
-          "groupId": "g178844901132164be28",
-          "earnedPoints": 9,
-          "redeemedPoints": 0,
-          "doublePointsUntil": 0,
-          "items": [],
-          "transactions": [
-            {
-              "timestamp": 1788360240.3216312,
-              "type": "earn",
-              "points": 1,
-              "description": "作业",
-              "groupId": "g178844901132164be28"
-            },
-            {
-              "timestamp": 1788275305.3216312,
-              "type": "deduct",
-              "points": 1,
-              "description": "纪律",
-              "groupId": "g178844901132164be28"
-            },
-            {
-              "timestamp": 1788188623.3216312,
-              "type": "earn",
-              "points": 2,
-              "description": "课堂",
-              "groupId": "g178844901132164be28"
-            },
-            {
-              "timestamp": 1788102738.3216312,
-              "type": "earn",
-              "points": 2,
-              "description": "考试",
-              "groupId": "g178844901132164be28"
-            },
-            {
-              "timestamp": 1788015961.3216312,
-              "type": "earn",
-              "points": 2,
-              "description": "听写",
-              "groupId": "g178844901132164be28"
-            },
-            {
-              "timestamp": 1787843359.3216312,
-              "type": "earn",
-              "points": 2,
-              "description": "作业",
-              "groupId": "g178844901132164be28"
-            },
-            {
-              "timestamp": 1787582665.3216312,
-              "type": "earn",
-              "points": 1,
-              "description": "考试",
-              "groupId": "g178844901132164be28"
-            }
-          ]
-        },
-        {
-          "id": "s178844901132149d495",
-          "studentId": "11",
-          "name": "徐可欣",
-          "groupId": "g178844901132189b42a",
-          "earnedPoints": 9,
-          "redeemedPoints": 0,
-          "doublePointsUntil": 0,
-          "items": [],
-          "transactions": [
-            {
-              "timestamp": 1788360917.3216312,
-              "type": "earn",
-              "points": 1,
-              "description": "纪律",
-              "groupId": "g178844901132189b42a"
-            },
-            {
-              "timestamp": 1788275109.3216312,
-              "type": "earn",
-              "points": 1,
-              "description": "课堂",
-              "groupId": "g178844901132189b42a"
-            },
-            {
-              "timestamp": 1788101635.3216312,
-              "type": "earn",
-              "points": 1,
-              "description": "听写",
-              "groupId": "g178844901132189b42a"
-            },
-            {
-              "timestamp": 1788014861.3216312,
-              "type": "earn",
-              "points": 1,
-              "description": "背诵",
-              "groupId": "g178844901132189b42a"
-            },
-            {
-              "timestamp": 1787757281.3216312,
-              "type": "earn",
-              "points": 1,
-              "description": "课堂",
-              "groupId": "g178844901132189b42a"
-            },
-            {
-              "timestamp": 1787671266.3216312,
-              "type": "deduct",
-              "points": 2,
-              "description": "考试",
-              "groupId": "g178844901132189b42a"
-            },
-            {
-              "timestamp": 1787410756.3216312,
-              "type": "earn",
-              "points": 1,
-              "description": "作业",
-              "groupId": "g178844901132189b42a"
-            },
-            {
-              "timestamp": 1787237027.3216312,
-              "type": "earn",
-              "points": 1,
-              "description": "课堂",
-              "groupId": "g178844901132189b42a"
-            },
-            {
-              "timestamp": 1787065802.3216312,
-              "type": "earn",
-              "points": 1,
-              "description": "听写",
-              "groupId": "g178844901132189b42a"
-            },
-            {
-              "timestamp": 1786980116.3216312,
-              "type": "earn",
-              "points": 1,
-              "description": "背诵",
-              "groupId": "g178844901132189b42a"
-            },
-            {
-              "timestamp": 1786891643.3216312,
-              "type": "earn",
-              "points": 1,
-              "description": "作业",
-              "groupId": "g178844901132189b42a"
-            },
-            {
-              "timestamp": 1786806575.3216312,
-              "type": "earn",
-              "points": 1,
-              "description": "纪律",
-              "groupId": "g178844901132189b42a"
-            }
-          ]
-        },
-        {
-          "id": "s17884490113217a7278",
-          "studentId": "12",
-          "name": "高子墨",
-          "groupId": "g178844901132121813b",
-          "earnedPoints": 9,
-          "redeemedPoints": 0,
-          "doublePointsUntil": 0,
-          "items": [],
-          "transactions": [
-            {
-              "timestamp": 1788361726.3216312,
-              "type": "earn",
-              "points": 2,
-              "description": "课堂",
-              "groupId": "g178844901132121813b"
-            },
-            {
-              "timestamp": 1788273809.3216312,
-              "type": "earn",
-              "points": 2,
-              "description": "考试",
-              "groupId": "g178844901132121813b"
-            },
-            {
-              "timestamp": 1788188388.3216312,
-              "type": "deduct",
-              "points": 1,
-              "description": "听写",
-              "groupId": "g178844901132121813b"
-            },
-            {
-              "timestamp": 1788100941.3216312,
-              "type": "earn",
-              "points": 1,
-              "description": "背诵",
-              "groupId": "g178844901132121813b"
-            },
-            {
-              "timestamp": 1787929815.3216312,
-              "type": "deduct",
-              "points": 1,
-              "description": "纪律",
-              "groupId": "g178844901132121813b"
-            },
-            {
-              "timestamp": 1787843231.3216312,
-              "type": "deduct",
-              "points": 1,
-              "description": "课堂",
-              "groupId": "g178844901132121813b"
-            },
-            {
-              "timestamp": 1787583285.3216312,
-              "type": "earn",
-              "points": 1,
-              "description": "背诵",
-              "groupId": "g178844901132121813b"
-            },
-            {
-              "timestamp": 1787498095.3216312,
-              "type": "earn",
-              "points": 3,
-              "description": "作业",
-              "groupId": "g178844901132121813b"
-            },
-            {
-              "timestamp": 1787325418.3216312,
-              "type": "deduct",
-              "points": 2,
-              "description": "课堂",
-              "groupId": "g178844901132121813b"
-            },
-            {
-              "timestamp": 1787152539.3216312,
-              "type": "earn",
-              "points": 1,
-              "description": "听写",
-              "groupId": "g178844901132121813b"
-            },
-            {
-              "timestamp": 1787065205.3216312,
-              "type": "earn",
-              "points": 3,
-              "description": "背诵",
-              "groupId": "g178844901132121813b"
-            },
-            {
-              "timestamp": 1786979437.3216312,
-              "type": "earn",
-              "points": 1,
-              "description": "作业",
-              "groupId": "g178844901132121813b"
-            }
-          ]
-        },
-        {
-          "id": "s178844901132174df45",
-          "studentId": "13",
-          "name": "罗小雨",
-          "groupId": "g17884490113215ec86c",
-          "earnedPoints": 4,
-          "redeemedPoints": 0,
-          "doublePointsUntil": 0,
-          "items": [],
-          "transactions": [
-            {
-              "timestamp": 1788360282.3216312,
-              "type": "earn",
-              "points": 2,
-              "description": "考试",
-              "groupId": "g17884490113215ec86c"
-            },
-            {
-              "timestamp": 1788275456.3216312,
-              "type": "deduct",
-              "points": 1,
-              "description": "听写",
-              "groupId": "g17884490113215ec86c"
-            },
-            {
-              "timestamp": 1787843958.3216312,
-              "type": "earn",
-              "points": 2,
-              "description": "考试",
-              "groupId": "g17884490113215ec86c"
-            },
-            {
-              "timestamp": 1787671015.3216312,
-              "type": "deduct",
-              "points": 2,
-              "description": "背诵",
-              "groupId": "g17884490113215ec86c"
-            },
-            {
-              "timestamp": 1787497159.3216312,
-              "type": "earn",
-              "points": 2,
-              "description": "纪律",
-              "groupId": "g17884490113215ec86c"
-            },
-            {
-              "timestamp": 1787410683.3216312,
-              "type": "earn",
-              "points": 2,
-              "description": "课堂",
-              "groupId": "g17884490113215ec86c"
-            },
-            {
-              "timestamp": 1787238669.3216312,
-              "type": "deduct",
-              "points": 1,
-              "description": "听写",
-              "groupId": "g17884490113215ec86c"
-            },
-            {
-              "timestamp": 1787151495.3216312,
-              "type": "earn",
-              "points": 1,
-              "description": "背诵",
-              "groupId": "g17884490113215ec86c"
-            },
-            {
-              "timestamp": 1787064134.3216312,
-              "type": "deduct",
-              "points": 1,
-              "description": "作业",
-              "groupId": "g17884490113215ec86c"
-            },
-            {
-              "timestamp": 1786892486.3216312,
-              "type": "deduct",
-              "points": 2,
-              "description": "课堂",
-              "groupId": "g17884490113215ec86c"
-            },
-            {
-              "timestamp": 1786805755.3216312,
-              "type": "earn",
-              "points": 3,
-              "description": "考试",
-              "groupId": "g17884490113215ec86c"
-            },
-            {
-              "timestamp": 1786718946.3216312,
-              "type": "deduct",
-              "points": 1,
-              "description": "听写",
-              "groupId": "g17884490113215ec86c"
-            }
-          ]
-        },
-        {
-          "id": "s1788449011321a3e68a",
-          "studentId": "14",
-          "name": "沈星辰",
-          "groupId": "g178844901132164be28",
-          "earnedPoints": 9,
-          "redeemedPoints": 0,
-          "doublePointsUntil": 0,
-          "items": [],
-          "transactions": [
-            {
-              "timestamp": 1788361554.3216312,
-              "type": "earn",
-              "points": 1,
-              "description": "听写",
-              "groupId": "g178844901132164be28"
-            },
-            {
-              "timestamp": 1788101750.3216312,
-              "type": "deduct",
-              "points": 1,
-              "description": "纪律",
-              "groupId": "g178844901132164be28"
-            },
-            {
-              "timestamp": 1787842443.3216312,
-              "type": "earn",
-              "points": 1,
-              "description": "听写",
-              "groupId": "g178844901132164be28"
-            },
-            {
-              "timestamp": 1787756964.3216312,
-              "type": "earn",
-              "points": 1,
-              "description": "背诵",
-              "groupId": "g178844901132164be28"
-            },
-            {
-              "timestamp": 1787670012.3216312,
-              "type": "deduct",
-              "points": 2,
-              "description": "作业",
-              "groupId": "g178844901132164be28"
-            },
-            {
-              "timestamp": 1787412008.3216312,
-              "type": "earn",
-              "points": 3,
-              "description": "考试",
-              "groupId": "g178844901132164be28"
-            },
-            {
-              "timestamp": 1787238187.3216312,
-              "type": "earn",
-              "points": 3,
-              "description": "背诵",
-              "groupId": "g178844901132164be28"
-            },
-            {
-              "timestamp": 1787065866.3216312,
-              "type": "earn",
-              "points": 2,
-              "description": "纪律",
-              "groupId": "g178844901132164be28"
-            },
-            {
-              "timestamp": 1786978103.3216312,
-              "type": "earn",
-              "points": 1,
-              "description": "课堂",
-              "groupId": "g178844901132164be28"
-            }
-          ]
-        },
-        {
-          "id": "s17884490113210f5d02",
-          "studentId": "15",
-          "name": "许诺",
-          "groupId": "g178844901132189b42a",
-          "earnedPoints": 5,
-          "redeemedPoints": 0,
-          "doublePointsUntil": 0,
-          "items": [],
-          "transactions": [
-            {
-              "timestamp": 1788362518.3216312,
-              "type": "earn",
-              "points": 2,
-              "description": "背诵",
-              "groupId": "g178844901132189b42a"
-            },
-            {
-              "timestamp": 1788016805.3216312,
-              "type": "earn",
-              "points": 2,
-              "description": "考试",
-              "groupId": "g178844901132189b42a"
-            },
-            {
-              "timestamp": 1787929073.3216312,
-              "type": "earn",
-              "points": 3,
-              "description": "听写",
-              "groupId": "g178844901132189b42a"
-            },
-            {
-              "timestamp": 1787582931.3216312,
-              "type": "earn",
-              "points": 2,
-              "description": "课堂",
-              "groupId": "g178844901132189b42a"
-            },
-            {
-              "timestamp": 1787410391.3216312,
-              "type": "deduct",
-              "points": 2,
-              "description": "听写",
-              "groupId": "g178844901132189b42a"
-            },
-            {
-              "timestamp": 1787323561.3216312,
-              "type": "deduct",
-              "points": 2,
-              "description": "背诵",
-              "groupId": "g178844901132189b42a"
-            },
-            {
-              "timestamp": 1787237829.3216312,
-              "type": "deduct",
-              "points": 2,
-              "description": "作业",
-              "groupId": "g178844901132189b42a"
-            },
-            {
-              "timestamp": 1787151431.3216312,
-              "type": "deduct",
-              "points": 1,
-              "description": "纪律",
-              "groupId": "g178844901132189b42a"
-            },
-            {
-              "timestamp": 1787064582.3216312,
-              "type": "deduct",
-              "points": 1,
-              "description": "课堂",
-              "groupId": "g178844901132189b42a"
-            },
-            {
-              "timestamp": 1786979972.3216312,
-              "type": "earn",
-              "points": 2,
-              "description": "考试",
-              "groupId": "g178844901132189b42a"
-            },
-            {
-              "timestamp": 1786892088.3216312,
-              "type": "earn",
-              "points": 1,
-              "description": "听写",
-              "groupId": "g178844901132189b42a"
-            },
-            {
-              "timestamp": 1786719514.3216312,
-              "type": "earn",
-              "points": 1,
-              "description": "作业",
-              "groupId": "g178844901132189b42a"
-            }
-          ]
-        }
-      ],
-      "rewards": [
-        {
-          "id": "r1788449011321bd75",
-          "name": "英语课换座券",
-          "cost": 5,
-          "category": "普通",
-          "description": "换同桌体验，一节课的新鲜感。",
-          "blindBoxExcluded": false
-        },
-        {
-          "id": "r17884490113216f53",
-          "name": "问题转移券",
-          "cost": 5,
-          "category": "普通",
-          "description": "巧妙化解提问尴尬。",
-          "blindBoxExcluded": false
-        },
-        {
-          "id": "r1788449011321f2bb",
-          "name": "听写预知券",
-          "cost": 5,
-          "category": "普通",
-          "description": "提前知道3个词，满分更容易。",
-          "blindBoxExcluded": false
-        },
-        {
-          "id": "r1788449011321f391",
-          "name": "水火救援券",
-          "cost": 5,
-          "category": "普通",
-          "description": "英雄救美（同学）的好机会。",
-          "blindBoxExcluded": false
-        },
-        {
-          "id": "r1788449011321c558",
-          "name": "夸夸券",
-          "cost": 5,
-          "category": "普通",
-          "description": "让爸妈听到老师的表扬，全家开心。",
-          "blindBoxExcluded": false
-        },
-        {
-          "id": "r17884490113219cd4",
-          "name": "免死金牌",
-          "cost": 10,
-          "category": "稀有",
-          "description": "一次\"免罪\"机会，护身符般存在。",
-          "blindBoxExcluded": false
-        },
-        {
-          "id": "r17884490113218d3a",
-          "name": "有福同享券",
-          "cost": 10,
-          "category": "稀有",
-          "description": "和朋友分享快乐，友谊加倍。",
-          "blindBoxExcluded": false
-        },
-        {
-          "id": "r178844901132184f4",
-          "name": "作业减半券",
-          "cost": 10,
-          "category": "稀有",
-          "description": "少写一半作业，省时又省力。",
-          "blindBoxExcluded": false
-        },
-        {
-          "id": "r17884490113217337",
-          "name": "免背书券",
-          "cost": 10,
-          "category": "稀有",
-          "description": "逃过一次背诵，轻松过关。",
-          "blindBoxExcluded": false
-        },
-        {
-          "id": "r1788449011321c29d",
-          "name": "班干部体验券",
-          "cost": 10,
-          "category": "稀有",
-          "description": "当一天小干部，过把\"官瘾\"。",
-          "blindBoxExcluded": false
-        },
-        {
-          "id": "r1788449011321c471",
-          "name": "谈心沟通券",
-          "cost": 10,
-          "category": "稀有",
-          "description": "和老师一对一聊心事。",
-          "blindBoxExcluded": false
-        },
-        {
-          "id": "r1788449011321a396",
-          "name": "小组加分券",
-          "cost": 15,
-          "category": "史诗",
-          "description": "直接给小组加5分。",
-          "blindBoxExcluded": false
-        },
-        {
-          "id": "r17884490113214526",
-          "name": "心愿券",
-          "cost": 15,
-          "category": "史诗",
-          "description": "打电话给爸妈，实现一个小愿望！",
-          "blindBoxExcluded": false
-        },
-        {
-          "id": "r1788449011321cea5",
-          "name": "作业免除券",
-          "cost": 15,
-          "category": "史诗",
-          "description": "这次的英语作业不用做啦！",
-          "blindBoxExcluded": false
-        },
-        {
-          "id": "r178844901132190a0",
-          "name": "双倍积分卡",
-          "cost": 15,
-          "category": "史诗",
-          "description": "使用后一周内所有加分翻倍。",
-          "blindBoxExcluded": false
-        },
-        {
-          "id": "r1788449011321bde2",
-          "name": "提早下课券",
-          "cost": 20,
-          "category": "传说",
-          "description": "提前5分钟下课！（需老师同意）",
-          "blindBoxExcluded": false
-        },
-        {
-          "id": "r1788449011321dfe9",
-          "name": "盲盒券",
-          "cost": 10,
-          "category": "稀有",
-          "description": "随机抽取一张奖励。",
-          "blindBoxExcluded": true
-        },
-        {
-          "id": "r17884490113217acd",
-          "name": "座位自由券",
-          "cost": 4,
-          "category": "普通",
-          "description": "",
-          "blindBoxExcluded": false
-        },
-        {
-          "id": "r1788449011321d7ed",
-          "name": "课堂发言券",
-          "cost": 6,
-          "category": "普通",
-          "description": "",
-          "blindBoxExcluded": false
-        },
-        {
-          "id": "r17884490113215ca4",
-          "name": "迟到免罚券",
-          "cost": 12,
-          "category": "稀有",
-          "description": "",
-          "blindBoxExcluded": false
-        },
-        {
-          "id": "r1788449011321d8f1",
-          "name": "课间点歌券",
-          "cost": 12,
-          "category": "稀有",
-          "description": "",
-          "blindBoxExcluded": false
-        },
-        {
-          "id": "r1788449011321ade5",
-          "name": "当小班长一天",
-          "cost": 20,
-          "category": "史诗",
-          "description": "",
-          "blindBoxExcluded": false
-        },
-        {
-          "id": "r17884490113215671",
-          "name": "免一次值日",
-          "cost": 18,
-          "category": "史诗",
-          "description": "",
-          "blindBoxExcluded": false
-        },
-        {
-          "id": "r17884490113216cf8",
-          "name": "心愿实现卡",
-          "cost": 25,
-          "category": "传说",
-          "description": "",
-          "blindBoxExcluded": false
-        },
-        {
-          "id": "r1788449011321b64c",
-          "name": "期末免考券",
-          "cost": 30,
-          "category": "传说",
-          "description": "",
-          "blindBoxExcluded": false
-        }
-      ]
+     "id": "g17884490113215ec86c",
+     "name": "探索组",
+     "directPoints": 0
+    },
+    {
+     "id": "g178844901132164be28",
+     "name": "智慧组",
+     "directPoints": 0
+    },
+    {
+     "id": "g178844901132189b42a",
+     "name": "梦想组",
+     "directPoints": 0
+    },
+    {
+     "id": "g178844901132121813b",
+     "name": "先锋组",
+     "directPoints": 0
     }
-  ]
+   ],
+   "students": [
+    {
+     "id": "s17884490113217d2060",
+     "studentId": "01",
+     "name": "陈果",
+     "groupId": "g17884490113215ec86c",
+     "earnedPoints": 9,
+     "redeemedPoints": 10,
+     "doublePointsUntil": 0,
+     "items": [
+      {
+       "id": "demo_it01",
+       "rewardId": "r17884490113219cd4",
+       "name": "免死金牌",
+       "acquiredTime": 1788449011.3216312
+      }
+     ],
+     "transactions": [
+      {
+       "timestamp": 1788360704.3216312,
+       "type": "earn",
+       "points": 2,
+       "description": "考试",
+       "groupId": "g17884490113215ec86c"
+      },
+      {
+       "timestamp": 1788275434.3216312,
+       "type": "earn",
+       "points": 2,
+       "description": "听写",
+       "groupId": "g17884490113215ec86c"
+      },
+      {
+       "timestamp": 1788102649.3216312,
+       "type": "earn",
+       "points": 3,
+       "description": "作业",
+       "groupId": "g17884490113215ec86c"
+      },
+      {
+       "timestamp": 1787757640.3216312,
+       "type": "earn",
+       "points": 2,
+       "description": "听写",
+       "groupId": "g17884490113215ec86c"
+      },
+      {
+       "timestamp": 1787239265.3216312,
+       "type": "deduct",
+       "points": 2,
+       "description": "听写",
+       "groupId": "g17884490113215ec86c"
+      },
+      {
+       "timestamp": 1786891391.3216312,
+       "type": "earn",
+       "points": 1,
+       "description": "课堂",
+       "groupId": "g17884490113215ec86c"
+      },
+      {
+       "timestamp": 1786806454.3216312,
+       "type": "earn",
+       "points": 1,
+       "description": "考试",
+       "groupId": "g17884490113215ec86c"
+      },
+      {
+       "timestamp": 1788445411.3216312,
+       "type": "redeem",
+       "points": 10,
+       "description": "兑换 免死金牌",
+       "groupId": "g17884490113215ec86c"
+      }
+     ]
+    },
+    {
+     "id": "s1788449011321e96e06",
+     "studentId": "02",
+     "name": "林小满",
+     "groupId": "g178844901132164be28",
+     "earnedPoints": 7,
+     "redeemedPoints": 0,
+     "doublePointsUntil": 0,
+     "items": [],
+     "transactions": [
+      {
+       "timestamp": 1788187554.3216312,
+       "type": "earn",
+       "points": 1,
+       "description": "作业",
+       "groupId": "g178844901132164be28"
+      },
+      {
+       "timestamp": 1788102371.3216312,
+       "type": "deduct",
+       "points": 1,
+       "description": "纪律",
+       "groupId": "g178844901132164be28"
+      },
+      {
+       "timestamp": 1787670970.3216312,
+       "type": "earn",
+       "points": 1,
+       "description": "作业",
+       "groupId": "g178844901132164be28"
+      },
+      {
+       "timestamp": 1787584738.3216312,
+       "type": "earn",
+       "points": 1,
+       "description": "纪律",
+       "groupId": "g178844901132164be28"
+      },
+      {
+       "timestamp": 1787498609.3216312,
+       "type": "earn",
+       "points": 3,
+       "description": "课堂",
+       "groupId": "g178844901132164be28"
+      },
+      {
+       "timestamp": 1787323886.3216312,
+       "type": "deduct",
+       "points": 2,
+       "description": "听写",
+       "groupId": "g178844901132164be28"
+      },
+      {
+       "timestamp": 1787237784.3216312,
+       "type": "earn",
+       "points": 3,
+       "description": "背诵",
+       "groupId": "g178844901132164be28"
+      },
+      {
+       "timestamp": 1787152198.3216312,
+       "type": "earn",
+       "points": 2,
+       "description": "作业",
+       "groupId": "g178844901132164be28"
+      },
+      {
+       "timestamp": 1787065232.3216312,
+       "type": "earn",
+       "points": 1,
+       "description": "纪律",
+       "groupId": "g178844901132164be28"
+      },
+      {
+       "timestamp": 1786806860.3216312,
+       "type": "deduct",
+       "points": 2,
+       "description": "听写",
+       "groupId": "g178844901132164be28"
+      }
+     ]
+    },
+    {
+     "id": "s17884490113215e65a1",
+     "studentId": "03",
+     "name": "王浩然",
+     "groupId": "g178844901132189b42a",
+     "earnedPoints": 0,
+     "redeemedPoints": 0,
+     "doublePointsUntil": 0,
+     "items": [],
+     "transactions": [
+      {
+       "timestamp": 1787843734.3216312,
+       "type": "earn",
+       "points": 1,
+       "description": "背诵",
+       "groupId": "g178844901132189b42a"
+      },
+      {
+       "timestamp": 1787757810.3216312,
+       "type": "deduct",
+       "points": 1,
+       "description": "作业",
+       "groupId": "g178844901132189b42a"
+      },
+      {
+       "timestamp": 1787583766.3216312,
+       "type": "earn",
+       "points": 2,
+       "description": "课堂",
+       "groupId": "g178844901132189b42a"
+      },
+      {
+       "timestamp": 1787497748.3216312,
+       "type": "deduct",
+       "points": 2,
+       "description": "考试",
+       "groupId": "g178844901132189b42a"
+      },
+      {
+       "timestamp": 1787323448.3216312,
+       "type": "earn",
+       "points": 2,
+       "description": "背诵",
+       "groupId": "g178844901132189b42a"
+      },
+      {
+       "timestamp": 1787151203.3216312,
+       "type": "deduct",
+       "points": 1,
+       "description": "纪律",
+       "groupId": "g178844901132189b42a"
+      },
+      {
+       "timestamp": 1786978998.3216312,
+       "type": "earn",
+       "points": 1,
+       "description": "考试",
+       "groupId": "g178844901132189b42a"
+      },
+      {
+       "timestamp": 1786893442.3216312,
+       "type": "deduct",
+       "points": 2,
+       "description": "听写",
+       "groupId": "g178844901132189b42a"
+      }
+     ]
+    },
+    {
+     "id": "s1788449011321701d26",
+     "studentId": "04",
+     "name": "张曦",
+     "groupId": "g178844901132121813b",
+     "earnedPoints": 7,
+     "redeemedPoints": 0,
+     "doublePointsUntil": 0,
+     "items": [],
+     "transactions": [
+      {
+       "timestamp": 1788360755.3216312,
+       "type": "earn",
+       "points": 1,
+       "description": "作业",
+       "groupId": "g178844901132121813b"
+      },
+      {
+       "timestamp": 1788189256.3216312,
+       "type": "earn",
+       "points": 2,
+       "description": "课堂",
+       "groupId": "g178844901132121813b"
+      },
+      {
+       "timestamp": 1788102780.3216312,
+       "type": "deduct",
+       "points": 1,
+       "description": "考试",
+       "groupId": "g178844901132121813b"
+      },
+      {
+       "timestamp": 1787843434.3216312,
+       "type": "earn",
+       "points": 3,
+       "description": "作业",
+       "groupId": "g178844901132121813b"
+      },
+      {
+       "timestamp": 1787670606.3216312,
+       "type": "earn",
+       "points": 2,
+       "description": "课堂",
+       "groupId": "g178844901132121813b"
+      },
+      {
+       "timestamp": 1787583035.3216312,
+       "type": "earn",
+       "points": 1,
+       "description": "考试",
+       "groupId": "g178844901132121813b"
+      },
+      {
+       "timestamp": 1787498417.3216312,
+       "type": "earn",
+       "points": 1,
+       "description": "听写",
+       "groupId": "g178844901132121813b"
+      },
+      {
+       "timestamp": 1787237807.3216312,
+       "type": "deduct",
+       "points": 1,
+       "description": "纪律",
+       "groupId": "g178844901132121813b"
+      },
+      {
+       "timestamp": 1787064600.3216312,
+       "type": "earn",
+       "points": 1,
+       "description": "考试",
+       "groupId": "g178844901132121813b"
+      },
+      {
+       "timestamp": 1786806894.3216312,
+       "type": "deduct",
+       "points": 2,
+       "description": "作业",
+       "groupId": "g178844901132121813b"
+      }
+     ]
+    },
+    {
+     "id": "s17884490113219144b5",
+     "studentId": "05",
+     "name": "李思远",
+     "groupId": "g17884490113215ec86c",
+     "earnedPoints": 4,
+     "redeemedPoints": 0,
+     "doublePointsUntil": 0,
+     "items": [],
+     "transactions": [
+      {
+       "timestamp": 1788362308.3216312,
+       "type": "earn",
+       "points": 2,
+       "description": "纪律",
+       "groupId": "g17884490113215ec86c"
+      },
+      {
+       "timestamp": 1788189744.3216312,
+       "type": "deduct",
+       "points": 1,
+       "description": "考试",
+       "groupId": "g17884490113215ec86c"
+      },
+      {
+       "timestamp": 1788016764.3216312,
+       "type": "deduct",
+       "points": 1,
+       "description": "背诵",
+       "groupId": "g17884490113215ec86c"
+      },
+      {
+       "timestamp": 1787496474.3216312,
+       "type": "earn",
+       "points": 1,
+       "description": "背诵",
+       "groupId": "g17884490113215ec86c"
+      },
+      {
+       "timestamp": 1787409795.3216312,
+       "type": "deduct",
+       "points": 1,
+       "description": "作业",
+       "groupId": "g17884490113215ec86c"
+      },
+      {
+       "timestamp": 1787151734.3216312,
+       "type": "earn",
+       "points": 3,
+       "description": "考试",
+       "groupId": "g17884490113215ec86c"
+      },
+      {
+       "timestamp": 1787064161.3216312,
+       "type": "deduct",
+       "points": 2,
+       "description": "听写",
+       "groupId": "g17884490113215ec86c"
+      },
+      {
+       "timestamp": 1786979936.3216312,
+       "type": "earn",
+       "points": 1,
+       "description": "背诵",
+       "groupId": "g17884490113215ec86c"
+      },
+      {
+       "timestamp": 1786893252.3216312,
+       "type": "earn",
+       "points": 1,
+       "description": "作业",
+       "groupId": "g17884490113215ec86c"
+      },
+      {
+       "timestamp": 1786805556.3216312,
+       "type": "deduct",
+       "points": 2,
+       "description": "纪律",
+       "groupId": "g17884490113215ec86c"
+      },
+      {
+       "timestamp": 1786720829.3216312,
+       "type": "earn",
+       "points": 3,
+       "description": "课堂",
+       "groupId": "g17884490113215ec86c"
+      }
+     ]
+    },
+    {
+     "id": "s1788449011321604ae7",
+     "studentId": "06",
+     "name": "周子涵",
+     "groupId": "g178844901132164be28",
+     "earnedPoints": 5,
+     "redeemedPoints": 0,
+     "doublePointsUntil": 0,
+     "items": [],
+     "transactions": [
+      {
+       "timestamp": 1788362081.3216312,
+       "type": "earn",
+       "points": 3,
+       "description": "课堂",
+       "groupId": "g178844901132164be28"
+      },
+      {
+       "timestamp": 1788274770.3216312,
+       "type": "earn",
+       "points": 1,
+       "description": "考试",
+       "groupId": "g178844901132164be28"
+      },
+      {
+       "timestamp": 1788101703.3216312,
+       "type": "deduct",
+       "points": 2,
+       "description": "背诵",
+       "groupId": "g178844901132164be28"
+      },
+      {
+       "timestamp": 1788014964.3216312,
+       "type": "deduct",
+       "points": 2,
+       "description": "作业",
+       "groupId": "g178844901132164be28"
+      },
+      {
+       "timestamp": 1787929045.3216312,
+       "type": "earn",
+       "points": 2,
+       "description": "纪律",
+       "groupId": "g178844901132164be28"
+      },
+      {
+       "timestamp": 1787841718.3216312,
+       "type": "deduct",
+       "points": 2,
+       "description": "课堂",
+       "groupId": "g178844901132164be28"
+      },
+      {
+       "timestamp": 1787410620.3216312,
+       "type": "earn",
+       "points": 1,
+       "description": "纪律",
+       "groupId": "g178844901132164be28"
+      },
+      {
+       "timestamp": 1787323432.3216312,
+       "type": "earn",
+       "points": 3,
+       "description": "课堂",
+       "groupId": "g178844901132164be28"
+      },
+      {
+       "timestamp": 1787237195.3216312,
+       "type": "earn",
+       "points": 1,
+       "description": "考试",
+       "groupId": "g178844901132164be28"
+      },
+      {
+       "timestamp": 1787065341.3216312,
+       "type": "deduct",
+       "points": 2,
+       "description": "背诵",
+       "groupId": "g178844901132164be28"
+      },
+      {
+       "timestamp": 1786980120.3216312,
+       "type": "earn",
+       "points": 1,
+       "description": "作业",
+       "groupId": "g178844901132164be28"
+      },
+      {
+       "timestamp": 1786805420.3216312,
+       "type": "earn",
+       "points": 1,
+       "description": "课堂",
+       "groupId": "g178844901132164be28"
+      }
+     ]
+    },
+    {
+     "id": "s1788449011321ab596d",
+     "studentId": "07",
+     "name": "吴明轩",
+     "groupId": "g178844901132189b42a",
+     "earnedPoints": 8,
+     "redeemedPoints": 0,
+     "doublePointsUntil": 0,
+     "items": [],
+     "transactions": [
+      {
+       "timestamp": 1788101601.3216312,
+       "type": "earn",
+       "points": 1,
+       "description": "作业",
+       "groupId": "g178844901132189b42a"
+      },
+      {
+       "timestamp": 1788015672.3216312,
+       "type": "deduct",
+       "points": 1,
+       "description": "纪律",
+       "groupId": "g178844901132189b42a"
+      },
+      {
+       "timestamp": 1787929798.3216312,
+       "type": "earn",
+       "points": 1,
+       "description": "课堂",
+       "groupId": "g178844901132189b42a"
+      },
+      {
+       "timestamp": 1787843334.3216312,
+       "type": "deduct",
+       "points": 1,
+       "description": "考试",
+       "groupId": "g178844901132189b42a"
+      },
+      {
+       "timestamp": 1787756515.3216312,
+       "type": "earn",
+       "points": 2,
+       "description": "听写",
+       "groupId": "g178844901132189b42a"
+      },
+      {
+       "timestamp": 1787498349.3216312,
+       "type": "deduct",
+       "points": 2,
+       "description": "纪律",
+       "groupId": "g178844901132189b42a"
+      },
+      {
+       "timestamp": 1787411519.3216312,
+       "type": "earn",
+       "points": 1,
+       "description": "课堂",
+       "groupId": "g178844901132189b42a"
+      },
+      {
+       "timestamp": 1787237716.3216312,
+       "type": "deduct",
+       "points": 1,
+       "description": "听写",
+       "groupId": "g178844901132189b42a"
+      },
+      {
+       "timestamp": 1787150989.3216312,
+       "type": "earn",
+       "points": 2,
+       "description": "背诵",
+       "groupId": "g178844901132189b42a"
+      },
+      {
+       "timestamp": 1787064758.3216312,
+       "type": "earn",
+       "points": 3,
+       "description": "作业",
+       "groupId": "g178844901132189b42a"
+      },
+      {
+       "timestamp": 1786891323.3216312,
+       "type": "earn",
+       "points": 1,
+       "description": "课堂",
+       "groupId": "g178844901132189b42a"
+      },
+      {
+       "timestamp": 1786719561.3216312,
+       "type": "earn",
+       "points": 2,
+       "description": "听写",
+       "groupId": "g178844901132189b42a"
+      }
+     ]
+    },
+    {
+     "id": "s178844901132140b973",
+     "studentId": "08",
+     "name": "郑乐瑶",
+     "groupId": "g178844901132121813b",
+     "earnedPoints": 9,
+     "redeemedPoints": 10,
+     "doublePointsUntil": 0,
+     "items": [
+      {
+       "id": "demo_it08",
+       "rewardId": "r17884490113219cd4",
+       "name": "免死金牌",
+       "acquiredTime": 1788449011.3216312
+      }
+     ],
+     "transactions": [
+      {
+       "timestamp": 1788187949.3216312,
+       "type": "earn",
+       "points": 1,
+       "description": "作业",
+       "groupId": "g178844901132121813b"
+      },
+      {
+       "timestamp": 1788016039.3216312,
+       "type": "earn",
+       "points": 1,
+       "description": "课堂",
+       "groupId": "g178844901132121813b"
+      },
+      {
+       "timestamp": 1787930139.3216312,
+       "type": "deduct",
+       "points": 2,
+       "description": "考试",
+       "groupId": "g178844901132121813b"
+      },
+      {
+       "timestamp": 1787842019.3216312,
+       "type": "earn",
+       "points": 3,
+       "description": "听写",
+       "groupId": "g178844901132121813b"
+      },
+      {
+       "timestamp": 1787757492.3216312,
+       "type": "earn",
+       "points": 1,
+       "description": "背诵",
+       "groupId": "g178844901132121813b"
+      },
+      {
+       "timestamp": 1787669465.3216312,
+       "type": "deduct",
+       "points": 1,
+       "description": "作业",
+       "groupId": "g178844901132121813b"
+      },
+      {
+       "timestamp": 1787496421.3216312,
+       "type": "earn",
+       "points": 1,
+       "description": "课堂",
+       "groupId": "g178844901132121813b"
+      },
+      {
+       "timestamp": 1787411284.3216312,
+       "type": "deduct",
+       "points": 1,
+       "description": "考试",
+       "groupId": "g178844901132121813b"
+      },
+      {
+       "timestamp": 1787237280.3216312,
+       "type": "earn",
+       "points": 3,
+       "description": "背诵",
+       "groupId": "g178844901132121813b"
+      },
+      {
+       "timestamp": 1787151400.3216312,
+       "type": "deduct",
+       "points": 1,
+       "description": "作业",
+       "groupId": "g178844901132121813b"
+      },
+      {
+       "timestamp": 1787065694.3216312,
+       "type": "earn",
+       "points": 3,
+       "description": "纪律",
+       "groupId": "g178844901132121813b"
+      },
+      {
+       "timestamp": 1786892222.3216312,
+       "type": "earn",
+       "points": 1,
+       "description": "考试",
+       "groupId": "g178844901132121813b"
+      },
+      {
+       "timestamp": 1788445411.3216312,
+       "type": "redeem",
+       "points": 10,
+       "description": "兑换 免死金牌",
+       "groupId": "g178844901132121813b"
+      }
+     ]
+    },
+    {
+     "id": "s178844901132187c467",
+     "studentId": "09",
+     "name": "孙一诺",
+     "groupId": "g17884490113215ec86c",
+     "earnedPoints": 9,
+     "redeemedPoints": 10,
+     "doublePointsUntil": 0,
+     "items": [
+      {
+       "id": "demo_it09",
+       "rewardId": "r17884490113219cd4",
+       "name": "免死金牌",
+       "acquiredTime": 1788449011.3216312
+      }
+     ],
+     "transactions": [
+      {
+       "timestamp": 1788274153.3216312,
+       "type": "earn",
+       "points": 2,
+       "description": "作业",
+       "groupId": "g17884490113215ec86c"
+      },
+      {
+       "timestamp": 1788187912.3216312,
+       "type": "earn",
+       "points": 1,
+       "description": "纪律",
+       "groupId": "g17884490113215ec86c"
+      },
+      {
+       "timestamp": 1788016506.3216312,
+       "type": "deduct",
+       "points": 2,
+       "description": "考试",
+       "groupId": "g17884490113215ec86c"
+      },
+      {
+       "timestamp": 1787842942.3216312,
+       "type": "deduct",
+       "points": 1,
+       "description": "背诵",
+       "groupId": "g17884490113215ec86c"
+      },
+      {
+       "timestamp": 1787756739.3216312,
+       "type": "earn",
+       "points": 1,
+       "description": "作业",
+       "groupId": "g17884490113215ec86c"
+      },
+      {
+       "timestamp": 1787669984.3216312,
+       "type": "deduct",
+       "points": 1,
+       "description": "纪律",
+       "groupId": "g17884490113215ec86c"
+      },
+      {
+       "timestamp": 1787496885.3216312,
+       "type": "earn",
+       "points": 2,
+       "description": "考试",
+       "groupId": "g17884490113215ec86c"
+      },
+      {
+       "timestamp": 1787412095.3216312,
+       "type": "earn",
+       "points": 1,
+       "description": "听写",
+       "groupId": "g17884490113215ec86c"
+      },
+      {
+       "timestamp": 1787239268.3216312,
+       "type": "earn",
+       "points": 1,
+       "description": "作业",
+       "groupId": "g17884490113215ec86c"
+      },
+      {
+       "timestamp": 1786978284.3216312,
+       "type": "deduct",
+       "points": 1,
+       "description": "考试",
+       "groupId": "g17884490113215ec86c"
+      },
+      {
+       "timestamp": 1786805289.3216312,
+       "type": "earn",
+       "points": 3,
+       "description": "背诵",
+       "groupId": "g17884490113215ec86c"
+      },
+      {
+       "timestamp": 1786719209.3216312,
+       "type": "earn",
+       "points": 3,
+       "description": "作业",
+       "groupId": "g17884490113215ec86c"
+      },
+      {
+       "timestamp": 1788445411.3216312,
+       "type": "redeem",
+       "points": 10,
+       "description": "兑换 免死金牌",
+       "groupId": "g17884490113215ec86c"
+      }
+     ]
+    },
+    {
+     "id": "s1788449011321499f14",
+     "studentId": "10",
+     "name": "黄嘉豪",
+     "groupId": "g178844901132164be28",
+     "earnedPoints": 9,
+     "redeemedPoints": 0,
+     "doublePointsUntil": 0,
+     "items": [],
+     "transactions": [
+      {
+       "timestamp": 1788360240.3216312,
+       "type": "earn",
+       "points": 1,
+       "description": "作业",
+       "groupId": "g178844901132164be28"
+      },
+      {
+       "timestamp": 1788275305.3216312,
+       "type": "deduct",
+       "points": 1,
+       "description": "纪律",
+       "groupId": "g178844901132164be28"
+      },
+      {
+       "timestamp": 1788188623.3216312,
+       "type": "earn",
+       "points": 2,
+       "description": "课堂",
+       "groupId": "g178844901132164be28"
+      },
+      {
+       "timestamp": 1788102738.3216312,
+       "type": "earn",
+       "points": 2,
+       "description": "考试",
+       "groupId": "g178844901132164be28"
+      },
+      {
+       "timestamp": 1788015961.3216312,
+       "type": "earn",
+       "points": 2,
+       "description": "听写",
+       "groupId": "g178844901132164be28"
+      },
+      {
+       "timestamp": 1787843359.3216312,
+       "type": "earn",
+       "points": 2,
+       "description": "作业",
+       "groupId": "g178844901132164be28"
+      },
+      {
+       "timestamp": 1787582665.3216312,
+       "type": "earn",
+       "points": 1,
+       "description": "考试",
+       "groupId": "g178844901132164be28"
+      }
+     ]
+    },
+    {
+     "id": "s178844901132149d495",
+     "studentId": "11",
+     "name": "徐可欣",
+     "groupId": "g178844901132189b42a",
+     "earnedPoints": 9,
+     "redeemedPoints": 0,
+     "doublePointsUntil": 0,
+     "items": [],
+     "transactions": [
+      {
+       "timestamp": 1788360917.3216312,
+       "type": "earn",
+       "points": 1,
+       "description": "纪律",
+       "groupId": "g178844901132189b42a"
+      },
+      {
+       "timestamp": 1788275109.3216312,
+       "type": "earn",
+       "points": 1,
+       "description": "课堂",
+       "groupId": "g178844901132189b42a"
+      },
+      {
+       "timestamp": 1788101635.3216312,
+       "type": "earn",
+       "points": 1,
+       "description": "听写",
+       "groupId": "g178844901132189b42a"
+      },
+      {
+       "timestamp": 1788014861.3216312,
+       "type": "earn",
+       "points": 1,
+       "description": "背诵",
+       "groupId": "g178844901132189b42a"
+      },
+      {
+       "timestamp": 1787757281.3216312,
+       "type": "earn",
+       "points": 1,
+       "description": "课堂",
+       "groupId": "g178844901132189b42a"
+      },
+      {
+       "timestamp": 1787671266.3216312,
+       "type": "deduct",
+       "points": 2,
+       "description": "考试",
+       "groupId": "g178844901132189b42a"
+      },
+      {
+       "timestamp": 1787410756.3216312,
+       "type": "earn",
+       "points": 1,
+       "description": "作业",
+       "groupId": "g178844901132189b42a"
+      },
+      {
+       "timestamp": 1787237027.3216312,
+       "type": "earn",
+       "points": 1,
+       "description": "课堂",
+       "groupId": "g178844901132189b42a"
+      },
+      {
+       "timestamp": 1787065802.3216312,
+       "type": "earn",
+       "points": 1,
+       "description": "听写",
+       "groupId": "g178844901132189b42a"
+      },
+      {
+       "timestamp": 1786980116.3216312,
+       "type": "earn",
+       "points": 1,
+       "description": "背诵",
+       "groupId": "g178844901132189b42a"
+      },
+      {
+       "timestamp": 1786891643.3216312,
+       "type": "earn",
+       "points": 1,
+       "description": "作业",
+       "groupId": "g178844901132189b42a"
+      },
+      {
+       "timestamp": 1786806575.3216312,
+       "type": "earn",
+       "points": 1,
+       "description": "纪律",
+       "groupId": "g178844901132189b42a"
+      }
+     ]
+    },
+    {
+     "id": "s17884490113217a7278",
+     "studentId": "12",
+     "name": "高子墨",
+     "groupId": "g178844901132121813b",
+     "earnedPoints": 9,
+     "redeemedPoints": 0,
+     "doublePointsUntil": 0,
+     "items": [],
+     "transactions": [
+      {
+       "timestamp": 1788361726.3216312,
+       "type": "earn",
+       "points": 2,
+       "description": "课堂",
+       "groupId": "g178844901132121813b"
+      },
+      {
+       "timestamp": 1788273809.3216312,
+       "type": "earn",
+       "points": 2,
+       "description": "考试",
+       "groupId": "g178844901132121813b"
+      },
+      {
+       "timestamp": 1788188388.3216312,
+       "type": "deduct",
+       "points": 1,
+       "description": "听写",
+       "groupId": "g178844901132121813b"
+      },
+      {
+       "timestamp": 1788100941.3216312,
+       "type": "earn",
+       "points": 1,
+       "description": "背诵",
+       "groupId": "g178844901132121813b"
+      },
+      {
+       "timestamp": 1787929815.3216312,
+       "type": "deduct",
+       "points": 1,
+       "description": "纪律",
+       "groupId": "g178844901132121813b"
+      },
+      {
+       "timestamp": 1787843231.3216312,
+       "type": "deduct",
+       "points": 1,
+       "description": "课堂",
+       "groupId": "g178844901132121813b"
+      },
+      {
+       "timestamp": 1787583285.3216312,
+       "type": "earn",
+       "points": 1,
+       "description": "背诵",
+       "groupId": "g178844901132121813b"
+      },
+      {
+       "timestamp": 1787498095.3216312,
+       "type": "earn",
+       "points": 3,
+       "description": "作业",
+       "groupId": "g178844901132121813b"
+      },
+      {
+       "timestamp": 1787325418.3216312,
+       "type": "deduct",
+       "points": 2,
+       "description": "课堂",
+       "groupId": "g178844901132121813b"
+      },
+      {
+       "timestamp": 1787152539.3216312,
+       "type": "earn",
+       "points": 1,
+       "description": "听写",
+       "groupId": "g178844901132121813b"
+      },
+      {
+       "timestamp": 1787065205.3216312,
+       "type": "earn",
+       "points": 3,
+       "description": "背诵",
+       "groupId": "g178844901132121813b"
+      },
+      {
+       "timestamp": 1786979437.3216312,
+       "type": "earn",
+       "points": 1,
+       "description": "作业",
+       "groupId": "g178844901132121813b"
+      }
+     ]
+    },
+    {
+     "id": "s178844901132174df45",
+     "studentId": "13",
+     "name": "罗小雨",
+     "groupId": "g17884490113215ec86c",
+     "earnedPoints": 4,
+     "redeemedPoints": 0,
+     "doublePointsUntil": 0,
+     "items": [],
+     "transactions": [
+      {
+       "timestamp": 1788360282.3216312,
+       "type": "earn",
+       "points": 2,
+       "description": "考试",
+       "groupId": "g17884490113215ec86c"
+      },
+      {
+       "timestamp": 1788275456.3216312,
+       "type": "deduct",
+       "points": 1,
+       "description": "听写",
+       "groupId": "g17884490113215ec86c"
+      },
+      {
+       "timestamp": 1787843958.3216312,
+       "type": "earn",
+       "points": 2,
+       "description": "考试",
+       "groupId": "g17884490113215ec86c"
+      },
+      {
+       "timestamp": 1787671015.3216312,
+       "type": "deduct",
+       "points": 2,
+       "description": "背诵",
+       "groupId": "g17884490113215ec86c"
+      },
+      {
+       "timestamp": 1787497159.3216312,
+       "type": "earn",
+       "points": 2,
+       "description": "纪律",
+       "groupId": "g17884490113215ec86c"
+      },
+      {
+       "timestamp": 1787410683.3216312,
+       "type": "earn",
+       "points": 2,
+       "description": "课堂",
+       "groupId": "g17884490113215ec86c"
+      },
+      {
+       "timestamp": 1787238669.3216312,
+       "type": "deduct",
+       "points": 1,
+       "description": "听写",
+       "groupId": "g17884490113215ec86c"
+      },
+      {
+       "timestamp": 1787151495.3216312,
+       "type": "earn",
+       "points": 1,
+       "description": "背诵",
+       "groupId": "g17884490113215ec86c"
+      },
+      {
+       "timestamp": 1787064134.3216312,
+       "type": "deduct",
+       "points": 1,
+       "description": "作业",
+       "groupId": "g17884490113215ec86c"
+      },
+      {
+       "timestamp": 1786892486.3216312,
+       "type": "deduct",
+       "points": 2,
+       "description": "课堂",
+       "groupId": "g17884490113215ec86c"
+      },
+      {
+       "timestamp": 1786805755.3216312,
+       "type": "earn",
+       "points": 3,
+       "description": "考试",
+       "groupId": "g17884490113215ec86c"
+      },
+      {
+       "timestamp": 1786718946.3216312,
+       "type": "deduct",
+       "points": 1,
+       "description": "听写",
+       "groupId": "g17884490113215ec86c"
+      }
+     ]
+    },
+    {
+     "id": "s1788449011321a3e68a",
+     "studentId": "14",
+     "name": "沈星辰",
+     "groupId": "g178844901132164be28",
+     "earnedPoints": 9,
+     "redeemedPoints": 0,
+     "doublePointsUntil": 0,
+     "items": [],
+     "transactions": [
+      {
+       "timestamp": 1788361554.3216312,
+       "type": "earn",
+       "points": 1,
+       "description": "听写",
+       "groupId": "g178844901132164be28"
+      },
+      {
+       "timestamp": 1788101750.3216312,
+       "type": "deduct",
+       "points": 1,
+       "description": "纪律",
+       "groupId": "g178844901132164be28"
+      },
+      {
+       "timestamp": 1787842443.3216312,
+       "type": "earn",
+       "points": 1,
+       "description": "听写",
+       "groupId": "g178844901132164be28"
+      },
+      {
+       "timestamp": 1787756964.3216312,
+       "type": "earn",
+       "points": 1,
+       "description": "背诵",
+       "groupId": "g178844901132164be28"
+      },
+      {
+       "timestamp": 1787670012.3216312,
+       "type": "deduct",
+       "points": 2,
+       "description": "作业",
+       "groupId": "g178844901132164be28"
+      },
+      {
+       "timestamp": 1787412008.3216312,
+       "type": "earn",
+       "points": 3,
+       "description": "考试",
+       "groupId": "g178844901132164be28"
+      },
+      {
+       "timestamp": 1787238187.3216312,
+       "type": "earn",
+       "points": 3,
+       "description": "背诵",
+       "groupId": "g178844901132164be28"
+      },
+      {
+       "timestamp": 1787065866.3216312,
+       "type": "earn",
+       "points": 2,
+       "description": "纪律",
+       "groupId": "g178844901132164be28"
+      },
+      {
+       "timestamp": 1786978103.3216312,
+       "type": "earn",
+       "points": 1,
+       "description": "课堂",
+       "groupId": "g178844901132164be28"
+      }
+     ]
+    },
+    {
+     "id": "s17884490113210f5d02",
+     "studentId": "15",
+     "name": "许诺",
+     "groupId": "g178844901132189b42a",
+     "earnedPoints": 5,
+     "redeemedPoints": 0,
+     "doublePointsUntil": 0,
+     "items": [],
+     "transactions": [
+      {
+       "timestamp": 1788362518.3216312,
+       "type": "earn",
+       "points": 2,
+       "description": "背诵",
+       "groupId": "g178844901132189b42a"
+      },
+      {
+       "timestamp": 1788016805.3216312,
+       "type": "earn",
+       "points": 2,
+       "description": "考试",
+       "groupId": "g178844901132189b42a"
+      },
+      {
+       "timestamp": 1787929073.3216312,
+       "type": "earn",
+       "points": 3,
+       "description": "听写",
+       "groupId": "g178844901132189b42a"
+      },
+      {
+       "timestamp": 1787582931.3216312,
+       "type": "earn",
+       "points": 2,
+       "description": "课堂",
+       "groupId": "g178844901132189b42a"
+      },
+      {
+       "timestamp": 1787410391.3216312,
+       "type": "deduct",
+       "points": 2,
+       "description": "听写",
+       "groupId": "g178844901132189b42a"
+      },
+      {
+       "timestamp": 1787323561.3216312,
+       "type": "deduct",
+       "points": 2,
+       "description": "背诵",
+       "groupId": "g178844901132189b42a"
+      },
+      {
+       "timestamp": 1787237829.3216312,
+       "type": "deduct",
+       "points": 2,
+       "description": "作业",
+       "groupId": "g178844901132189b42a"
+      },
+      {
+       "timestamp": 1787151431.3216312,
+       "type": "deduct",
+       "points": 1,
+       "description": "纪律",
+       "groupId": "g178844901132189b42a"
+      },
+      {
+       "timestamp": 1787064582.3216312,
+       "type": "deduct",
+       "points": 1,
+       "description": "课堂",
+       "groupId": "g178844901132189b42a"
+      },
+      {
+       "timestamp": 1786979972.3216312,
+       "type": "earn",
+       "points": 2,
+       "description": "考试",
+       "groupId": "g178844901132189b42a"
+      },
+      {
+       "timestamp": 1786892088.3216312,
+       "type": "earn",
+       "points": 1,
+       "description": "听写",
+       "groupId": "g178844901132189b42a"
+      },
+      {
+       "timestamp": 1786719514.3216312,
+       "type": "earn",
+       "points": 1,
+       "description": "作业",
+       "groupId": "g178844901132189b42a"
+      }
+     ]
+    },
+    {
+     "id": "s90000",
+     "studentId": "16",
+     "name": "赵子轩",
+     "groupId": "g178844901132121813b",
+     "earnedPoints": 10,
+     "redeemedPoints": 0,
+     "doublePointsUntil": 0,
+     "items": [],
+     "transactions": []
+    },
+    {
+     "id": "s90001",
+     "studentId": "17",
+     "name": "钱思彤",
+     "groupId": "g17884490113215ec86c",
+     "earnedPoints": 0,
+     "redeemedPoints": 0,
+     "doublePointsUntil": 0,
+     "items": [],
+     "transactions": []
+    },
+    {
+     "id": "s90002",
+     "studentId": "18",
+     "name": "孙一诺",
+     "groupId": "g178844901132164be28",
+     "earnedPoints": 1,
+     "redeemedPoints": 0,
+     "doublePointsUntil": 0,
+     "items": [],
+     "transactions": []
+    },
+    {
+     "id": "s90003",
+     "studentId": "19",
+     "name": "李梓萱",
+     "groupId": "g178844901132189b42a",
+     "earnedPoints": 6,
+     "redeemedPoints": 0,
+     "doublePointsUntil": 0,
+     "items": [],
+     "transactions": []
+    },
+    {
+     "id": "s90004",
+     "studentId": "20",
+     "name": "周浩宇",
+     "groupId": "g178844901132121813b",
+     "earnedPoints": 5,
+     "redeemedPoints": 0,
+     "doublePointsUntil": 0,
+     "items": [],
+     "transactions": []
+    },
+    {
+     "id": "s90005",
+     "studentId": "21",
+     "name": "吴梦洁",
+     "groupId": "g17884490113215ec86c",
+     "earnedPoints": 8,
+     "redeemedPoints": 0,
+     "doublePointsUntil": 0,
+     "items": [],
+     "transactions": []
+    },
+    {
+     "id": "s90006",
+     "studentId": "22",
+     "name": "郑俊熙",
+     "groupId": "g178844901132164be28",
+     "earnedPoints": 6,
+     "redeemedPoints": 0,
+     "doublePointsUntil": 0,
+     "items": [],
+     "transactions": []
+    },
+    {
+     "id": "s90007",
+     "studentId": "23",
+     "name": "王雨桐",
+     "groupId": "g178844901132189b42a",
+     "earnedPoints": 10,
+     "redeemedPoints": 0,
+     "doublePointsUntil": 0,
+     "items": [],
+     "transactions": []
+    },
+    {
+     "id": "s90008",
+     "studentId": "24",
+     "name": "冯嘉懿",
+     "groupId": "g178844901132121813b",
+     "earnedPoints": 4,
+     "redeemedPoints": 0,
+     "doublePointsUntil": 0,
+     "items": [],
+     "transactions": []
+    },
+    {
+     "id": "s90009",
+     "studentId": "25",
+     "name": "陈可馨",
+     "groupId": "g17884490113215ec86c",
+     "earnedPoints": 0,
+     "redeemedPoints": 0,
+     "doublePointsUntil": 0,
+     "items": [],
+     "transactions": []
+    },
+    {
+     "id": "s90010",
+     "studentId": "26",
+     "name": "褚天佑",
+     "groupId": "g178844901132164be28",
+     "earnedPoints": 12,
+     "redeemedPoints": 0,
+     "doublePointsUntil": 0,
+     "items": [],
+     "transactions": []
+    },
+    {
+     "id": "s90011",
+     "studentId": "27",
+     "name": "卫欣怡",
+     "groupId": "g178844901132189b42a",
+     "earnedPoints": 7,
+     "redeemedPoints": 0,
+     "doublePointsUntil": 0,
+     "items": [],
+     "transactions": []
+    },
+    {
+     "id": "s90012",
+     "studentId": "28",
+     "name": "蒋若曦",
+     "groupId": "g178844901132121813b",
+     "earnedPoints": 11,
+     "redeemedPoints": 0,
+     "doublePointsUntil": 0,
+     "items": [],
+     "transactions": []
+    },
+    {
+     "id": "s90013",
+     "studentId": "29",
+     "name": "沈亦辰",
+     "groupId": "g17884490113215ec86c",
+     "earnedPoints": 2,
+     "redeemedPoints": 0,
+     "doublePointsUntil": 0,
+     "items": [],
+     "transactions": []
+    },
+    {
+     "id": "s90014",
+     "studentId": "30",
+     "name": "韩雪莹",
+     "groupId": "g178844901132164be28",
+     "earnedPoints": 3,
+     "redeemedPoints": 0,
+     "doublePointsUntil": 0,
+     "items": [],
+     "transactions": []
+    },
+    {
+     "id": "s90015",
+     "studentId": "31",
+     "name": "杨博文",
+     "groupId": "g178844901132189b42a",
+     "earnedPoints": 2,
+     "redeemedPoints": 0,
+     "doublePointsUntil": 0,
+     "items": [],
+     "transactions": []
+    },
+    {
+     "id": "s90016",
+     "studentId": "32",
+     "name": "朱晓彤",
+     "groupId": "g178844901132121813b",
+     "earnedPoints": 10,
+     "redeemedPoints": 0,
+     "doublePointsUntil": 0,
+     "items": [],
+     "transactions": []
+    },
+    {
+     "id": "s90017",
+     "studentId": "33",
+     "name": "秦子墨",
+     "groupId": "g17884490113215ec86c",
+     "earnedPoints": 9,
+     "redeemedPoints": 0,
+     "doublePointsUntil": 0,
+     "items": [],
+     "transactions": []
+    },
+    {
+     "id": "s90018",
+     "studentId": "34",
+     "name": "许静怡",
+     "groupId": "g178844901132164be28",
+     "earnedPoints": 3,
+     "redeemedPoints": 0,
+     "doublePointsUntil": 0,
+     "items": [],
+     "transactions": []
+    },
+    {
+     "id": "s90019",
+     "studentId": "35",
+     "name": "何梓豪",
+     "groupId": "g178844901132189b42a",
+     "earnedPoints": 2,
+     "redeemedPoints": 0,
+     "doublePointsUntil": 0,
+     "items": [],
+     "transactions": []
+    },
+    {
+     "id": "s90020",
+     "studentId": "36",
+     "name": "吕诗琪",
+     "groupId": "g178844901132121813b",
+     "earnedPoints": 9,
+     "redeemedPoints": 0,
+     "doublePointsUntil": 0,
+     "items": [],
+     "transactions": []
+    },
+    {
+     "id": "s90021",
+     "studentId": "37",
+     "name": "施俊杰",
+     "groupId": "g17884490113215ec86c",
+     "earnedPoints": 0,
+     "redeemedPoints": 0,
+     "doublePointsUntil": 0,
+     "items": [],
+     "transactions": []
+    },
+    {
+     "id": "s90022",
+     "studentId": "38",
+     "name": "张雨萌",
+     "groupId": "g178844901132164be28",
+     "earnedPoints": 1,
+     "redeemedPoints": 0,
+     "doublePointsUntil": 0,
+     "items": [],
+     "transactions": []
+    },
+    {
+     "id": "s90023",
+     "studentId": "39",
+     "name": "孔令仪",
+     "groupId": "g178844901132189b42a",
+     "earnedPoints": 2,
+     "redeemedPoints": 0,
+     "doublePointsUntil": 0,
+     "items": [],
+     "transactions": []
+    },
+    {
+     "id": "s90024",
+     "studentId": "40",
+     "name": "曹俊豪",
+     "groupId": "g178844901132121813b",
+     "earnedPoints": 7,
+     "redeemedPoints": 0,
+     "doublePointsUntil": 0,
+     "items": [],
+     "transactions": []
+    },
+    {
+     "id": "s90025",
+     "studentId": "41",
+     "name": "严梦琪",
+     "groupId": "g17884490113215ec86c",
+     "earnedPoints": 2,
+     "redeemedPoints": 0,
+     "doublePointsUntil": 0,
+     "items": [],
+     "transactions": []
+    },
+    {
+     "id": "s90026",
+     "studentId": "42",
+     "name": "华语晨",
+     "groupId": "g178844901132164be28",
+     "earnedPoints": 10,
+     "redeemedPoints": 0,
+     "doublePointsUntil": 0,
+     "items": [],
+     "transactions": []
+    },
+    {
+     "id": "s90027",
+     "studentId": "43",
+     "name": "金泽宇",
+     "groupId": "g178844901132189b42a",
+     "earnedPoints": 0,
+     "redeemedPoints": 0,
+     "doublePointsUntil": 0,
+     "items": [],
+     "transactions": []
+    },
+    {
+     "id": "s90028",
+     "studentId": "44",
+     "name": "魏子涵",
+     "groupId": "g178844901132121813b",
+     "earnedPoints": 8,
+     "redeemedPoints": 0,
+     "doublePointsUntil": 0,
+     "items": [],
+     "transactions": []
+    },
+    {
+     "id": "s90029",
+     "studentId": "45",
+     "name": "陶思远",
+     "groupId": "g17884490113215ec86c",
+     "earnedPoints": 6,
+     "redeemedPoints": 0,
+     "doublePointsUntil": 0,
+     "items": [],
+     "transactions": []
+    },
+    {
+     "id": "s90030",
+     "studentId": "46",
+     "name": "姜雨欣",
+     "groupId": "g178844901132164be28",
+     "earnedPoints": 1,
+     "redeemedPoints": 0,
+     "doublePointsUntil": 0,
+     "items": [],
+     "transactions": []
+    },
+    {
+     "id": "s90031",
+     "studentId": "47",
+     "name": "戚博涵",
+     "groupId": "g178844901132189b42a",
+     "earnedPoints": 4,
+     "redeemedPoints": 0,
+     "doublePointsUntil": 0,
+     "items": [],
+     "transactions": []
+    },
+    {
+     "id": "s90032",
+     "studentId": "48",
+     "name": "谢佳怡",
+     "groupId": "g178844901132121813b",
+     "earnedPoints": 3,
+     "redeemedPoints": 0,
+     "doublePointsUntil": 0,
+     "items": [],
+     "transactions": []
+    },
+    {
+     "id": "s90033",
+     "studentId": "49",
+     "name": "邹俊宇",
+     "groupId": "g17884490113215ec86c",
+     "earnedPoints": 6,
+     "redeemedPoints": 0,
+     "doublePointsUntil": 0,
+     "items": [],
+     "transactions": []
+    },
+    {
+     "id": "s90034",
+     "studentId": "50",
+     "name": "喻子涵",
+     "groupId": "g178844901132164be28",
+     "earnedPoints": 2,
+     "redeemedPoints": 0,
+     "doublePointsUntil": 0,
+     "items": [],
+     "transactions": []
+    }
+   ],
+   "rewards": [
+    {
+     "id": "r1788449011321bd75",
+     "name": "英语课换座券",
+     "cost": 5,
+     "category": "普通",
+     "description": "换同桌体验，一节课的新鲜感。",
+     "blindBoxExcluded": false
+    },
+    {
+     "id": "r17884490113216f53",
+     "name": "问题转移券",
+     "cost": 5,
+     "category": "普通",
+     "description": "巧妙化解提问尴尬。",
+     "blindBoxExcluded": false
+    },
+    {
+     "id": "r1788449011321f2bb",
+     "name": "听写预知券",
+     "cost": 5,
+     "category": "普通",
+     "description": "提前知道3个词，满分更容易。",
+     "blindBoxExcluded": false
+    },
+    {
+     "id": "r1788449011321f391",
+     "name": "水火救援券",
+     "cost": 5,
+     "category": "普通",
+     "description": "英雄救美（同学）的好机会。",
+     "blindBoxExcluded": false
+    },
+    {
+     "id": "r1788449011321c558",
+     "name": "夸夸券",
+     "cost": 5,
+     "category": "普通",
+     "description": "让爸妈听到老师的表扬，全家开心。",
+     "blindBoxExcluded": false
+    },
+    {
+     "id": "r17884490113219cd4",
+     "name": "免死金牌",
+     "cost": 10,
+     "category": "稀有",
+     "description": "一次\"免罪\"机会，护身符般存在。",
+     "blindBoxExcluded": false
+    },
+    {
+     "id": "r17884490113218d3a",
+     "name": "有福同享券",
+     "cost": 10,
+     "category": "稀有",
+     "description": "和朋友分享快乐，友谊加倍。",
+     "blindBoxExcluded": false
+    },
+    {
+     "id": "r178844901132184f4",
+     "name": "作业减半券",
+     "cost": 10,
+     "category": "稀有",
+     "description": "少写一半作业，省时又省力。",
+     "blindBoxExcluded": false
+    },
+    {
+     "id": "r17884490113217337",
+     "name": "免背书券",
+     "cost": 10,
+     "category": "稀有",
+     "description": "逃过一次背诵，轻松过关。",
+     "blindBoxExcluded": false
+    },
+    {
+     "id": "r1788449011321c29d",
+     "name": "班干部体验券",
+     "cost": 10,
+     "category": "稀有",
+     "description": "当一天小干部，过把\"官瘾\"。",
+     "blindBoxExcluded": false
+    },
+    {
+     "id": "r1788449011321c471",
+     "name": "谈心沟通券",
+     "cost": 10,
+     "category": "稀有",
+     "description": "和老师一对一聊心事。",
+     "blindBoxExcluded": false
+    },
+    {
+     "id": "r1788449011321a396",
+     "name": "小组加分券",
+     "cost": 15,
+     "category": "史诗",
+     "description": "直接给小组加5分。",
+     "blindBoxExcluded": false
+    },
+    {
+     "id": "r17884490113214526",
+     "name": "心愿券",
+     "cost": 15,
+     "category": "史诗",
+     "description": "打电话给爸妈，实现一个小愿望！",
+     "blindBoxExcluded": false
+    },
+    {
+     "id": "r1788449011321cea5",
+     "name": "作业免除券",
+     "cost": 15,
+     "category": "史诗",
+     "description": "这次的英语作业不用做啦！",
+     "blindBoxExcluded": false
+    },
+    {
+     "id": "r178844901132190a0",
+     "name": "双倍积分卡",
+     "cost": 15,
+     "category": "史诗",
+     "description": "使用后一周内所有加分翻倍。",
+     "blindBoxExcluded": false
+    },
+    {
+     "id": "r1788449011321bde2",
+     "name": "提早下课券",
+     "cost": 20,
+     "category": "传说",
+     "description": "提前5分钟下课！（需老师同意）",
+     "blindBoxExcluded": false
+    },
+    {
+     "id": "r1788449011321dfe9",
+     "name": "盲盒券",
+     "cost": 10,
+     "category": "稀有",
+     "description": "随机抽取一张奖励。",
+     "blindBoxExcluded": true
+    },
+    {
+     "id": "r17884490113217acd",
+     "name": "座位自由券",
+     "cost": 4,
+     "category": "普通",
+     "description": "",
+     "blindBoxExcluded": false
+    },
+    {
+     "id": "r1788449011321d7ed",
+     "name": "课堂发言券",
+     "cost": 6,
+     "category": "普通",
+     "description": "",
+     "blindBoxExcluded": false
+    },
+    {
+     "id": "r17884490113215ca4",
+     "name": "迟到免罚券",
+     "cost": 12,
+     "category": "稀有",
+     "description": "",
+     "blindBoxExcluded": false
+    },
+    {
+     "id": "r1788449011321d8f1",
+     "name": "课间点歌券",
+     "cost": 12,
+     "category": "稀有",
+     "description": "",
+     "blindBoxExcluded": false
+    },
+    {
+     "id": "r1788449011321ade5",
+     "name": "当小班长一天",
+     "cost": 20,
+     "category": "史诗",
+     "description": "",
+     "blindBoxExcluded": false
+    },
+    {
+     "id": "r17884490113215671",
+     "name": "免一次值日",
+     "cost": 18,
+     "category": "史诗",
+     "description": "",
+     "blindBoxExcluded": false
+    },
+    {
+     "id": "r17884490113216cf8",
+     "name": "心愿实现卡",
+     "cost": 25,
+     "category": "传说",
+     "description": "",
+     "blindBoxExcluded": false
+    },
+    {
+     "id": "r1788449011321b64c",
+     "name": "期末免考券",
+     "cost": 30,
+     "category": "传说",
+     "description": "",
+     "blindBoxExcluded": false
+    }
+   ]
+  }
+ ]
 }

@@ -171,6 +171,15 @@ class Theme(QObject):
     def fontBig(self):
         return 15
 
+    # ---- 圆形按钮的玻璃面（原型同名：fillGlass / fillGlassHover）----
+    @Property(str, constant=True)
+    def fillGlass(self):
+        return '#80ffffff'    # 次级圆钮面：50% 白
+
+    @Property(str, constant=True)
+    def fillGlassHover(self):
+        return '#bdffffff'    # 悬停增亮：74% 白
+
     # ---- 分段 tab 配色（照搬原型的 SegmentedTabs：底槽 + 滑动胶囊）----
     @Property(str, constant=True)
     def fillShell(self):

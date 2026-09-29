@@ -99,6 +99,19 @@ Canvas {
             ctx.moveTo(12, 5); ctx.lineTo(12, 19)
             ctx.moveTo(5, 12); ctx.lineTo(19, 12)
             ctx.stroke(); break
+        case "maximize":
+            rrect(ctx, 5.4, 5.4, 13.2, 13.2, 2.6); ctx.stroke(); break
+        case "restore":
+            rrect(ctx, 4.6, 7.8, 11.6, 11.6, 2.4); ctx.stroke()
+            ctx.beginPath()
+            ctx.moveTo(8.0, 6.2); ctx.lineTo(8.0, 5.2)
+            ctx.quadraticCurveTo(8.0, 4.6, 8.6, 4.6)
+            ctx.lineTo(18.0, 4.6)
+            ctx.quadraticCurveTo(18.6, 4.6, 18.6, 5.2)
+            ctx.lineTo(18.6, 14.6)
+            ctx.quadraticCurveTo(18.6, 15.4, 17.8, 15.4)
+            ctx.lineTo(16.2, 15.4)
+            ctx.stroke(); break
         case "minus":
             ctx.moveTo(5, 12); ctx.lineTo(19, 12)
             ctx.stroke(); break
