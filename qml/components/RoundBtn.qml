@@ -22,33 +22,31 @@ Item {
     width: root.size
     height: root.size
 
-    // 底部柔和投影（让按钮"浮"起来）
-    Rectangle {
-        width: root.size
-        height: root.size
-        radius: root.size / 2
-        color: "#26000000"
-        y: 2
+    // 柔光晕投影（照搬原型：径向渐变、边缘真正模糊）。
+    // 原来是一块 #26000000 的**硬边黑圆**下移 2px —— 边缘生硬，且和"玻璃"语言不搭
+    SoftShadow {
+        anchors.fill: parent
+        anchors.margins: -10
+        anchors.topMargin: -5
+        anchors.bottomMargin: -7
+        softColor: Qt.rgba(0.30, 0.33, 0.48, mouse.containsMouse ? 0.22 : 0.13)
     }
 
     Rectangle {
         id: disc
         anchors.fill: parent
         radius: root.size / 2
-        gradient: Gradient {
-            GradientStop { position: 0.0; color: Qt.lighter(root.bg, 1.14) }
-            GradientStop { position: 1.0; color: root.bg }
-        }
-        border.color: root.borderOverride !== "transparent" ? root.borderOverride
-                     : mouse.pressed ? Qt.darker(root.bg, 1.18)
-                     : mouse.containsMouse ? root.fg
-                     : Qt.lighter(root.bg, 1.06)
+        // 毛玻璃面：**半透明**（透出背后的内容/桌面），悬停加浓一档。
+        // 原来是"不透明白渐变 + 一圈描边"，与原型零描边的玻璃语言不一致
+        color: Qt.rgba(root.bg.r, root.bg.g, root.bg.b, mouse.containsMouse ? 0.88 : 0.72)
+        // 描边只在调用方**显式指定**时才画（默认零描边）
+        border.color: root.borderOverride !== "transparent" ? root.borderOverride : "transparent"
         border.width: root.borderOverride !== "transparent"
-                     ? (mouse.containsMouse ? 2.8 : root.borderW)
-                     : (mouse.containsMouse ? 1.7 : root.borderW)
-        scale: mouse.pressed ? 0.9 : (mouse.containsMouse ? 1.07 : 1.0)
+                     ? (mouse.containsMouse ? 2.4 : root.borderW) : 0
+        // 按压缩放沿用（原型的按压反馈也是缩到 ~0.94）
+        scale: mouse.pressed ? 0.92 : (mouse.containsMouse ? 1.06 : 1.0)
         Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
-        Behavior on border.color { ColorAnimation { duration: 120 } }
+        Behavior on color { ColorAnimation { duration: 140 } }
         Behavior on border.width { NumberAnimation { duration: 120 } }
 
         Canvas {
