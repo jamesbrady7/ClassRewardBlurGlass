@@ -42,6 +42,8 @@ Window {
         clip: true
         border.color: Theme.border
         border.width: 1
+        // 桌面穿透模式：背景交给 DWM（Acrylic 在窗后实时糊化桌面），不再自绘
+        visible: !systemGlass
 
         Rectangle {
             anchors.fill: parent
@@ -68,6 +70,7 @@ Window {
         anchors.topMargin: 24
         anchors.horizontalCenter: parent.horizontalCenter
         source: backgroundLayer
+        glassBlur: !systemGlass       // 穿透模式：模糊交给 DWM，这里只留半透明 tint
 
         MouseArea {
             anchors.fill: parent

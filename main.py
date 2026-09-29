@@ -6,15 +6,104 @@
 #
 # 架构：model / controller 是纯 Python（MVC 数据层与业务层，不碰 Qt），
 #       QML 是视图层，通过 qml_bridge 的 View-Model 适配器交互。
+#
+# 毛玻璃：窗口为无边框 + 透明，背景由 **Windows DWM Acrylic** 在窗后实时糊化桌面
+#         （见下方 _apply_accent）。GLASS_SYSTEM=0 可关闭，退回原来的自绘渐变底。
 # ============================================================
-import sys
+import ctypes
 import os
+import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from PySide6.QtGui import QGuiApplication, QFont, QFontDatabase
+BASE = os.path.dirname(os.path.abspath(__file__))
+_logFile = os.path.join(BASE, '_run.log')
+
+# 桌面穿透开关（默认开；GLASS_SYSTEM=0 可关，退回自绘底）
+SYSTEM_GLASS = os.environ.get('GLASS_SYSTEM', '1') == '1'
+GLASS_SKIP_REASON = ''
+
+_LOG_MAX = 512 * 1024
+_log_repeat = {'last': None, 'n': 0}
+
+
+def _log(line):
+    """统一落盘。同一行连续重复时只记一次并合并计数（QML 逐帧报错会把日志刷爆）。"""
+    if line == _log_repeat['last']:
+        _log_repeat['n'] += 1
+        return
+    tail = ''
+    if _log_repeat['n'] > 1:
+        tail = '  ↑ 上一行重复 %d 次\n' % (_log_repeat['n'] - 1)
+    _log_repeat['last'] = line
+    _log_repeat['n'] = 1
+    try:
+        if os.path.exists(_logFile) and os.path.getsize(_logFile) > _LOG_MAX:
+            os.replace(_logFile, _logFile + '.1')
+    except OSError:
+        pass
+    try:
+        with open(_logFile, 'a', encoding='utf-8') as f:
+            f.write(tail + line + '\n')
+    except OSError:
+        pass
+
+
+def _acrylic_ok():
+    """Acrylic 状态4 自 Win10 1803(17134) 起可用。"""
+    try:
+        return sys.getwindowsversion().build >= 17134
+    except Exception:
+        return False
+
+
+def _transparency_enabled():
+    """系统『透明效果』开关。关掉时 DWM 直接禁用 Acrylic——窗口仍透明但背景是锐利的，
+    叠多少层都救不回来，所以必须退回自绘底。"""
+    try:
+        import winreg
+        with winreg.OpenKey(
+                winreg.HKEY_CURRENT_USER,
+                r'Software\Microsoft\Windows\CurrentVersion\Themes\Personalize') as k:
+            return winreg.QueryValueEx(k, 'EnableTransparency')[0] == 1
+    except Exception:
+        return True      # 读不到就按"开"处理，别误伤
+
+
+def _system_glass_ok():
+    global GLASS_SKIP_REASON
+    if not SYSTEM_GLASS:
+        return False
+    if not _acrylic_ok():
+        GLASS_SKIP_REASON = '当前系统不支持（需要 Windows 10 1803 及以上）'
+    elif not _transparency_enabled():
+        GLASS_SKIP_REASON = '系统『透明效果』已关闭（设置 > 个性化 > 颜色）'
+    else:
+        return True
+    _log('[glass] 桌面穿透跳过：%s → 退回自绘底' % GLASS_SKIP_REASON)
+    return False
+
+
+SYSTEM_GLASS_OK = _system_glass_ok()
+
+if SYSTEM_GLASS_OK:
+    # ⚠️ 不强制软件渲染：原型在同一哨兵底下 A/B 实测两个后端的 Acrylic 输出逐位相同，
+    #    而软件渲染的动画只有硬件的 1/6（拖动/最小化会明显卡）。若某台机器上 Acrylic 真的不透，
+    #    用 GLASS_BACKEND=software 退回。
+    _backend = os.environ.get('GLASS_BACKEND', '')
+    if _backend:
+        os.environ['QT_QUICK_BACKEND'] = _backend
+
+from PySide6.QtCore import QTimer, QUrl, qInstallMessageHandler
+from PySide6.QtGui import QGuiApplication, QSurfaceFormat, QFont, QFontDatabase
 from PySide6.QtQml import QQmlApplicationEngine
-from PySide6.QtCore import QUrl
+
+if SYSTEM_GLASS_OK:
+    from PySide6.QtQuick import QQuickWindow
+    QQuickWindow.setDefaultAlphaBuffer(True)     # 必须在窗口创建前
+    _fmt = QSurfaceFormat()
+    _fmt.setAlphaBufferSize(8)
+    QSurfaceFormat.setDefaultFormat(_fmt)
 
 from controller.app_controller import AppController
 from model.storage import StorageManager
@@ -22,6 +111,46 @@ from qml_bridge import RewardBridge
 from qml_theme import Theme
 
 _FONT_WEIGHTS = ('Regular', 'Medium', 'Semibold', 'Bold')
+
+
+def _qt_message(mode, context, message):
+    _log(message)
+
+
+def _accent_params():
+    """按系统版本返回 (AccentState, AccentFlags, GradientColor)。
+
+    ⚠️ 状态号必须与 flags 配对，跨状态套用别的参数会得到"零模糊"的假象：
+      Win11(>=22000)：状态3 + 零 flags/零染色 —— 只模糊、不掺系统白纱，最透
+      Win10(<22000) ：状态4 + flags2 —— Win10 上状态3 不出真模糊，状态4 才有
+    """
+    try:
+        build = sys.getwindowsversion().build
+    except Exception:
+        build = 0
+    if build >= 22000:
+        return 3, 0, 0x00000000
+    return 4, 2, 0x00F6EEE8
+
+
+def _apply_accent(hwnd):
+    """无边框窗 Acrylic：SetWindowCompositionAttribute + 系统圆角。"""
+    class _ACCENT_POLICY(ctypes.Structure):
+        _fields_ = [('AccentState', ctypes.c_int), ('AccentFlags', ctypes.c_int),
+                    ('GradientColor', ctypes.c_uint), ('AnimationId', ctypes.c_int)]
+
+    class _WINCOMPATTRDATA(ctypes.Structure):
+        _fields_ = [('Attribute', ctypes.c_int),
+                    ('Data', ctypes.POINTER(_ACCENT_POLICY)),
+                    ('SizeOfData', ctypes.c_size_t)]
+
+    st, flags, grad = _accent_params()
+    policy = _ACCENT_POLICY(st, flags, grad, 0)
+    data = _WINCOMPATTRDATA(19, ctypes.pointer(policy), ctypes.sizeof(policy))
+    ctypes.windll.user32.SetWindowCompositionAttribute(hwnd, ctypes.byref(data))
+
+    corner = ctypes.c_int(2)      # DWMWCP_ROUND
+    ctypes.windll.dwmapi.DwmSetWindowAttribute(hwnd, 33, ctypes.byref(corner), 4)
 
 
 def _load_fonts(base):
@@ -46,6 +175,7 @@ def _app_base():
 
 
 def main():
+    qInstallMessageHandler(_qt_message)
     app = QGuiApplication(sys.argv)
     app.setApplicationName("班级激励助手")
     app.setOrganizationName("ClassReward")
@@ -66,9 +196,25 @@ def main():
     theme = Theme()
     engine.rootContext().setContextProperty("reward", bridge)
     engine.rootContext().setContextProperty("Theme", theme)
+    # QML 按它决定：桌面穿透模式（背景交给 DWM）还是自绘底
+    engine.rootContext().setContextProperty("systemGlass", SYSTEM_GLASS_OK)
     engine.load(QUrl.fromLocalFile(os.path.join(base, 'qml', 'Main.qml')))
-    if not engine.rootObjects():
+    roots = engine.rootObjects()
+    if not roots:
+        _log('[glass] QML 加载失败')
         sys.exit(1)
+
+    if SYSTEM_GLASS_OK:
+        try:
+            hwnd = int(roots[0].winId())
+            _apply_accent(hwnd)
+            st, flags, grad = _accent_params()
+            _log('[glass] 桌面穿透已启用：build=%s state=%d flags=%d grad=0x%08X'
+                 % (getattr(sys.getwindowsversion(), 'build', '?'), st, flags, grad))
+        except Exception as e:
+            # pythonw 无控制台，print 到 stderr 等于把失败扔进虚空
+            _log('[glass] Acrylic 应用失败：%r' % (e,))
+
     sys.exit(app.exec())
 
 

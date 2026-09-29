@@ -10,6 +10,9 @@ Item {
     property color tint: "#ccffffff"
     property real blur: 1.0
     property real radius: Theme.radius
+    // false = **系统背板模式**：背景已由 DWM Acrylic 在窗后实时糊化，这里不再自绘模糊，
+    //         只留一层半透明 tint 压住内容可读性（软件渲染下 MultiEffect 模糊也不可用）
+    property bool glassBlur: true
     // 柔和投影（默认关，避免影响既有调用方）。开启后由自包含的 SoftShadow 绘制：
     // 径向渐变、边缘真正模糊，不会像硬边矩形阴影那样四周均匀外扩成"描边环"
     property bool shadow: false
@@ -40,7 +43,7 @@ Item {
     ShaderEffectSource {
         id: fx
         anchors.fill: parent
-        sourceItem: root.source
+        sourceItem: root.glassBlur ? root.source : null
         visible: false
     }
 
@@ -64,6 +67,7 @@ Item {
 
     MultiEffect {
         anchors.fill: parent
+        visible: root.glassBlur
         source: fx
         // ⚠️ 必须 false：padding 自动扩展会把 maskSource 映射错位 → 模糊输出半透明、下层透出
         autoPaddingEnabled: false
