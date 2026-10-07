@@ -47,7 +47,14 @@ Window {
     visible: true
     title: "班级激励助手"
     color: "transparent"
-    flags: Qt.FramelessWindowHint | Qt.Window   // 无边框，标题栏自绘以统一风格
+    // 无边框，标题栏自绘以统一风格。
+    // ⚠️ 必须带上 Minimize/MaximizeButtonHint：只有 FramelessWindowHint 时窗口样式是
+    //    WS_POPUP，**WS_MINIMIZEBOX / WS_MAXIMIZEBOX 都会丢**。而 Windows 的 DefWindowProc
+    //    处理 SC_RESTORE / SC_MAXIMIZE 时要检查这两个位 —— 没有它们，**点任务栏按钮
+    //    还原不了已最小化的窗口**（应用自己的最小化按钮走 ShowWindow 直通，所以那个是好的，
+    //    很容易误判成"最小化没问题"）。这两个 hint 不会加回边框，窗口仍然无边框。
+    flags: Qt.Window | Qt.FramelessWindowHint
+           | Qt.WindowMinimizeButtonHint | Qt.WindowMaximizeButtonHint
 
     // 背景层暴露给子页面的毛玻璃面板（FrostedPanel.source）
     property alias frostedSource: backgroundLayer

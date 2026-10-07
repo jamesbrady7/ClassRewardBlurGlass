@@ -119,36 +119,55 @@ Column {
                     allSwitch.checked = root.total > 0 && root.checkedCount === root.total
                 }
             }
-            Item { width: 4; height: 1 }
+            Item { width: 6; height: 1 }
+            // 分值：**左边是数值，右边两个上下排列的小按钮（+ / −）**，只调数值本身。
+            // （不用滑条、也不用原来那两个大圆按钮 —— 换成这个紧凑的微调器）
             Text { text: "分值"; anchors.verticalCenter: parent.verticalCenter; color: Theme.textSecondary; font.family: Theme.fontFamily }
-            // 滑条调分值（原型 GlassSlider 的 value 是 0..1，这里映射到 1..pointsMax）
-            GlassSlider {
-                id: pointsSlider
-                objectName: "pointsSlider"       // 便于自动化测试取真实几何
-                width: 150
-                anchors.verticalCenter: parent.verticalCenter
-                // ⚠️ 用 Component.onCompleted 赋初值，**不写 value: 绑定**：
-                //    滑块拖动时会自己写 value，绑定会被打断；而绑定若还活着，
-                //    onValueChanged → points 变化 → 绑定重算 → 再触发 onValueChanged，会来回打架。
-                Component.onCompleted: value = (root.points - 1) / (root.pointsMax - 1)
-                onValueChanged: root.points =
-                    Math.max(1, Math.min(root.pointsMax, Math.round(1 + value * (root.pointsMax - 1))))
-            }
-            // 数值回显（滑条只有位置、读不出具体几分）
             Text {
                 text: String(root.points)
                 anchors.verticalCenter: parent.verticalCenter
                 color: Theme.textPrimary
-                font.pixelSize: 15
+                font.pixelSize: 16
                 font.bold: true
                 font.family: Theme.fontFamily
                 horizontalAlignment: Text.AlignHCenter
-                width: 22
+                width: 24
             }
-            Item { width: 4; height: 1 }
-            RoundBtn { size: 34; accent: true; scheme: "aurora"; icon: "plus"; hint: "按分值给所选学生加分"; anchors.verticalCenter: parent.verticalCenter; onClicked: root.op(true) }
-            RoundBtn { size: 34; accent: true; scheme: "crimson"; icon: "minus"; hint: "按分值给所选学生扣分"; anchors.verticalCenter: parent.verticalCenter; onClicked: root.op(false) }
-            Item { width: 4; height: 1 }
+            Column {
+                objectName: "pointsSpin"        // 便于自动化测试取真实几何
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: 2
+                Repeater {
+                    model: [1, -1]              // 上=加、下=减
+                    delegate: Rectangle {
+                        width: 24; height: 18; radius: 5
+                        // ⚠️ 底面别太淡：一开始用 Theme.bgTop，在这块半透明卡片上跟背景几乎同色，
+                        //    两个 +/- 看着像裸符号、不像按钮。改成明确的浅蓝灰 + 1px 白描边（玻璃边）。
+                        color: spinMa.containsMouse ? "#eaf1fb" : "#dde7f4"
+                        border.color: "#ffffff"
+                        border.width: 1
+                        CanvasIcon {
+                            anchors.centerIn: parent
+                            name: modelData > 0 ? "plus" : "minus"
+                            width: 11; height: 11
+                            color: Theme.textSecondary
+                        }
+                        MouseArea {
+                            id: spinMa
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.points = Math.max(1, Math.min(root.pointsMax,
+                                                                          root.points + modelData))
+                        }
+                    }
+                }
+            }
+            Item { width: 12; height: 1 }
+            // 应用：按上面的分值给所选学生加 / 扣
+            CuteButton { tone: "primary"; text: "加分"; anchors.verticalCenter: parent.verticalCenter; onClicked: root.op(true) }
+            CuteButton { tone: "danger"; text: "扣分"; anchors.verticalCenter: parent.verticalCenter; onClicked: root.op(false) }
+            Item { width: 6; height: 1 }
             Pill {
                 text: "已选 " + (root.sel ? root.sel.split(',').length : 0) + " 人"
                 bg: Theme.accentSoft; fg: Theme.accentDark

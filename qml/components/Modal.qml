@@ -9,6 +9,10 @@ Rectangle {
     property bool open: false
     property Component contentComponent: null   // 内容（由对话框提供）
     property Item content: contentLoader.item    // 已实例化的内容
+    // 弹窗面板底色：**半透明白**（原来用 Card 的默认 Theme.surface = 纯白不透明）。
+    // 本应用是毛玻璃风格，面板透一点才和整体一致 —— 能隐约看到后面被压暗的页面内容。
+    // 想更透就往 #ccffffff 调、想更实就往 #f5ffffff 调，只改这一个值。
+    property color panelColor: "#e8ffffff"
     signal closed()
 
     anchors.fill: parent
@@ -32,6 +36,7 @@ Rectangle {
         width: Math.min(400, parent.width - 80)
         height: Math.min(contentLoader.implicitHeight + 92, parent.height - 120)
         anchors.centerIn: parent
+        cardColor: root.panelColor      // 半透明白（见上面的说明）
         shadow: true
         z: 1
 
