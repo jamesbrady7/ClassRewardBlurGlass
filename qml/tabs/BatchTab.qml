@@ -139,7 +139,7 @@ Column {
                 Text {
                     anchors.left: parent.left
                     anchors.right: spinCol.left
-                    anchors.leftMargin: 2
+                    anchors.leftMargin: 6
                     anchors.verticalCenter: parent.verticalCenter
                     horizontalAlignment: Text.AlignHCenter
                     text: String(root.points)
@@ -160,7 +160,7 @@ Column {
                     Repeater {
                         model: [1, -1]          // 上=加、下=减
                         delegate: Item {
-                            width: 20; height: 15
+                            width: 18; height: 15
                             // 悬停提示：淡白圆角底（不是边框，平时完全透明）
                             // 胶囊本身就是 50% 白，悬停要更亮一点才看得出来
                             //
