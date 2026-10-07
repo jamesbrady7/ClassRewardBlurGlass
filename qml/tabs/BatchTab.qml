@@ -62,6 +62,7 @@ Column {
                         StudentChip {
                             anchors.fill: parent
                             visible: parent.stu !== null
+                            // 学号 + 姓名直接显示在方块上（导入名单后即刻可见）
                             idText: parent.stu ? parent.stu.studentId : ""
                             label: parent.stu ? (parent.stu.name.length > 3
                                                  ? parent.stu.name.slice(0, 3) : parent.stu.name) : ""

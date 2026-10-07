@@ -7,10 +7,34 @@ import "tabs"
 
 Window {
     id: mainWin
-    width: 1600
-    height: 1020
-    minimumWidth: 1100
-    minimumHeight: 750
+
+    // ============================================================
+    // 窗口尺寸按屏幕自适应
+    // ------------------------------------------------------------
+    // 原来写死 1600x1020 —— 在 1280x800（200% 缩放）这类逻辑分辨率小的机器上
+    // **窗口比屏幕还大**，四面都出界。改成按屏幕可用区等比缩：
+    //   · 大屏：被 1.0 封顶 → 就按设计基准 1600x1020，与原来一致
+    //   · 小屏：按可用区缩到放得下，四边留 6% 余量
+    // 用 desktopAvailable*（已扣任务栏）而不是 width/height（含任务栏），
+    // 否则窗口底边会被任务栏压住。
+    // ============================================================
+    readonly property int designW: 1600
+    readonly property int designH: 1020
+
+    readonly property real fitRatio: Math.min(1.0,
+        (Screen.desktopAvailableWidth  * 0.94) / designW,
+        (Screen.desktopAvailableHeight * 0.94) / designH)
+
+    width: Math.round(designW * fitRatio)
+    height: Math.round(designH * fitRatio)
+    // 最小尺寸也得跟着屏幕压：否则小屏上 minimum 比实际尺寸还大，窗口反而被顶出界
+    minimumWidth: Math.min(1100, width)
+    minimumHeight: Math.min(750, height)
+
+    // 启动时在可用区居中（拖动/拉边会写 x/y，绑定随之失效，符合预期）
+    x: Math.round((Screen.desktopAvailableWidth - width) / 2)
+    y: Math.round((Screen.desktopAvailableHeight - height) / 2)
+
     visible: true
     title: "班级激励助手"
     color: "transparent"
