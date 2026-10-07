@@ -102,8 +102,7 @@ Flickable {
                 // 小组卡片：与学生卡片同一套 Card 设计（半透明白玻璃 + 柔和投影 + 悬停上浮）
                 delegate: Card {
                     id: gCard
-                    property string valText: "1"
-                    function val() { return Math.max(1, Math.min(999, parseInt(gCard.valText) || 1)) }
+                    property int val: 1          // 自填分值；由下面的 PointsPill 胶囊直接改
                     width: 300
                     radius: Theme.radius
                     cardColor: "#4dffffff"
@@ -176,38 +175,18 @@ Flickable {
                         // 自填分值 + 加减
                         Row {
                             spacing: 8
-                            Rectangle { // 分值输入框
-                                width: 64
-                                height: 28
-                                radius: Theme.radiusSmall
-                                color: Theme.surface
-                                border.color: gVal.activeFocus ? Theme.accent : Theme.inputBorder
-                                border.width: 1
-                                TextInput {
-                                    id: gVal
-                                    anchors.fill: parent
-                                    anchors.leftMargin: 10
-                                    anchors.rightMargin: 4
-                                    verticalAlignment: Text.AlignVCenter
-                                    horizontalAlignment: Text.AlignHCenter
-                                    color: Theme.textPrimary
-                                    font.pixelSize: Theme.fontBody
-                                    font.family: Theme.fontFamily
-                                    text: gCard.valText
-                                    validator: IntValidator { bottom: 1; top: 999 }
-                                    onTextChanged: gCard.valText = text
-                                }
-                            }
-                            Text {
-                                text: "分"
+                            // 分值微调胶囊（全站统一样式）；右边两个 RoundBtn 是"应用到本组"的动作，不是调数值
+                            PointsPill {
+                                id: gVal
+                                from: 1
+                                to: 99
+                                value: gCard.val
                                 anchors.verticalCenter: parent.verticalCenter
-                                color: Theme.textMuted
-                                font.pixelSize: Theme.fontSmall
-                                font.family: Theme.fontFamily
+                                onEdited: gCard.val = value
                             }
                             Item { width: 2; height: 1 }
-                            RoundBtn { size: 28; accent: true; scheme: "aurora"; icon: "plus"; onClicked: reward.addGroupPoints(modelData.id, gCard.val()) }
-                            RoundBtn { size: 28; accent: true; scheme: "crimson"; icon: "minus"; onClicked: reward.subtractGroupPoints(modelData.id, gCard.val()) }
+                            RoundBtn { size: 28; accent: true; scheme: "aurora"; icon: "plus"; anchors.verticalCenter: parent.verticalCenter; onClicked: reward.addGroupPoints(modelData.id, gCard.val) }
+                            RoundBtn { size: 28; accent: true; scheme: "crimson"; icon: "minus"; anchors.verticalCenter: parent.verticalCenter; onClicked: reward.subtractGroupPoints(modelData.id, gCard.val) }
                         }
                     }
                     // 卡片高度随内容自动（上 14 + 内容 + 下 16，与新内边距一致）

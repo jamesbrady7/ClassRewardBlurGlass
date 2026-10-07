@@ -121,80 +121,21 @@ Column {
             }
             Item { width: 6; height: 1 }
             Text { text: "分值"; anchors.verticalCenter: parent.verticalCenter; color: Theme.textSecondary; font.family: Theme.fontFamily }
-            // **一个胶囊装下数值 + 加减**：靠左大面积是数值，靠右是一上一下两个 + / −。
-            // 加减区**不画按钮底、也不描边** —— 平时就是两个符号，只有悬停时才浮一层淡白底提示可点。
-            // （不用滑条、也不用原来那两个大圆按钮）
-            Rectangle {
+            // 分值微调胶囊（样式/几何约束见 components/PointsPill.qml，全站统一样式）
+            PointsPill {
                 id: pointsPill
                 objectName: "pointsPill"        // 便于自动化测试取真实几何
-                width: 48
-                height: 34
-                radius: height / 2
-                // 底色：与「操作分类」未选中按钮同款（CuteButton 次级态的 fillGlass #80ffffff，
-                // 悬停时它用 #bdffffff）—— 全站"玻璃面"就是这一个色，别自己另起一个灰蓝
-                color: "#80ffffff"
+                from: 1
+                to: root.pointsMax
+                value: root.points
                 anchors.verticalCenter: parent.verticalCenter
-
-                // 左：数值，占大部分宽度（自动撑到加减区左边）
-                Text {
-                    anchors.left: parent.left
-                    anchors.right: spinCol.left
-                    anchors.leftMargin: 6
-                    anchors.verticalCenter: parent.verticalCenter
-                    horizontalAlignment: Text.AlignHCenter
-                    text: String(root.points)
-                    color: Theme.textPrimary
-                    font.pixelSize: 16
-                    font.bold: true
-                    font.family: Theme.fontFamily
-                }
-
-                // 右：一上一下两个 + / −（无边框、无固定底）
-                Column {
-                    id: spinCol
-                    objectName: "pointsSpin"
-                    anchors.right: parent.right
-                    anchors.rightMargin: 2
-                    anchors.verticalCenter: parent.verticalCenter
-                    spacing: 0
-                    Repeater {
-                        model: [1, -1]          // 上=加、下=减
-                        delegate: Item {
-                            width: 18; height: 15
-                            // 悬停提示：淡白圆角底（不是边框，平时完全透明）
-                            // 胶囊本身就是 50% 白，悬停要更亮一点才看得出来
-                            //
-                            // ⚠️ 悬停底必须**内缩**，这里是有几何约束的，不是随手调：
-                            //    胶囊高 34 → 圆角 17，右端是一整个**半圆端帽**（圆心距右端 17px、半径 17）。
-                            //    悬停底若铺满整个 item（20 宽）且用小圆角，右上/右下角会戳出这个半圆
-                            //    —— 就是"高亮溢出胶囊"。
-                            //    只把圆角改成 height/2 还不够：算下来极限点距圆心 16.77 对 17，
-                            //    只剩 0.23px 余量，抗锯齿照样会漏。
-                            //    所以做成 16x14 的小胶囊**居中内缩**（左右各让 2、上下各让 0.5）：
-                            //    极限点 (418,564.5)/(410,557.5) 距圆心 15.0 / 15.3，余量 1.7~2.0px ✓
-                            Rectangle {
-                                anchors.centerIn: parent
-                                width: 16; height: 14
-                                radius: height / 2
-                                color: "#ffffff"
-                                opacity: spinMa.containsMouse ? 0.9 : 0
-                                Behavior on opacity { NumberAnimation { duration: 120 } }
-                            }
-                            CanvasIcon {
-                                anchors.centerIn: parent
-                                name: modelData > 0 ? "plus" : "minus"
-                                width: 11; height: 11
-                                color: Theme.textSecondary
-                            }
-                            MouseArea {
-                                id: spinMa
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: root.points = Math.max(1, Math.min(root.pointsMax,
-                                                                              root.points + modelData))
-                            }
-                        }
+                onEdited: root.points = value
+                // ⚠️ 组件内部点击时会自己写 value，上面那条 `value: root.points` 绑定第一次点击就断了；
+                //    所以若别处程序化改了 root.points，要在这里单向同步回胶囊（同 GlassSwitch 的坑）
+                Connections {
+                    target: root
+                    function onPointsChanged() {
+                        if (pointsPill.value !== root.points) pointsPill.value = root.points
                     }
                 }
             }

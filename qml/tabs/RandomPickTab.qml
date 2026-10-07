@@ -110,7 +110,7 @@ Column {
                         }
                         Item { width: 1; height: 1 }
                         Text { text: "分值"; color: Theme.textSecondary; font.pixelSize: Theme.fontSmall; font.family: Theme.fontFamily; anchors.verticalCenter: parent.verticalCenter }
-                        Stepper { id: stuStep; value: 1; max: 99; heightSize: 24 }
+                        PointsPill { id: stuStep; from: 1; to: 99; value: 1; anchors.verticalCenter: parent.verticalCenter }
                     }
                     Flickable {
                         width: parent.width
@@ -246,7 +246,7 @@ Column {
                         }
                         Item { width: 1; height: 1 }
                         Text { text: "分值"; color: Theme.textSecondary; font.pixelSize: Theme.fontSmall; font.family: Theme.fontFamily; anchors.verticalCenter: parent.verticalCenter }
-                        Stepper { id: grpStep; value: 1; max: 99; heightSize: 24 }
+                        PointsPill { id: grpStep; from: 1; to: 99; value: 1; anchors.verticalCenter: parent.verticalCenter }
                     }
                     Flickable {
                         width: parent.width
