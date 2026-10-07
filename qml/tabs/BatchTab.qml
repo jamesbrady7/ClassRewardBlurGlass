@@ -120,45 +120,67 @@ Column {
                 }
             }
             Item { width: 6; height: 1 }
-            // 分值：**左边是数值，右边两个上下排列的小按钮（+ / −）**，只调数值本身。
-            // （不用滑条、也不用原来那两个大圆按钮 —— 换成这个紧凑的微调器）
             Text { text: "分值"; anchors.verticalCenter: parent.verticalCenter; color: Theme.textSecondary; font.family: Theme.fontFamily }
-            Text {
-                text: String(root.points)
+            // **一个胶囊装下数值 + 加减**：靠左大面积是数值，靠右是一上一下两个 + / −。
+            // 加减区**不画按钮底、也不描边** —— 平时就是两个符号，只有悬停时才浮一层淡白底提示可点。
+            // （不用滑条、也不用原来那两个大圆按钮）
+            Rectangle {
+                id: pointsPill
+                objectName: "pointsPill"        // 便于自动化测试取真实几何
+                width: 104
+                height: 34
+                radius: height / 2
+                color: "#dde7f4"
                 anchors.verticalCenter: parent.verticalCenter
-                color: Theme.textPrimary
-                font.pixelSize: 16
-                font.bold: true
-                font.family: Theme.fontFamily
-                horizontalAlignment: Text.AlignHCenter
-                width: 24
-            }
-            Column {
-                objectName: "pointsSpin"        // 便于自动化测试取真实几何
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: 2
-                Repeater {
-                    model: [1, -1]              // 上=加、下=减
-                    delegate: Rectangle {
-                        width: 24; height: 18; radius: 5
-                        // ⚠️ 底面别太淡：一开始用 Theme.bgTop，在这块半透明卡片上跟背景几乎同色，
-                        //    两个 +/- 看着像裸符号、不像按钮。改成明确的浅蓝灰 + 1px 白描边（玻璃边）。
-                        color: spinMa.containsMouse ? "#eaf1fb" : "#dde7f4"
-                        border.color: "#ffffff"
-                        border.width: 1
-                        CanvasIcon {
-                            anchors.centerIn: parent
-                            name: modelData > 0 ? "plus" : "minus"
-                            width: 11; height: 11
-                            color: Theme.textSecondary
-                        }
-                        MouseArea {
-                            id: spinMa
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root.points = Math.max(1, Math.min(root.pointsMax,
-                                                                          root.points + modelData))
+
+                // 左：数值，占大部分宽度（自动撑到加减区左边）
+                Text {
+                    anchors.left: parent.left
+                    anchors.right: spinCol.left
+                    anchors.leftMargin: 6
+                    anchors.verticalCenter: parent.verticalCenter
+                    horizontalAlignment: Text.AlignHCenter
+                    text: String(root.points)
+                    color: Theme.textPrimary
+                    font.pixelSize: 16
+                    font.bold: true
+                    font.family: Theme.fontFamily
+                }
+
+                // 右：一上一下两个 + / −（无边框、无固定底）
+                Column {
+                    id: spinCol
+                    objectName: "pointsSpin"
+                    anchors.right: parent.right
+                    anchors.rightMargin: 3
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: 0
+                    Repeater {
+                        model: [1, -1]          // 上=加、下=减
+                        delegate: Item {
+                            width: 28; height: 16
+                            // 悬停提示：淡白圆角底（不是边框，平时完全透明）
+                            Rectangle {
+                                anchors.fill: parent
+                                radius: 6
+                                color: "#ffffff"
+                                opacity: spinMa.containsMouse ? 0.8 : 0
+                                Behavior on opacity { NumberAnimation { duration: 120 } }
+                            }
+                            CanvasIcon {
+                                anchors.centerIn: parent
+                                name: modelData > 0 ? "plus" : "minus"
+                                width: 11; height: 11
+                                color: Theme.textSecondary
+                            }
+                            MouseArea {
+                                id: spinMa
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.points = Math.max(1, Math.min(root.pointsMax,
+                                                                              root.points + modelData))
+                            }
                         }
                     }
                 }
