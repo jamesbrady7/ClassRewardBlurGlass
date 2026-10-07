@@ -94,7 +94,8 @@ if SYSTEM_GLASS_OK:
     if _backend:
         os.environ['QT_QUICK_BACKEND'] = _backend
 
-from PySide6.QtCore import QObject, QTimer, QUrl, Slot, qInstallMessageHandler
+from PySide6.QtCore import (QAbstractNativeEventFilter, QObject, QTimer, QUrl, Slot,
+                            qInstallMessageHandler)
 from PySide6.QtGui import QGuiApplication, QSurfaceFormat, QFont, QFontDatabase
 from PySide6.QtQml import QQmlApplicationEngine
 
@@ -253,6 +254,88 @@ class _GlassDrag(QObject):
         self._timer.stop()
 
 
+WM_SYSCOMMAND = 0x0112
+SC_MINIMIZE = 0xF020
+
+
+class _MSG(ctypes.Structure):
+    _fields_ = [("hwnd", ctypes.c_void_p), ("message", ctypes.c_uint),
+                ("wParam", ctypes.c_size_t), ("lParam", ctypes.c_ssize_t),
+                ("time", ctypes.c_uint), ("pt", ctypes.c_long * 2)]
+
+
+class _MinEventFilter(QAbstractNativeEventFilter):
+    """拦 SC_MINIMIZE 的过滤器。
+
+    ⚠️ 必须单独一个类：QAbstractNativeEventFilter 不是 QObject，没法让同一个对象
+    既当 QML 的 context property、又当事件过滤器。让过滤器持有桥的引用转发即可。
+    """
+
+    def __init__(self, owner):
+        super().__init__()
+        self._owner = owner
+
+    def nativeEventFilter(self, eventType, message):
+        return self._owner.on_native_event(eventType, message)
+
+
+class _MinimizeAnim(QObject):
+    """最小化前的"柔和过渡"桥（照搬原型）。
+
+    为什么需要：系统的窗口最小化/还原动画**对 WS_EX_LAYERED 窗口不生效**，而本窗口为了
+    透明正是 layered 的 → 表现为"啪"地消失/出现（像 PPT 的"出现"效果）。
+    做法：拦下 WM_SYSCOMMAND/SC_MINIMIZE，先让 QML 播一段"缩小 + 淡出"，
+    播完（或超时兜底）再真正调用 showMinimized()。
+    QML 侧通过 `mainWin.minimizing = true` 触发，播完回调本类的 finishMinimize()。
+
+    顺带覆盖"点任务栏图标最小化"——那条路径发的也是 SC_MINIMIZE。
+    """
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._win = None
+        self._winid = 0
+        self._filter = None
+        self._fallback = None
+
+    def attach(self, win, app):
+        self._win = win
+        self._winid = int(win.winId())
+        # ⚠️ 持引用：QAbstractNativeEventFilter 的临时对象被 GC 会**静默失效**
+        self._filter = _MinEventFilter(self)
+        app.installNativeEventFilter(self._filter)
+        # 兜底：万一 QML 那段动画没回调（异常/被中断），600ms 后照样最小化，
+        # 否则窗口会卡在"拦截了但没最小化"的状态——这是拦系统消息必须留的保险
+        self._fallback = QTimer(self)
+        self._fallback.setSingleShot(True)
+        self._fallback.timeout.connect(self.finishMinimize)
+
+    def on_native_event(self, eventType, message):
+        """由 _MinEventFilter 转发进来。"""
+        if self._win is None or bytes(eventType) != b"windows_generic_MSG":
+            return False, 0
+        try:
+            msg = ctypes.cast(int(message), ctypes.POINTER(_MSG)).contents
+        except Exception:
+            return False, 0
+        if (msg.message == WM_SYSCOMMAND and (msg.wParam & 0xFFF0) == SC_MINIMIZE
+                and msg.hwnd == self._winid):
+            self._start()
+            return True, 0          # 拦下，不让系统立刻最小化
+        return False, 0
+
+    def _start(self):
+        self._win.setProperty("minimizing", True)
+        self._fallback.start(600)
+
+    @Slot()
+    def finishMinimize(self):
+        if self._win is None:
+            return
+        self._fallback.stop()
+        self._win.showMinimized()
+
+
 def _load_fonts(base):
     """注册内置 MiSans 字体，返回家族名（失败返回 None）"""
     fd = os.path.join(base, 'assets', 'fonts')
@@ -297,6 +380,8 @@ def main():
     # context property 必须在 load 之前注册；窗口对象要 load 之后才有，故先建后 attach
     glass_drag = _GlassDrag()
     engine.rootContext().setContextProperty("glassDrag", glass_drag)
+    minimize_anim = _MinimizeAnim()
+    engine.rootContext().setContextProperty("glassWin", minimize_anim)
     engine.rootContext().setContextProperty("reward", bridge)
     engine.rootContext().setContextProperty("Theme", theme)
     # QML 按它决定：桌面穿透模式（背景交给 DWM）还是自绘底
@@ -311,6 +396,10 @@ def main():
     if not roots:
         _log('[glass] QML 加载失败')
         sys.exit(1)
+
+    # 最小化过渡：窗口本身透明（layered），系统的最小化动画对它不生效 → 自己播一段。
+    # 与是否桌面穿透无关，两种模式都要装。
+    minimize_anim.attach(roots[0], app)
 
     # 按系统版本适配：Win10 才节流（保 Acrylic 且跟手）；Win11 用原生拖动（保 Snap/贴边）。
     # GLASS_DRAG=system 可在 Win10 上强制退回原生拖动做 A/B。

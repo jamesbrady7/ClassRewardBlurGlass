@@ -50,6 +50,11 @@ class Theme(QObject):
         return '#d9dfe9'
 
     @Property(str, constant=True)
+    def groove(self):
+        # 滑条轨道槽（原型 GlassSlider 用的那个色；本应用无昼夜模式 → 取原型白天值）
+        return '#598c94ad'
+
+    @Property(str, constant=True)
     def textPrimary(self):
         return '#1f2937'
 

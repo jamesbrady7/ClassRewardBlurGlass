@@ -7,7 +7,15 @@ Column {
 
     property string sel: ""          // 逗号分隔的学生 id
     property string cat: ""
+    readonly property int total: reward.students.length
+    readonly property int checkedCount: root.sel ? root.sel.split(',').length : 0
+    // 分值量程（滑条映射到 1..pointsMax）。要改量程只动这一个数。
+    readonly property int pointsMax: 10
+    property int points: 1           // 当前分值
     function contains(id) { return root.sel.split(',').indexOf(id) >= 0 }
+    function setAll(on) {
+        root.sel = on ? reward.students.map(function(s) { return s.id }).join(',') : ""
+    }
     function toggle(id) {
         var arr = root.sel ? root.sel.split(',') : []
         var idx = arr.indexOf(id)
@@ -85,11 +93,58 @@ Column {
             anchors.fill: parent
             anchors.margins: 10
             spacing: 8
-            CuteButton { tone: "blue"; text: "全选"; anchors.verticalCenter: parent.verticalCenter; onClicked: { root.sel = reward.students.map(function(s) { return s.id }).join(',') } }
-            CuteButton { text: "取消全选"; anchors.verticalCenter: parent.verticalCenter; onClicked: root.sel = "" }
+            // 「全选」标签 + 玻璃开关（照原型 StudentsPage：标签在左、开关在右，两个按钮合成一个开关）
+            Text {
+                text: "全选"
+                anchors.verticalCenter: parent.verticalCenter
+                color: Theme.textMuted
+                font.pixelSize: 12
+                font.family: Theme.fontFamily
+            }
+            GlassSwitch {
+                id: allSwitch
+                objectName: "allSwitch"          // 便于自动化测试取真实几何
+                anchors.verticalCenter: parent.verticalCenter
+                onToggled: {
+                    root.setAll(checked)
+                    mainWin.toast.show(checked ? ("已全选 " + root.total + " 人") : "已取消全选")
+                }
+            }
+            // ⚠️ 不能用 `checked: ...` 绑定：GlassSwitch 点击时会自己写 checked，
+            //    第一次点击就把绑定打断，之后开关不再反映真实选中状态。
+            //    用 Connections 单向同步（程序化改 checked 不会触发 toggled，不会和点击打架）。
+            Connections {
+                target: root
+                function onCheckedCountChanged() {
+                    allSwitch.checked = root.total > 0 && root.checkedCount === root.total
+                }
+            }
             Item { width: 4; height: 1 }
             Text { text: "分值"; anchors.verticalCenter: parent.verticalCenter; color: Theme.textSecondary; font.family: Theme.fontFamily }
-            Stepper { id: points; value: 1; max: 999; anchors.verticalCenter: parent.verticalCenter }
+            // 滑条调分值（原型 GlassSlider 的 value 是 0..1，这里映射到 1..pointsMax）
+            GlassSlider {
+                id: pointsSlider
+                objectName: "pointsSlider"       // 便于自动化测试取真实几何
+                width: 150
+                anchors.verticalCenter: parent.verticalCenter
+                // ⚠️ 用 Component.onCompleted 赋初值，**不写 value: 绑定**：
+                //    滑块拖动时会自己写 value，绑定会被打断；而绑定若还活着，
+                //    onValueChanged → points 变化 → 绑定重算 → 再触发 onValueChanged，会来回打架。
+                Component.onCompleted: value = (root.points - 1) / (root.pointsMax - 1)
+                onValueChanged: root.points =
+                    Math.max(1, Math.min(root.pointsMax, Math.round(1 + value * (root.pointsMax - 1))))
+            }
+            // 数值回显（滑条只有位置、读不出具体几分）
+            Text {
+                text: String(root.points)
+                anchors.verticalCenter: parent.verticalCenter
+                color: Theme.textPrimary
+                font.pixelSize: 15
+                font.bold: true
+                font.family: Theme.fontFamily
+                horizontalAlignment: Text.AlignHCenter
+                width: 22
+            }
             Item { width: 4; height: 1 }
             RoundBtn { size: 34; accent: true; scheme: "aurora"; icon: "plus"; hint: "按分值给所选学生加分"; anchors.verticalCenter: parent.verticalCenter; onClicked: root.op(true) }
             RoundBtn { size: 34; accent: true; scheme: "crimson"; icon: "minus"; hint: "按分值给所选学生扣分"; anchors.verticalCenter: parent.verticalCenter; onClicked: root.op(false) }
@@ -124,7 +179,7 @@ Column {
     function op(isAdd) {
         if (!root.sel) { mainWin.toast.show("请先点选要操作的学生", 2000, true); return }
         if (!root.cat) { mainWin.toast.show("请先选择操作分类标签，再进行" + (isAdd ? "加分" : "扣分"), 2000, true); return }
-        mainWin.toast.show(reward.batchPointChange(root.sel, points.value, isAdd, root.cat))
+        mainWin.toast.show(reward.batchPointChange(root.sel, root.points, isAdd, root.cat))
         root.sel = ""
     }
 }

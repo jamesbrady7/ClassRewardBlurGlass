@@ -185,7 +185,9 @@ Window {
                 shadow: false
                 icon: "minus"
                 anchors.verticalCenter: parent.verticalCenter
-                onClicked: mainWin.showMinimized()
+                // 不直接 showMinimized()：先让 QML 播"缩小 + 淡出"，播完由 Python 真正最小化
+                // （透明的 layered 窗口没有系统最小化动画，直接最小化会"啪"地消失）
+                onClicked: mainWin.minimizing = true
             }
             CircleButton {
                 size: 30
@@ -351,6 +353,47 @@ Window {
                 AnalysisTab { id: page6; anchors.fill: parent; visible: false; opacity: 1; z: 0 }
             }
         }
+    }
+
+    // ============================================================
+    // 最小化 / 还原的柔和过渡
+    // ------------------------------------------------------------
+    // 系统的窗口最小化动画**对透明（WS_EX_LAYERED）窗口不生效**，直接最小化就是"啪"地
+    // 消失（像 PPT 的"出现"）。所以自己做：
+    //   最小化：先把内容缩小 + 淡出，播完再由 Python 真正最小化
+    //           （main.py 的 _MinimizeAnim 会拦下 SC_MINIMIZE，所以**点任务栏图标那条
+    //             路径同样走这里**）
+    //   还原：  窗口重新可见时反向播一遍
+    // 缩放锚点是 contentItem 默认的 Center → "往窗口中心收"，观感接近 macOS。
+    // ============================================================
+    property bool minimizing: false
+    onMinimizingChanged: if (minimizing) shrinkAnim.start()
+
+    ParallelAnimation {
+        id: shrinkAnim
+        NumberAnimation { target: mainWin.contentItem; property: "scale"
+                          to: 0.93; duration: 170; easing.type: Easing.InCubic }
+        NumberAnimation { target: mainWin.contentItem; property: "opacity"
+                          to: 0; duration: 170; easing.type: Easing.InCubic }
+        onFinished: {
+            // 先复位再交给系统：否则窗口下次出现时会停在缩小态
+            mainWin.contentItem.scale = 1
+            mainWin.contentItem.opacity = 1
+            mainWin.minimizing = false
+            glassWin.finishMinimize()
+        }
+    }
+    ParallelAnimation {
+        id: restoreAnim
+        NumberAnimation { target: mainWin.contentItem; property: "scale"
+                          from: 0.93; to: 1; duration: 210; easing.type: Easing.OutCubic }
+        NumberAnimation { target: mainWin.contentItem; property: "opacity"
+                          from: 0; to: 1; duration: 210; easing.type: Easing.OutCubic }
+    }
+    // 用形参接收，别用注入的 visibility（后者已废弃，会在 _run.log 里刷告警）
+    onVisibilityChanged: (vis) => {
+        if (vis !== Window.Minimized && vis !== Window.Hidden)
+            restoreAnim.start()
     }
 
     // 页面交叉淡化调度：新页淡入与旧页淡出同时进行，避免切换"闪"。
