@@ -27,9 +27,13 @@ Window {
 
     width: Math.round(designW * fitRatio)
     height: Math.round(designH * fitRatio)
-    // 最小尺寸也得跟着屏幕压：否则小屏上 minimum 比实际尺寸还大，窗口反而被顶出界
-    minimumWidth: Math.min(1100, width)
-    minimumHeight: Math.min(750, height)
+    // 最小尺寸按**设计的最小尺寸等比缩**（不是取当前尺寸！）。
+    // ⚠️ 踩过的坑：写成 Math.min(1100, width) / Math.min(750, height) 时，
+    //    小屏上（本机 fitRatio=0.70）最小值会等于当前尺寸 —— minimumHeight 变成 714
+    //    而当前高度就是 714 → **窗口根本缩不小**，一拖毫无反应，看着像缩放功能整个坏了。
+    //    设计基准里最小值是 1100x750（占设计尺寸 68.75% / 73.5%），等比缩放才保持同样的收缩余量。
+    minimumWidth: Math.round(1100 * fitRatio)
+    minimumHeight: Math.round(750 * fitRatio)
 
     // 启动时在可用区居中 —— 见下面那个（唯一的）Component.onCompleted。
     // ⚠️ QML 不允许同一个对象有两个 Component.onCompleted（会报
