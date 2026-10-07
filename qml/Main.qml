@@ -74,7 +74,12 @@ Window {
 
         MouseArea {
             anchors.fill: parent
-            onPressed: mainWin.startSystemMove()
+            // 走 Python 的节流拖动（穿透模式）；自绘模式内部会退回 startSystemMove。
+            // 不用 mainWin.startSystemMove() 直接拖：系统拖动把鼠标**每个输入事件**都变成一次
+            // 窗口移动，Win10 的 acrylic 每步都要重模糊整窗 → DWM 饱和、窗体跟不上光标。
+            // 节流到 DRAG_HZ(60) 次/秒后，模糊保住了，拖动也跟手。
+            onPressed: glassDrag.start()
+            onReleased: glassDrag.stop()   // 保险：不能只靠 Python 侧判松手
             onDoubleClicked: mainWin.visibility === Window.Maximized ? mainWin.showNormal() : mainWin.showMaximized()
         }
 

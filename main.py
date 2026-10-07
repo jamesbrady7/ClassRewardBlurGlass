@@ -94,7 +94,7 @@ if SYSTEM_GLASS_OK:
     if _backend:
         os.environ['QT_QUICK_BACKEND'] = _backend
 
-from PySide6.QtCore import QTimer, QUrl, qInstallMessageHandler
+from PySide6.QtCore import QObject, QTimer, QUrl, Slot, qInstallMessageHandler
 from PySide6.QtGui import QGuiApplication, QSurfaceFormat, QFont, QFontDatabase
 from PySide6.QtQml import QQmlApplicationEngine
 
@@ -117,6 +117,27 @@ def _qt_message(mode, context, message):
     _log(message)
 
 
+def _build_no():
+    try:
+        return sys.getwindowsversion().build
+    except Exception:
+        return 0
+
+
+def _needs_drag_throttle():
+    """**只有 Win10 需要节流拖动** —— 按系统版本适配，两边各取各自最好的那个。
+
+    Win10：系统移动循环把鼠标**每个输入事件**变成一次窗口移动，acrylic 每步都要重算
+           整窗模糊 → DWM 饱和、窗口跟不上光标 → 必须节流跟随（代价：失去吸附）。
+    Win11：走另一条合成路径，原生拖动本来就跟手，且能保住 Snap Layouts / 贴边 /
+           高刷拖动 → **不要节流**，用系统原生的。
+
+    下限 17134 与 _acrylic_ok 一致：更低版本没有 Acrylic，也就没有要保护的东西。
+    """
+    b = _build_no()
+    return 17134 <= b < 22000
+
+
 def _accent_params():
     """按系统版本返回 (AccentState, AccentFlags, GradientColor)。
 
@@ -124,11 +145,7 @@ def _accent_params():
       Win11(>=22000)：状态3 + 零 flags/零染色 —— 只模糊、不掺系统白纱，最透
       Win10(<22000) ：状态4 + flags2 —— Win10 上状态3 不出真模糊，状态4 才有
     """
-    try:
-        build = sys.getwindowsversion().build
-    except Exception:
-        build = 0
-    if build >= 22000:
+    if _build_no() >= 22000:
         return 3, 0, 0x00000000
     return 4, 2, 0x00F6EEE8
 
@@ -151,6 +168,88 @@ def _apply_accent(hwnd):
 
     corner = ctypes.c_int(2)      # DWMWCP_ROUND
     ctypes.windll.dwmapi.DwmSetWindowAttribute(hwnd, 33, ctypes.byref(corner), 4)
+
+
+DRAG_HZ = max(1, int(os.environ.get("GLASS_DRAG_HZ", "60")))   # 拖动跟随频率
+VK_LBUTTON = 0x01
+
+
+class _GlassDrag(QObject):
+    """自管理节流拖动，替代 QWindow.startSystemMove()。
+
+    为什么不用系统拖动：它把鼠标的**每一个**输入事件都变成一次窗口移动。Win10 的
+    acrylic 每移动一步都要重新模糊整个窗口表面 → DWM 被压饱和 → 窗体平滑地跟不上光标、
+    且拖动期间应用无响应。
+
+    自己按固定频率跟随光标，把移动次数压到 DRAG_HZ（默认 60），模糊得以保留。
+    证据：用 SetWindowPos 驱动窗口的合成拖动（连 1000Hz 也不）在 acrylic 下不卡，
+    说明"移动窗口"本身廉价，贵的是系统拖动那条路的每事件一次重绘。
+
+    代价：失去系统窗口吸附（Aero Snap）；好处：拖动期间不再进 OS 模态循环，应用保持响应。
+    **只在 Win10 启用**（见 _needs_drag_throttle）：Win11 没这个毛病，用原生拖动更好。
+    GLASS_DRAG_HZ 可调；GLASS_DRAG=system 可退回系统拖动。
+    """
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._win = None
+        self._hwnd = 0
+        self._throttle = False
+        self._origin = None      # (窗体x, 窗体y, 光标x, 光标y) 物理像素
+        self._RECT = self._POINT = None
+        self._timer = QTimer(self)
+        self._timer.setInterval(max(8, int(1000 / DRAG_HZ)))
+        self._timer.timeout.connect(self._tick)
+
+    def attach(self, win, throttle):
+        self._win = win
+        self._hwnd = int(win.winId())
+        self._throttle = throttle
+        _log("[glass] 拖动模式：%s"
+             % ("节流跟随 %dHz（保 Acrylic）" % DRAG_HZ if throttle
+                else "系统 startSystemMove（非穿透模式或 GLASS_DRAG=system）"))
+
+    @Slot()
+    def start(self):
+        if not self._throttle or self._win is None:
+            self._win.startSystemMove()
+            return
+
+        class RECT(ctypes.Structure):
+            _fields_ = [("left", ctypes.c_long), ("top", ctypes.c_long),
+                        ("right", ctypes.c_long), ("bottom", ctypes.c_long)]
+
+        class POINT(ctypes.Structure):
+            _fields_ = [("x", ctypes.c_long), ("y", ctypes.c_long)]
+
+        self._RECT, self._POINT = RECT, POINT
+        r, pt = RECT(), POINT()
+        ctypes.windll.user32.GetWindowRect(self._hwnd, ctypes.byref(r))
+        ctypes.windll.user32.GetCursorPos(ctypes.byref(pt))
+        self._origin = (r.left, r.top, pt.x, pt.y)
+        self._timer.start()
+
+    def _tick(self):
+        user32 = ctypes.windll.user32
+        if not (user32.GetAsyncKeyState(VK_LBUTTON) & 0x8000):
+            self._timer.stop()
+            return
+        pt = self._POINT()
+        user32.GetCursorPos(ctypes.byref(pt))
+        ox, oy, cx, cy = self._origin
+        dpr = self._win.devicePixelRatio() or 1.0
+        # 光标/窗口矩形都是物理像素，setPosition 要逻辑坐标
+        self._win.setPosition(round((ox + pt.x - cx) / dpr),
+                              round((oy + pt.y - cy) / dpr))
+
+    @Slot()
+    def stop(self):
+        """QML 松开鼠标时调用。
+
+        ⚠️ 不能只靠 GetAsyncKeyState 判松手：它一旦失灵，窗口会**永远跟着光标走**。
+        QML 的 MouseArea 在按下时隐式抓取鼠标，onReleased 是可靠的第二道保险。
+        """
+        self._timer.stop()
 
 
 def _load_fonts(base):
@@ -194,6 +293,9 @@ def main():
     engine = QQmlApplicationEngine()
     # 必须持有 Python 引用，否则对象被 GC，QML 里读到 null
     theme = Theme()
+    # context property 必须在 load 之前注册；窗口对象要 load 之后才有，故先建后 attach
+    glass_drag = _GlassDrag()
+    engine.rootContext().setContextProperty("glassDrag", glass_drag)
     engine.rootContext().setContextProperty("reward", bridge)
     engine.rootContext().setContextProperty("Theme", theme)
     # QML 按它决定：桌面穿透模式（背景交给 DWM）还是自绘底
@@ -203,6 +305,12 @@ def main():
     if not roots:
         _log('[glass] QML 加载失败')
         sys.exit(1)
+
+    # 按系统版本适配：Win10 才节流（保 Acrylic 且跟手）；Win11 用原生拖动（保 Snap/贴边）。
+    # GLASS_DRAG=system 可在 Win10 上强制退回原生拖动做 A/B。
+    glass_drag.attach(roots[0],
+                      SYSTEM_GLASS_OK and _needs_drag_throttle()
+                      and os.environ.get("GLASS_DRAG") != "system")
 
     if SYSTEM_GLASS_OK:
         try:
