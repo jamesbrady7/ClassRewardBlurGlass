@@ -31,9 +31,14 @@ Window {
     minimumWidth: Math.min(1100, width)
     minimumHeight: Math.min(750, height)
 
-    // 启动时在可用区居中（拖动/拉边会写 x/y，绑定随之失效，符合预期）
-    x: Math.round((Screen.desktopAvailableWidth - width) / 2)
-    y: Math.round((Screen.desktopAvailableHeight - height) / 2)
+    // 启动时在可用区居中 —— 见下面那个（唯一的）Component.onCompleted。
+    // ⚠️ QML 不允许同一个对象有两个 Component.onCompleted（会报
+    //    "Property value set multiple times" 直接加载失败），所以居中并进那一个里。
+
+    // Win10 才需要给"改窗口几何"的操作节流（拖动 + 拉边）：Win10 的 acrylic 每改一次
+    // 窗口几何就重算整窗模糊。由 main.py 注入（见 _needs_throttle）；
+    // 测试脚手架（_snap.py 等）不注入 → 用 typeof 兜底成 false，不会抛异常。
+    readonly property bool throttleResize: (typeof glassThrottle !== 'undefined') && glassThrottle
 
     visible: true
     title: "班级激励助手"
@@ -348,6 +353,10 @@ Window {
     property var _pages: []
     property int _curPage: -1
     Component.onCompleted: {
+        // 窗口在可用区居中。⚠️ **必须命令式赋值，不能写成 x:/y: 绑定** —— x 依赖 width，
+        // 写成绑定后拉右边/下边改 width 会让绑定重算，窗口一边变宽一边被重新居中，整窗跟着漂。
+        x = Math.round((Screen.desktopAvailableWidth - width) / 2)
+        y = Math.round((Screen.desktopAvailableHeight - height) / 2)
         _pages = [page0, page1, page2, page3, page4, page5, page6]
         showPage(0)
     }
@@ -695,10 +704,28 @@ Window {
     property int _rsmx
     property int _rsmy
 
+    // 拉边节流（仅 Win10）：原来 onPositionChanged **每个鼠标事件**都改一次窗口几何。
+    // Win10 的 acrylic 每改一次就要重算整窗模糊，1000Hz 鼠标 = 每秒 1000 次 → DWM 饱和、
+    // 窗口跟不上手（与拖动同一个根因，见 main.py 的 _needs_throttle）。
+    // 改成"只记最新鼠标位置、按 60Hz 一次性应用"，几何变更从约 1000 次/秒压到 60 次/秒。
+    // Win11 走另一条合成路径没这个毛病 → throttleResize=false，保持逐事件原样。
+    property string _rsMode: ""
+    property real _rsLastX: 0
+    property real _rsLastY: 0
+
+    Timer {
+        id: resizeThrottle
+        interval: Math.max(8, Math.round(1000 / 60))
+        repeat: true
+        running: mainWin.throttleResize && mainWin._rsMode !== ""
+        onTriggered: mainWin._resizeApply(mainWin._rsMode, mainWin._rsLastX, mainWin._rsLastY)
+    }
+
     function _resizeBegin(mx, my) {
         _rsw = mainWin.width; _rsh = mainWin.height
         _rsx = mainWin.x; _rsy = mainWin.y
         _rsmx = mx; _rsmy = my
+        _rsMode = ""
     }
     function _resizeApply(mode, mx, my) {
         var dx = mx - _rsmx
@@ -708,21 +735,43 @@ Window {
         if (mode.indexOf("T") >= 0) { mainWin.y = _rsy + dy; mainWin.height = Math.max(mainWin.minimumHeight, _rsh - dy) }
         if (mode.indexOf("B") >= 0) { mainWin.height = Math.max(mainWin.minimumHeight, _rsh + dy) }
     }
+    // 拖动中：节流开启时只记最新位置，交给 Timer 按帧应用；关闭时逐事件（原行为）
+    function _resizeDrag(mode, mx, my) {
+        if (!throttleResize) { _resizeApply(mode, mx, my); return }
+        _rsMode = mode; _rsLastX = mx; _rsLastY = my
+    }
+    // 松手：把最后一帧补上（鼠标最后一小段移动可能还没被 Timer 应用），再停表
+    function _resizeEnd() {
+        if (throttleResize && _rsMode !== "") _resizeApply(_rsMode, _rsLastX, _rsLastY)
+        _rsMode = ""
+    }
 
+    // ⚠️ 对角光标别写反：Qt 的 F=Forward=「\」(↖↘)、B=Backward=「/」(↗↙)。
+    //    规律是**左上/右下同向（\）、右上/左下同向（/）**。
+    //    原来左上角写成了 B、右上角写成了 F —— 两处互换，所以左上角显示「/」、
+    //    右上角显示「\」，全是反的（左下/右下是对的）。
     MouseArea { x: mainWin.width - 5; y: 5; width: 5; height: mainWin.height - 10; cursorShape: Qt.SizeHorCursor
-        onPressed: _resizeBegin(mouse.x, mouse.y); onPositionChanged: _resizeApply("R", mouse.x, mouse.y) }
+        onPressed: _resizeBegin(mouse.x, mouse.y)
+        onPositionChanged: _resizeDrag("R", mouse.x, mouse.y); onReleased: _resizeEnd() }
     MouseArea { x: 5; y: mainWin.height - 5; width: mainWin.width - 10; height: 5; cursorShape: Qt.SizeVerCursor
-        onPressed: _resizeBegin(mouse.x, mouse.y); onPositionChanged: _resizeApply("B", mouse.x, mouse.y) }
+        onPressed: _resizeBegin(mouse.x, mouse.y)
+        onPositionChanged: _resizeDrag("B", mouse.x, mouse.y); onReleased: _resizeEnd() }
     MouseArea { x: mainWin.width - 5; y: mainWin.height - 5; width: 5; height: 5; cursorShape: Qt.SizeFDiagCursor
-        onPressed: _resizeBegin(mouse.x, mouse.y); onPositionChanged: _resizeApply("RB", mouse.x, mouse.y) }
+        onPressed: _resizeBegin(mouse.x, mouse.y)
+        onPositionChanged: _resizeDrag("RB", mouse.x, mouse.y); onReleased: _resizeEnd() }
     MouseArea { x: 0; y: mainWin.height - 5; width: 8; height: 5; cursorShape: Qt.SizeBDiagCursor
-        onPressed: _resizeBegin(mouse.x, mouse.y); onPositionChanged: _resizeApply("LB", mouse.x, mouse.y) }
+        onPressed: _resizeBegin(mouse.x, mouse.y)
+        onPositionChanged: _resizeDrag("LB", mouse.x, mouse.y); onReleased: _resizeEnd() }
     MouseArea { x: 0; y: 5; width: 5; height: mainWin.height - 10; cursorShape: Qt.SizeHorCursor
-        onPressed: _resizeBegin(mouse.x, mouse.y); onPositionChanged: _resizeApply("L", mouse.x, mouse.y) }
+        onPressed: _resizeBegin(mouse.x, mouse.y)
+        onPositionChanged: _resizeDrag("L", mouse.x, mouse.y); onReleased: _resizeEnd() }
     MouseArea { x: 5; y: 0; width: mainWin.width - 10; height: 5; cursorShape: Qt.SizeVerCursor
-        onPressed: _resizeBegin(mouse.x, mouse.y); onPositionChanged: _resizeApply("T", mouse.x, mouse.y) }
-    MouseArea { x: mainWin.width - 5; y: 0; width: 5; height: 8; cursorShape: Qt.SizeFDiagCursor
-        onPressed: _resizeBegin(mouse.x, mouse.y); onPositionChanged: _resizeApply("TR", mouse.x, mouse.y) }
-    MouseArea { x: 0; y: 0; width: 8; height: 8; cursorShape: Qt.SizeBDiagCursor
-        onPressed: _resizeBegin(mouse.x, mouse.y); onPositionChanged: _resizeApply("LT", mouse.x, mouse.y) }
+        onPressed: _resizeBegin(mouse.x, mouse.y)
+        onPositionChanged: _resizeDrag("T", mouse.x, mouse.y); onReleased: _resizeEnd() }
+    MouseArea { x: mainWin.width - 5; y: 0; width: 5; height: 8; cursorShape: Qt.SizeBDiagCursor
+        onPressed: _resizeBegin(mouse.x, mouse.y)
+        onPositionChanged: _resizeDrag("TR", mouse.x, mouse.y); onReleased: _resizeEnd() }
+    MouseArea { x: 0; y: 0; width: 8; height: 8; cursorShape: Qt.SizeFDiagCursor
+        onPressed: _resizeBegin(mouse.x, mouse.y)
+        onPositionChanged: _resizeDrag("LT", mouse.x, mouse.y); onReleased: _resizeEnd() }
 }

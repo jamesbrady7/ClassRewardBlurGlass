@@ -124,8 +124,9 @@ def _build_no():
         return 0
 
 
-def _needs_drag_throttle():
-    """**只有 Win10 需要节流拖动** —— 按系统版本适配，两边各取各自最好的那个。
+def _needs_throttle():
+    """**只有 Win10 需要给"改窗口几何"的操作节流**（拖动 + 拉边缩放）
+    —— 按系统版本适配，两边各取各自最好的那个。
 
     Win10：系统移动循环把鼠标**每个输入事件**变成一次窗口移动，acrylic 每步都要重算
            整窗模糊 → DWM 饱和、窗口跟不上光标 → 必须节流跟随（代价：失去吸附）。
@@ -186,7 +187,7 @@ class _GlassDrag(QObject):
     说明"移动窗口"本身廉价，贵的是系统拖动那条路的每事件一次重绘。
 
     代价：失去系统窗口吸附（Aero Snap）；好处：拖动期间不再进 OS 模态循环，应用保持响应。
-    **只在 Win10 启用**（见 _needs_drag_throttle）：Win11 没这个毛病，用原生拖动更好。
+    **只在 Win10 启用**（见 _needs_throttle）：Win11 没这个毛病，用原生拖动更好。
     GLASS_DRAG_HZ 可调；GLASS_DRAG=system 可退回系统拖动。
     """
 
@@ -300,6 +301,11 @@ def main():
     engine.rootContext().setContextProperty("Theme", theme)
     # QML 按它决定：桌面穿透模式（背景交给 DWM）还是自绘底
     engine.rootContext().setContextProperty("systemGlass", SYSTEM_GLASS_OK)
+    # QML 按它决定：改窗口几何的操作（拖动 / 拉边缩放）要不要节流 —— 只有 Win10 需要。
+    # GLASS_DRAG=system 同时关掉两者（都退回原生的逐事件行为，便于 A/B）。
+    engine.rootContext().setContextProperty(
+        "glassThrottle",
+        SYSTEM_GLASS_OK and _needs_throttle() and os.environ.get("GLASS_DRAG") != "system")
     engine.load(QUrl.fromLocalFile(os.path.join(base, 'qml', 'Main.qml')))
     roots = engine.rootObjects()
     if not roots:
@@ -309,7 +315,7 @@ def main():
     # 按系统版本适配：Win10 才节流（保 Acrylic 且跟手）；Win11 用原生拖动（保 Snap/贴边）。
     # GLASS_DRAG=system 可在 Win10 上强制退回原生拖动做 A/B。
     glass_drag.attach(roots[0],
-                      SYSTEM_GLASS_OK and _needs_drag_throttle()
+                      SYSTEM_GLASS_OK and _needs_throttle()
                       and os.environ.get("GLASS_DRAG") != "system")
 
     if SYSTEM_GLASS_OK:
