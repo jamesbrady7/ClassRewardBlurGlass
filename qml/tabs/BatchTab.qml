@@ -9,7 +9,7 @@ Column {
     property string cat: ""
     readonly property int total: reward.students.length
     readonly property int checkedCount: root.sel ? root.sel.split(',').length : 0
-    // 分值量程（滑条映射到 1..pointsMax）。要改量程只动这一个数。
+    // 分值量程：微调器夹在 1..pointsMax。要改量程只动这一个数。
     readonly property int pointsMax: 10
     property int points: 1           // 当前分值
     function contains(id) { return root.sel.split(',').indexOf(id) >= 0 }
@@ -127,7 +127,7 @@ Column {
             Rectangle {
                 id: pointsPill
                 objectName: "pointsPill"        // 便于自动化测试取真实几何
-                width: 64
+                width: 48
                 height: 34
                 radius: height / 2
                 // 底色：与「操作分类」未选中按钮同款（CuteButton 次级态的 fillGlass #80ffffff，
@@ -139,7 +139,7 @@ Column {
                 Text {
                     anchors.left: parent.left
                     anchors.right: spinCol.left
-                    anchors.leftMargin: 4
+                    anchors.leftMargin: 2
                     anchors.verticalCenter: parent.verticalCenter
                     horizontalAlignment: Text.AlignHCenter
                     text: String(root.points)
@@ -160,7 +160,7 @@ Column {
                     Repeater {
                         model: [1, -1]          // 上=加、下=减
                         delegate: Item {
-                            width: 22; height: 16
+                            width: 20; height: 16
                             // 悬停提示：淡白圆角底（不是边框，平时完全透明）
                             // 胶囊本身就是 50% 白，悬停要更亮一点才看得出来
                             Rectangle {
