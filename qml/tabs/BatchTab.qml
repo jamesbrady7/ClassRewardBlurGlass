@@ -160,12 +160,22 @@ Column {
                     Repeater {
                         model: [1, -1]          // 上=加、下=减
                         delegate: Item {
-                            width: 20; height: 16
+                            width: 20; height: 15
                             // 悬停提示：淡白圆角底（不是边框，平时完全透明）
                             // 胶囊本身就是 50% 白，悬停要更亮一点才看得出来
+                            //
+                            // ⚠️ 悬停底必须**内缩**，这里是有几何约束的，不是随手调：
+                            //    胶囊高 34 → 圆角 17，右端是一整个**半圆端帽**（圆心距右端 17px、半径 17）。
+                            //    悬停底若铺满整个 item（20 宽）且用小圆角，右上/右下角会戳出这个半圆
+                            //    —— 就是"高亮溢出胶囊"。
+                            //    只把圆角改成 height/2 还不够：算下来极限点距圆心 16.77 对 17，
+                            //    只剩 0.23px 余量，抗锯齿照样会漏。
+                            //    所以做成 16x14 的小胶囊**居中内缩**（左右各让 2、上下各让 0.5）：
+                            //    极限点 (418,564.5)/(410,557.5) 距圆心 15.0 / 15.3，余量 1.7~2.0px ✓
                             Rectangle {
-                                anchors.fill: parent
-                                radius: 6
+                                anchors.centerIn: parent
+                                width: 16; height: 14
+                                radius: height / 2
                                 color: "#ffffff"
                                 opacity: spinMa.containsMouse ? 0.9 : 0
                                 Behavior on opacity { NumberAnimation { duration: 120 } }
