@@ -127,10 +127,12 @@ Column {
             Rectangle {
                 id: pointsPill
                 objectName: "pointsPill"        // 便于自动化测试取真实几何
-                width: 104
+                width: 78
                 height: 34
                 radius: height / 2
-                color: "#dde7f4"
+                // 底色：与「操作分类」未选中按钮同款（CuteButton 次级态的 fillGlass #80ffffff，
+                // 悬停时它用 #bdffffff）—— 全站"玻璃面"就是这一个色，别自己另起一个灰蓝
+                color: "#80ffffff"
                 anchors.verticalCenter: parent.verticalCenter
 
                 // 左：数值，占大部分宽度（自动撑到加减区左边）
@@ -158,13 +160,14 @@ Column {
                     Repeater {
                         model: [1, -1]          // 上=加、下=减
                         delegate: Item {
-                            width: 28; height: 16
+                            width: 24; height: 16
                             // 悬停提示：淡白圆角底（不是边框，平时完全透明）
+                            // 胶囊本身就是 50% 白，悬停要更亮一点才看得出来
                             Rectangle {
                                 anchors.fill: parent
                                 radius: 6
                                 color: "#ffffff"
-                                opacity: spinMa.containsMouse ? 0.8 : 0
+                                opacity: spinMa.containsMouse ? 0.9 : 0
                                 Behavior on opacity { NumberAnimation { duration: 120 } }
                             }
                             CanvasIcon {
