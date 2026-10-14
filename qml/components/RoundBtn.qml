@@ -12,7 +12,11 @@ Item {
     property string icon: ""          // undo | plus | minus | search | clock | bag | trash
     property string glyph: ""         // 未提供 icon 时显示的字符
     property real iconSpan: 16        // 图标画布边长（越大图形越大）
-    property real iconWeight: 1.6     // 线宽
+    // 线宽：**悬停时加粗**（与分值胶囊 PointsPill 同一套反馈语言）
+    // 调用方若显式设了 iconWeight，则它优先（会覆盖下面的悬停绑定）
+    property real iconWeightBase: 1.6
+    property real iconWeightHover: 3.0
+    property real iconWeight: mouse.containsMouse ? iconWeightHover : iconWeightBase
     // 彩色杂糅面（= 原型 CircleButton 的 accent 模式）：多色弥散渐变，代替单一底色
     property bool accent: false
     property string scheme: "mint"
@@ -73,11 +77,12 @@ Item {
             anchors.centerIn: parent
             width: root.iconSpan
             height: width
-            // ⚠️ effFg 是 root 的属性，处理器**必须挂在 root 上**：
+            // ⚠️ effFg / iconWeight 都是 root 的属性，处理器**必须挂在 root 上**：
             //    在本 Canvas 里直接写 onEffFgChanged 会被当成"Canvas 自己没这个属性"→ 组件加载失败
             Connections {
                 target: root
                 function onEffFgChanged() { ico.requestPaint() }
+                function onIconWeightChanged() { ico.requestPaint() }   // 悬停加粗要重绘才生效
             }
             onPaint: {
                 var ctx = getContext("2d")
