@@ -193,8 +193,15 @@ Item {
                 width: parent.width
                 height: 36
                 radius: Theme.radiusSmall
-                // 悬停或选中（"热"态）：文字放大 1px + 加粗；移开/取消选中自动恢复
-                readonly property bool hot: itemMouse.containsMouse || root.currentId === modelData.id
+                readonly property bool sel: root.currentId === modelData.id
+                // 悬停或选中（"热"态）：文字放大 + 加粗；移开/取消选中自动恢复
+                readonly property bool hot: itemMouse.containsMouse || sel
+                readonly property string label: modelData.studentId + "  " + modelData.name
+                                                + "（可用 " + modelData.available + " 分）"
+                readonly property color fg: sel ? Theme.accentDark : Theme.textPrimary
+                // 字号有**过渡**（150ms）：直接绑 hot 会"啪"地跳，很突兀。
+                property real fs: hot ? Theme.fontSmall + 1 : Theme.fontSmall
+                Behavior on fs { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
                 // 悬停=明确的浅色高亮（原来用 Theme.bgTop，压在纯白弹层上几乎看不出）；
                 // 选中=薄荷底 + 深色字 + 右侧 ✓（与悬停区分开）
                 // ⚠️ **这里绝不能挂 Behavior 淡入淡出**：鼠标快速划过列表时，上一行还在淡出、
@@ -207,23 +214,44 @@ Item {
                     anchors.leftMargin: 10
                     anchors.rightMargin: 10
                     spacing: 8
-                    Text {
-                        text: modelData.studentId + "  " + modelData.name + "（可用 " + modelData.available + " 分）"
-                        anchors.verticalCenter: parent.verticalCenter
-                        color: root.currentId === modelData.id ? Theme.accentDark : Theme.textPrimary
-                        // 热态放大加粗（宽度是显式绑定的 + elide，所以放大会被省略号收住、不会顶破行）
-                        font.pixelSize: rowRect.hot ? Theme.fontSmall + 1 : Theme.fontSmall
-                        font.bold: rowRect.hot
-                        font.family: Theme.fontFamily
-                        elide: Text.ElideRight
+                    // 文字层：字号走上面的 fs 动画；**加粗本身是离散的没法插值**，
+                    // 所以用"常规/加粗两行叠着交叉淡化"来补——合起来整个过程是连续的，不是啪地跳。
+                    // 两层都是 anchors.fill + 显式宽度的容器 → 不引起任何布局回流（不会诱发悬停抖动）。
+                    Item {
                         width: parent.width - 40
+                        height: parent.height
+                        Text {
+                            anchors.fill: parent
+                            verticalAlignment: Text.AlignVCenter
+                            text: rowRect.label
+                            color: rowRect.fg
+                            font.pixelSize: rowRect.fs
+                            font.family: Theme.fontFamily
+                            elide: Text.ElideRight
+                            opacity: rowRect.hot ? 0 : 1
+                            Behavior on opacity { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+                        }
+                        Text {
+                            anchors.fill: parent
+                            verticalAlignment: Text.AlignVCenter
+                            text: rowRect.label
+                            color: rowRect.fg
+                            font.pixelSize: rowRect.fs
+                            font.bold: true
+                            font.family: Theme.fontFamily
+                            elide: Text.ElideRight
+                            opacity: rowRect.hot ? 1 : 0
+                            Behavior on opacity { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+                        }
                     }
                     Text {
-                        text: root.currentId === modelData.id ? "✓" : ""
+                        text: "✓"                       // 常驻，只淡入淡出（原来是空串↔"✓"直接跳）
                         anchors.verticalCenter: parent.verticalCenter
                         color: Theme.accent
                         font.bold: true
                         font.family: Theme.fontFamily
+                        opacity: rowRect.sel ? 1 : 0
+                        Behavior on opacity { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
                     }
                 }
                 MouseArea {
