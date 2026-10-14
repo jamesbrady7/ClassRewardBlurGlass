@@ -185,8 +185,9 @@ Flickable {
                                 onEdited: gCard.val = value
                             }
                             Item { width: 2; height: 1 }
-                            RoundBtn { size: 28; accent: true; scheme: "aurora"; icon: "plus"; anchors.verticalCenter: parent.verticalCenter; onClicked: reward.addGroupPoints(modelData.id, gCard.val) }
-                            RoundBtn { size: 28; accent: true; scheme: "crimson"; icon: "minus"; anchors.verticalCenter: parent.verticalCenter; onClicked: reward.subtractGroupPoints(modelData.id, gCard.val) }
+                            // 与批量操作完全同款：加分 / 扣分 文字按钮（原来是自己画的两个圆钮）
+                            CuteButton { tone: "primary"; text: "加分"; anchors.verticalCenter: parent.verticalCenter; onClicked: reward.addGroupPoints(modelData.id, gCard.val) }
+                            CuteButton { tone: "danger"; text: "扣分"; anchors.verticalCenter: parent.verticalCenter; onClicked: reward.subtractGroupPoints(modelData.id, gCard.val) }
                         }
                     }
                     // 卡片高度随内容自动（上 14 + 内容 + 下 16，与新内边距一致）

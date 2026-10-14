@@ -70,7 +70,8 @@ Column {
                         width: parent.width
                         spacing: 8
                         Text { text: "抽"; anchors.verticalCenter: parent.verticalCenter; color: Theme.textSecondary; font.family: Theme.fontFamily }
-                        Stepper { id: stuCount; value: 3; max: 50 }
+                        // 与分值调整同款控件（一个胶囊装下数值 + 上下加减）
+                        PointsPill { id: stuCount; from: 1; to: 50; value: 3 }
                         Text { text: "名学生"; anchors.verticalCenter: parent.verticalCenter; color: Theme.textSecondary; font.family: Theme.fontFamily }
                         Item { width: 1; height: 1 }
                         CuteButton { tone: "primary"; text: "抽取"; onClicked: {
@@ -212,7 +213,7 @@ Column {
                         width: parent.width
                         spacing: 8
                         Text { text: "抽"; anchors.verticalCenter: parent.verticalCenter; color: Theme.textSecondary; font.family: Theme.fontFamily }
-                        Stepper { id: groupCount; value: 1; max: 20 }
+                        PointsPill { id: groupCount; from: 1; to: 20; value: 1 }
                         Text { text: "个小组"; anchors.verticalCenter: parent.verticalCenter; color: Theme.textSecondary; font.family: Theme.fontFamily }
                         Item { width: 1; height: 1 }
                         CuteButton { tone: "pink"; text: "抽取"; onClicked: root.grpResult = reward.randomPickGroups(groupCount.value) }
