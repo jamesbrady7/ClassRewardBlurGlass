@@ -36,6 +36,11 @@ Column {
 
     spacing: Theme.spacing
 
+    // 切走本 tab 时收起学生下拉。
+    // ⚠️ 下拉是 Popup，挂在**窗口覆盖层**（z=1000001），不随页面 visible 一起隐藏——
+    //    不主动收的话它会悬在别的 tab 页面上，切回来时层级/内容也是错的。
+    onVisibleChanged: if (!visible && picker.popupOpen) picker.popupOpen = false
+
     Row {
         width: parent.width
         spacing: 10
@@ -65,6 +70,7 @@ Column {
             fg: Theme.amber
             bg: "#55ffffff"
             bordered: false
+            hoverHighlight: true
             anchors.verticalCenter: parent.verticalCenter
             onClicked: { if (root.currentStudentId) mainWin.toast.show(reward.undoLast(root.currentStudentId)); else mainWin.toast.show("请先选择学生") }
         }
@@ -73,6 +79,7 @@ Column {
             fg: Theme.blue
             bg: "#55ffffff"
             bordered: false
+            hoverHighlight: true
             anchors.verticalCenter: parent.verticalCenter
             onClicked: { if (root.currentStudentId) mainWin.dlgHistory.openDialog(root.currentStudentId); else mainWin.toast.show("请先选择学生") }
         }
@@ -81,6 +88,7 @@ Column {
             fg: Theme.purple
             bg: "#55ffffff"
             bordered: false
+            hoverHighlight: true
             anchors.verticalCenter: parent.verticalCenter
             onClicked: { if (root.currentStudentId) mainWin.dlgBackpack.openDialog(root.currentStudentId); else mainWin.toast.show("请先选择学生") }
         }
@@ -156,10 +164,13 @@ Column {
                 }
                 Rectangle {
                     width: 30; height: 30; radius: 15
-                    color: "#55ffffff"
+                    // 悬停提亮（白玻璃底提不动，直接换更亮的白）
+                    color: delMa.containsMouse ? "#a8ffffff" : "#55ffffff"
+                    Behavior on color { ColorAnimation { duration: 130 } }
                     anchors.verticalCenter: parent.verticalCenter
                     Text { text: "🗑"; anchors.centerIn: parent; font.pixelSize: 14 }
                     MouseArea {
+                        id: delMa
                         anchors.fill: parent
                         hoverEnabled: true; cursorShape: Qt.PointingHandCursor
                         onClicked: mainWin.dlgConfirm.openConfirm("删除奖励", "删除「" + modelData.name + "」？", function() { reward.deleteReward(modelData.id) })

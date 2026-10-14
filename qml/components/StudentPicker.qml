@@ -33,9 +33,12 @@ Item {
         id: box
         width: parent.width; height: 38
         radius: Theme.radiusSmall
-        color: Theme.surface
+        // 平时=半透明白玻璃（原来是 Theme.surface 纯白不透明），浓度与同排的三颗图标钮、
+        // 以及奖券的删除钮一致（都是 #55ffffff 这一档）；悬停/展开时提亮
+        color: root.popupOpen ? "#e0ffffff" : (boxMa.containsMouse ? "#a8ffffff" : "#55ffffff")
         border.color: root.popupOpen ? Theme.accent : Theme.inputBorder
         border.width: 1
+        Behavior on color { ColorAnimation { duration: 140 } }
         Behavior on border.color { ColorAnimation { duration: 140 } }
 
         // 放大镜
@@ -90,9 +93,11 @@ Item {
             onAccepted: root.popupOpen = false
         }
 
-        // 打开/关闭
+        // 打开/关闭（hoverEnabled 供上面的底色高亮用）
         MouseArea {
+            id: boxMa
             anchors.fill: parent
+            hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
             onClicked: {
                 if (!root.popupOpen) root.popupOpen = true
@@ -138,8 +143,11 @@ Item {
                 width: parent.width
                 height: 36
                 radius: Theme.radiusSmall
+                // 悬停=明确的浅色高亮（原来用 Theme.bgTop，压在纯白弹层上几乎看不出）；
+                // 选中=薄荷底 + 深色字 + 右侧 ✓（与悬停区分开）
                 color: root.currentId === modelData.id ? Theme.accentSoft
-                     : itemMouse.containsMouse ? Theme.bgTop : "transparent"
+                     : itemMouse.containsMouse ? "#e9eef5" : "transparent"
+                Behavior on color { ColorAnimation { duration: 110 } }
                 Row {
                     anchors.fill: parent
                     anchors.leftMargin: 10

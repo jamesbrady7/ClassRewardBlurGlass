@@ -12,6 +12,9 @@ Rectangle {
     property color fg: Theme.textSecondary
     property color bg: Theme.bgTop
     property bool bordered: true        // 彩色软底靠描边分层；白玻璃按钮不需要（同奖券的删除钮）
+    // 悬停/按压提亮。⚠️ 白玻璃底（#55ffffff 之类）**提不动**——Qt.lighter 对已饱和的白色是恒等变换，
+    // 光靠上面那个 gradient 悬停没有任何变化，必须叠一层白。
+    property bool hoverHighlight: false
     signal clicked()
 
     readonly property bool iconOnly: text === ""
@@ -24,6 +27,16 @@ Rectangle {
     }
     border.color: root.bordered ? Qt.lighter(root.bg, 0.8) : "transparent"
     border.width: root.bordered ? 1 : 0
+
+    // 悬停/按压高亮层：**必须压在图标下面**（先声明在前），否则把图标一起洗白
+    Rectangle {
+        anchors.fill: parent
+        radius: root.radius
+        visible: root.hoverHighlight
+        color: "#ffffff"
+        opacity: mouse.pressed ? 0.55 : (mouse.containsMouse ? 0.30 : 0)
+        Behavior on opacity { NumberAnimation { duration: 130; easing.type: Easing.OutCubic } }
+    }
 
     Row {
         anchors.centerIn: parent
