@@ -59,8 +59,9 @@ Column {
                 width: parent.width
                 height: 118
                 radius: Theme.radius
-                cardColor: "#eef8f4"
-                borderColor: "#b9dfd2"
+                // 与前几页同款半透明玻璃卡（原为浅翠实色 + 描边）
+                cardColor: "#4dffffff"
+                shadow: true
                 Column {
                     anchors.fill: parent
                     anchors.margins: 12
@@ -88,7 +89,8 @@ Column {
 
             Card {
                 width: parent.width
-                cardColor: "#f5fbf8"
+                cardColor: "#4dffffff"
+                shadow: true
                 anchors.top: stuCtrl.bottom
                 anchors.topMargin: 8
                 anchors.bottom: parent.bottom
@@ -202,8 +204,9 @@ Column {
                 width: parent.width
                 height: 118
                 radius: Theme.radius
-                cardColor: "#fdf2f7"
-                borderColor: "#f0c0d4"
+                // 与前几页同款半透明玻璃卡（原为浅粉实色 + 描边）
+                cardColor: "#4dffffff"
+                shadow: true
                 Column {
                     anchors.fill: parent
                     anchors.margins: 12
@@ -224,7 +227,8 @@ Column {
 
             Card {
                 width: parent.width
-                cardColor: "#fbf4f8"
+                cardColor: "#4dffffff"
+                shadow: true
                 anchors.top: grpCtrl.bottom
                 anchors.topMargin: 8
                 anchors.bottom: parent.bottom

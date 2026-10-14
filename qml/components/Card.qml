@@ -10,7 +10,10 @@ Item {
     id: root
 
     property color cardColor: Theme.surface
-    property color borderColor: Theme.border
+    // 默认**不描边**：半透明玻璃卡片一律靠填充/投影分层，描边会把玻璃感破坏掉。
+    // （历史上这里是 Theme.border，所以没显式传 borderColor 的卡片都有一条灰边。）
+    // 要边就显式传一个不透明的颜色进来（border.width 会跟着自动开）。
+    property color borderColor: "transparent"
     property bool shadow: false
     property bool liftOnHover: false      // 悬停轻微上浮（默认关，避免影响不该动的卡片）
     property real liftPx: 4
@@ -47,7 +50,7 @@ Item {
             radius: root.radius
             color: root.cardColor
             border.color: root.borderColor
-            border.width: 1
+            border.width: root.borderColor.a > 0 ? 1 : 0
         }
 
         Item { id: host; anchors.fill: parent }
