@@ -192,15 +192,16 @@ Column {
         width: parent.width
         height: 50
         radius: Theme.radius
-        color: Theme.amberSoft
-        border.color: Theme.amber
-        border.width: 2
+        // 半透明粉底 + 无边框（原来是 amberSoft 实色 + 2px amber 描边）：
+        // 底色取主题粉 #e76a9e 的 20% 透明度（同奖券底色的 tintCat 手法），文字色跟着底色一起改成粉
+        color: "#33" + Theme.pink.slice(1)
+        border.width: 0
         Row {
             anchors.left: parent.left; anchors.leftMargin: 16
             anchors.right: parent.right; anchors.rightMargin: 12
             anchors.verticalCenter: parent.verticalCenter
             spacing: 10
-            Text { text: "🎁 盲盒券（10 分）· 随机抽取奖励"; color: Theme.amber; font.pixelSize: Theme.fontBody; font.bold: true; font.family: Theme.fontFamily; anchors.verticalCenter: parent.verticalCenter }
+            Text { text: "🎁 盲盒券（10 分）· 随机抽取奖励"; color: Theme.pink; font.pixelSize: Theme.fontBody; font.bold: true; font.family: Theme.fontFamily; anchors.verticalCenter: parent.verticalCenter }
             Item { width: 1; height: 1 }
             CuteButton {
                 tone: "primary"

@@ -36,13 +36,44 @@ Item {
         // 平时=半透明白玻璃（原来是 Theme.surface 纯白不透明），浓度与同排的三颗图标钮、
         // 以及奖券的删除钮一致（都是 #55ffffff 这一档）；悬停/展开时提亮
         color: root.popupOpen ? "#e0ffffff" : (boxMa.containsMouse ? "#a8ffffff" : "#55ffffff")
-        // 焦点边框用**主题里的灰**（原来是强调色绿 #0fa88f，和这套浅色玻璃不搭）；
-        // 悬停也给一档更深的灰，形成"灰阶阶梯"：静止 inputBorder → 悬停 → 展开 textMuted
-        border.color: root.popupOpen ? Theme.textMuted
-                                    : (boxMa.containsMouse ? "#bcc5d2" : Theme.inputBorder)
-        border.width: 1
+        // 只有展开/焦点态用硬边框（主题灰，原来是强调色绿）；平时交给下面那圈"向内渐隐的白边"，
+        // 不再画 1px 硬边——硬边在这一片浅色玻璃上会读成"框了一条白线"
+        border.color: Theme.textMuted
+        border.width: root.popupOpen ? 1 : 0
         Behavior on color { ColorAnimation { duration: 140 } }
         Behavior on border.color { ColorAnimation { duration: 140 } }
+
+        // 未点击时的边缘：**向内渐隐的白边**
+        // 多层内缩的圆角描边叠出衰减（同 SoftRectShadow 的手法：本 Qt 的 Canvas 没有高斯模糊）。
+        // 每条描边都从 box 内侧起画（inset 从 1 起、线宽 1），**不会溢出容器**。
+        Canvas {
+            id: softEdge
+            anchors.fill: parent
+            visible: !root.popupOpen
+            onPaint: {
+                var ctx = getContext("2d")
+                ctx.reset()
+                var w = width, h = height, base = box.radius, N = 5
+                for (var i = 0; i < N; i++) {
+                    var a = 0.58 * Math.pow(1 - i / N, 1.4)      // 贴边最亮，向内快速衰减
+                    var ins = i + 1
+                    var x = ins, y = ins, ww = w - 2 * ins, hh = h - 2 * ins
+                    var rr = Math.max(1, base - ins)
+                    ctx.strokeStyle = "rgba(255,255,255," + a.toFixed(3) + ")"
+                    ctx.lineWidth = 1
+                    ctx.beginPath()
+                    ctx.moveTo(x + rr, y)
+                    ctx.lineTo(x + ww - rr, y); ctx.quadraticCurveTo(x + ww, y, x + ww, y + rr)
+                    ctx.lineTo(x + ww, y + hh - rr); ctx.quadraticCurveTo(x + ww, y + hh, x + ww - rr, y + hh)
+                    ctx.lineTo(x + rr, y + hh); ctx.quadraticCurveTo(x, y + hh, x, y + hh - rr)
+                    ctx.lineTo(x, y + rr); ctx.quadraticCurveTo(x, y, x + rr, y)
+                    ctx.closePath()
+                    ctx.stroke()
+                }
+            }
+            onWidthChanged: requestPaint()
+            onHeightChanged: requestPaint()
+        }
 
         // 展开时由边框**向框内渐隐**的内阴影（内凹感）：贴边最重、约 55% 处消失，
         // 所以只压住上半边的"内壁"，不会糊到文字。声明在文字之前=压在文字下面。
@@ -158,9 +189,12 @@ Item {
             spacing: 2
             model: root.filtered
             delegate: Rectangle {
+                id: rowRect
                 width: parent.width
                 height: 36
                 radius: Theme.radiusSmall
+                // 悬停或选中（"热"态）：文字放大 1px + 加粗；移开/取消选中自动恢复
+                readonly property bool hot: itemMouse.containsMouse || root.currentId === modelData.id
                 // 悬停=明确的浅色高亮（原来用 Theme.bgTop，压在纯白弹层上几乎看不出）；
                 // 选中=薄荷底 + 深色字 + 右侧 ✓（与悬停区分开）
                 // ⚠️ **这里绝不能挂 Behavior 淡入淡出**：鼠标快速划过列表时，上一行还在淡出、
@@ -177,7 +211,9 @@ Item {
                         text: modelData.studentId + "  " + modelData.name + "（可用 " + modelData.available + " 分）"
                         anchors.verticalCenter: parent.verticalCenter
                         color: root.currentId === modelData.id ? Theme.accentDark : Theme.textPrimary
-                        font.pixelSize: Theme.fontSmall
+                        // 热态放大加粗（宽度是显式绑定的 + elide，所以放大会被省略号收住、不会顶破行）
+                        font.pixelSize: rowRect.hot ? Theme.fontSmall + 1 : Theme.fontSmall
+                        font.bold: rowRect.hot
                         font.family: Theme.fontFamily
                         elide: Text.ElideRight
                         width: parent.width - 40
