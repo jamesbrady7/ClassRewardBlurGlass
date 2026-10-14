@@ -59,11 +59,20 @@ Item {
                     width: 18; height: 15
                     // 悬停反馈 = **符号本身加粗**（原来是一层白色高亮底，已去掉）
                     CanvasIcon {
+                        id: spinIcon
                         anchors.centerIn: parent
                         name: modelData > 0 ? "plus" : "minus"
-                        width: 11; height: 11
-                        strokeW: spinMa.containsMouse ? 3.1 : 1.7     // 明显加粗
+                        width: 13; height: 13                          // 11→13：图标太小的话粗细差看不出来
+                        strokeW: spinMa.containsMouse ? 3.6 : 1.7      // 拉大差距（原来 3.1 只差 1.4px）
                         color: spinMa.containsMouse ? Theme.textPrimary : Theme.textSecondary
+                        // ⚠️ **显式重绘**：不依赖 onStrokeWChanged。
+                        //    实测过"悬停不加粗、点了才加粗、移开不恢复"——
+                        //    绑定值是对的，但画布没在 containsMouse 变化时重画。
+                        //    挂一条 Connections 强制重绘，绕开这个不确定性。
+                        Connections {
+                            target: spinMa
+                            function onContainsMouseChanged() { spinIcon.requestPaint() }
+                        }
                     }
                     MouseArea {
                         id: spinMa
