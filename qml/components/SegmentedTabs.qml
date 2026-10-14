@@ -27,13 +27,19 @@ Item {
         font.family: Theme.fontFamily
         font.weight: Font.DemiBold
     }
-    readonly property real autoSeg: {
+    // ⚠️ 不能在绑定里量文字：绑定同时读 tm.advanceWidth **又写 tm.text** → 自我引用，
+    //    Qt 报 "Binding loop detected for property autoSeg"（宽度还可能算错）。
+    //    改成普通属性 + 在标签变化时用函数量一次。
+    property real autoSeg: 96
+    onLabelsChanged: recomputeSeg()
+    Component.onCompleted: recomputeSeg()
+    function recomputeSeg() {
         var m = 0
         for (var i = 0; i < labels.length; i++) {
             tm.text = labels[i]
             m = Math.max(m, tm.advanceWidth)
         }
-        return Math.max(72, Math.ceil(m) + 36)
+        autoSeg = Math.max(72, Math.ceil(m) + 36)
     }
 
     // 位移进度（以「格」为单位的连续值）—— 唯一动画源；形变由它派生 → 位移与形变天然同步
