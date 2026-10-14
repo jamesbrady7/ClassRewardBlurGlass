@@ -9,6 +9,70 @@ Flickable {
     contentWidth: width
     contentHeight: col.implicitHeight
 
+    // ===== 数据同步：把 bridge 的 groups 增量搬进本地 ListModel =====
+    // ⚠️ 为什么不用 `model: reward.groups`：
+    //    bridge 的 groups 是**每次通知都重新构造的一整个新数组**，Repeater 据此判定"模型换了"
+    //    → **销毁并重建全部卡片**（实测：点一次「加分」4 张卡全部 DESTROYED + 重新 created）。
+    //    表现就是卡片闪烁、卡顿，而且悬停态与自填分值一起被重置。
+    //    ListModel 增量更新：加减分只走 setProperty + move()，**delegate 全程存活**（零重建）。
+    ListModel { id: groupModel }
+
+    Connections {
+        target: reward
+        function onDataChanged() { root.syncGroups() }
+    }
+    Component.onCompleted: root.syncGroups()
+
+    // 成员牌面：「学号 姓名」用换行拼成**一个字符串**存进 role。
+    // ⚠️ 数组不能放进 ListModel 的 role：**任何** JS 数组都会被转成**嵌套 ListModel**
+    //    （实测 role 读出来是 QQmlListModel，连字符串数组也一样）→ 内层 Repeater 的 modelData
+    //    拿不到值、还会在批量 append 时报 "Cannot read property 'members' of undefined"。
+    //    所以这里存字符串，用的时候再 split。
+    function memberLabels(ms) {
+        var out = []
+        for (var i = 0; i < (ms ? ms.length : 0); i++) out.push(ms[i].studentId + " " + ms[i].name)
+        return out
+    }
+    function rowOf(g) {
+        var labels = memberLabels(g.members)
+        var s = labels.join("\n")
+        return { gid: g.id, name: g.name, points: g.points,
+                 mstr: s, mcount: labels.length }
+    }
+    function syncGroups() {
+        if (!reward) return
+        var gs = reward.groups
+        // ① 结构变了（增删小组）→ 只能重建；其余情况一律原地更新
+        var structural = (groupModel.count !== gs.length)
+        if (!structural) {
+            for (var i = 0; i < gs.length; i++)
+                if (groupModel.get(i).gid !== gs[i].id) { structural = true; break }
+        }
+        if (structural) {
+            groupModel.clear()
+            for (var k = 0; k < gs.length; k++) groupModel.append(rowOf(gs[k]))
+            return
+        }
+        // ② 数值 / 名字 / 成员原地更新（只刷新变化的绑定，卡片不动）
+        for (var j = 0; j < gs.length; j++) {
+            var g = gs[j], row = groupModel.get(j)
+            if (row.points !== g.points) groupModel.setProperty(j, "points", g.points)
+            if (row.name !== g.name) groupModel.setProperty(j, "name", g.name)
+            var s = memberLabels(g.members).join("\n")
+            if (row.mstr !== s) {
+                groupModel.setProperty(j, "mstr", s)
+                groupModel.setProperty(j, "mcount", s ? s.split("\n").length : 0)
+            }
+        }
+        // ③ 名次变化用 move() 重排 —— 同样保 delegate（直接改 model 会整表重建）
+        for (var t = 0; t < gs.length; t++) {
+            var cur = -1
+            for (var c = 0; c < groupModel.count; c++)
+                if (groupModel.get(c).gid === gs[t].id) { cur = c; break }
+            if (cur >= 0 && cur !== t) groupModel.move(cur, t)
+        }
+    }
+
     Column {
         id: col
         width: root.width
@@ -98,7 +162,8 @@ Flickable {
             width: parent.width
             spacing: 12
             Repeater {
-                model: reward.groups
+                // model = 上面增量同步的 ListModel（不用 reward.groups，理由见 syncGroups 注释）
+                model: groupModel
                 // 小组卡片：与学生卡片同一套 Card 设计（半透明白玻璃 + 柔和投影 + 悬停上浮）
                 delegate: Card {
                     id: gCard
@@ -123,7 +188,7 @@ Flickable {
                         spacing: 6
                         Text { // 组名
                             width: parent.width
-                            text: modelData.name
+                            text: model.name
                             color: Theme.textPrimary
                             font.pixelSize: 20
                             font.bold: true
@@ -131,7 +196,7 @@ Flickable {
                             elide: Text.ElideRight
                         }
                         Text {
-                            text: "总分 " + modelData.points + " 分 · 组员 " + modelData.members.length + " 人"
+                            text: "总分 " + model.points + " 分 · 组员 " + model.mcount + " 人"
                             color: Theme.accentDark
                             font.pixelSize: Theme.fontBody
                             font.bold: true
@@ -139,7 +204,7 @@ Flickable {
                         }
                         // 组员（学号+姓名），自动换行、不裁切
                         Text {
-                            visible: modelData.members.length === 0
+                            visible: model.mcount === 0
                             width: parent.width
                             text: "暂无组员（花名册右键学生 → 移到本组）"
                             color: Theme.textMuted
@@ -148,11 +213,17 @@ Flickable {
                             wrapMode: Text.WordWrap
                         }
                         Flow {
-                            visible: modelData.members.length > 0
+                            id: memFlow
+                            // ⚠️ 不要写成 Repeater { model: model.members }：
+                            //    ListModel 在批量 append 时 delegate 的上下文会有短暂未就绪的窗口，
+                            //    那次求值会报 "Cannot read property 'members' of undefined"（实测只在加载时出现一次）。
+                            //    这里取一次并做保护，model 就绪后绑定会自动重算。
+                            property var memItems: (model && model.mstr) ? model.mstr.split("\n") : []
+                            visible: model.mcount > 0
                             width: parent.width
                             spacing: 5
                             Repeater {
-                                model: modelData.members
+                                model: memFlow.memItems
                                 delegate: Rectangle {
                                     height: 21
                                     radius: Theme.radiusPill
@@ -162,7 +233,8 @@ Flickable {
                                     width: memTxt.implicitWidth + 12
                                     Text {
                                         id: memTxt
-                                        text: modelData.studentId + " " + modelData.name
+                                        // role 里存的就是拼好的「学号 姓名」（见 memberLabels）
+                                        text: modelData
                                         anchors.centerIn: parent
                                         color: Theme.textSecondary
                                         font.pixelSize: 10
@@ -186,22 +258,27 @@ Flickable {
                             }
                             Item { width: 2; height: 1 }
                             // 与批量操作完全同款：加分 / 扣分 文字按钮（原来是自己画的两个圆钮）
-                            CuteButton { tone: "primary"; text: "加分"; anchors.verticalCenter: parent.verticalCenter; onClicked: reward.addGroupPoints(modelData.id, gCard.val) }
-                            CuteButton { tone: "danger"; text: "扣分"; anchors.verticalCenter: parent.verticalCenter; onClicked: reward.subtractGroupPoints(modelData.id, gCard.val) }
+                            CuteButton { tone: "primary"; text: "加分"; anchors.verticalCenter: parent.verticalCenter; onClicked: reward.addGroupPoints(model.gid, gCard.val) }
+                            CuteButton { tone: "danger"; text: "扣分"; anchors.verticalCenter: parent.verticalCenter; onClicked: reward.subtractGroupPoints(model.gid, gCard.val) }
                         }
                     }
                     // 卡片高度随内容自动（上 14 + 内容 + 下 16，与新内边距一致）
                     height: gBody.implicitHeight + 30
 
                     // 右键菜单（整卡右键）
+                    // ⚠️ **hoverEnabled 必须 false**：这层 MouseArea 盖满整卡、又是最后声明的（最上层），
+                    //    一旦开 hover，Qt 的悬停投递在它这里就终止了 → 下面分值胶囊的 +/− 永远收不到 hover
+                    //    （症状：加减号悬停不加粗、点一下才加粗、移开不恢复）。
+                    //    右键不受影响：press 与 hover 是两条通道，且胶囊那两个 MouseArea 只认左键。
                     MouseArea {
+                        objectName: "cardHoverMa"
                         anchors.fill: parent
-                        hoverEnabled: true
+                        hoverEnabled: false
                         acceptedButtons: Qt.RightButton
                         cursorShape: Qt.PointingHandCursor
                         onPressed: function(mouse) {
                             if (mouse.button === Qt.RightButton)
-                                mainWin.openGroupMenu(gCard, modelData.id, modelData.name)
+                                mainWin.openGroupMenu(gCard, model.gid, model.name)
                         }
                     }
                 }

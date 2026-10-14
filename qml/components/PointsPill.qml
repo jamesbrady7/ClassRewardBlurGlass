@@ -65,17 +65,13 @@ Item {
                         width: 13; height: 13                          // 11→13：图标太小的话粗细差看不出来
                         strokeW: spinMa.containsMouse ? 3.6 : 1.7      // 拉大差距（原来 3.1 只差 1.4px）
                         color: spinMa.containsMouse ? Theme.textPrimary : Theme.textSecondary
-                        // ⚠️ **显式重绘**：不依赖 onStrokeWChanged。
-                        //    实测过"悬停不加粗、点了才加粗、移开不恢复"——
-                        //    绑定值是对的，但画布没在 containsMouse 变化时重画。
-                        //    挂一条 Connections 强制重绘，绕开这个不确定性。
-                        Connections {
-                            target: spinMa
-                            function onContainsMouseChanged() { spinIcon.requestPaint() }
-                        }
+                        // 重绘由 CanvasIcon 自己的 onStrokeWChanged/onColorChanged 触发。
+                        // ⚠️ 曾误判成"画布不重绘"而加过一条 Connections 强制重绘——真实原因是
+                        //    **悬停根本没到这一层**（被上层整卡 MouseArea 吃掉，见 GroupTab 卡片注释）。
                     }
                     MouseArea {
                         id: spinMa
+                        objectName: modelData > 0 ? "spinHotPlus" : "spinHotMinus"   // 便于自动化测试取真实几何
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
