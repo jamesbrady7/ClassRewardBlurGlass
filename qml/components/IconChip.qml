@@ -1,8 +1,9 @@
 import QtQuick
 
-// 彩色软底小图标按钮：Canvas 线框图标 + 文字（语义清晰又不呆板）。
+// 小图标按钮：Canvas 线框图标（＋可选文字）。
 // 图标用矢量绘制，不依赖任何 emoji/符号字体。
 // icon: undo(左回箭头) | clock(时钟) | bag(背包)
+// 不传 text 时收成**圆形纯图标按钮**（宽度=高度、无描边留白）。
 Rectangle {
     id: root
 
@@ -10,17 +11,19 @@ Rectangle {
     property string text: ""
     property color fg: Theme.textSecondary
     property color bg: Theme.bgTop
+    property bool bordered: true        // 彩色软底靠描边分层；白玻璃按钮不需要（同奖券的删除钮）
     signal clicked()
 
-    radius: Theme.radiusSmall
+    readonly property bool iconOnly: text === ""
+    radius: root.iconOnly ? height / 2 : Theme.radiusSmall
     height: 36
-    width: iconItem.implicitWidth + 12 + lab.implicitWidth + 26
+    width: root.iconOnly ? height : (iconItem.implicitWidth + 12 + lab.implicitWidth + 26)
     gradient: Gradient {
         GradientStop { position: 0.0; color: mouse.containsMouse ? Qt.lighter(root.bg, 1.32) : Qt.lighter(root.bg, 1.16) }
         GradientStop { position: 1.0; color: mouse.pressed ? Qt.lighter(root.bg, 0.88) : root.bg }
     }
-    border.color: Qt.lighter(root.bg, 0.8)
-    border.width: 1
+    border.color: root.bordered ? Qt.lighter(root.bg, 0.8) : "transparent"
+    border.width: root.bordered ? 1 : 0
 
     Row {
         anchors.centerIn: parent

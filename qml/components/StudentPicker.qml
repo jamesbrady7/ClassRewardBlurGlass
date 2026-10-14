@@ -1,6 +1,9 @@
 import QtQuick
+import QtQuick.Controls
 
-// 学生搜索选择器：输入姓名/学号实时过滤；弹出列表高于后续内容（用 z 置顶）。
+// 学生搜索选择器：输入姓名/学号实时过滤。
+// 下拉用 Popup —— ①自带「点别处关闭 / Esc 关闭」（原来只能点中某一项或按回车才收，
+// 点别处不会消失）；②渲染在窗口覆盖层，天然盖住下方其它内容（不再需要父级调 z）。
 Item {
     id: root
 
@@ -98,23 +101,37 @@ Item {
         }
     }
 
-    // 下拉结果
-    Rectangle {
+    // popupOpen 是唯一开关：外部（包括 Popup 自己关闭时）都只改这个属性
+    onPopupOpenChanged: popupOpen ? pop.open() : pop.close()
+
+    // 下拉结果：Popup = 窗口覆盖层 + 「点别处/按 Esc 自动关闭」
+    Popup {
         id: pop
-        visible: root.popupOpen
-        width: parent.width
+        y: box.height + 4
+        width: root.width
         height: Math.min(252, root.filtered.length * 42 + 10)
-        anchors.top: box.bottom; anchors.topMargin: 4
-        radius: Theme.radiusSmall
-        color: Theme.surface
-        border.color: Theme.border; border.width: 1
-        clip: true
-        opacity: root.popupOpen ? 1 : 0
-        Behavior on opacity { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
+        padding: 5
+        // ⚠️ 用 CloseOnPressOutsideParent（不是 CloseOnPressOutside）：
+        //    搜索框本身在 popup 之外，用后者的话点搜索框会"先关再被 MouseArea 重新打开"（闪一下）；
+        //    前者只在按到**本组件之外**时才关 → 点搜索框保持展开，点别处关掉。
+        closePolicy: Popup.CloseOnPressOutsideParent | Popup.CloseOnEscape
+        // 只保留淡入淡出（与原来的 140ms 一致），关掉控件自带的缩放/滑动
+        enter: Transition { NumberAnimation { property: "opacity"; from: 0; to: 1; duration: 140; easing.type: Easing.OutCubic } }
+        exit: Transition { NumberAnimation { property: "opacity"; from: 1; to: 0; duration: 120; easing.type: Easing.OutCubic } }
+        background: Rectangle {
+            radius: Theme.radiusSmall
+            color: Theme.surface
+            border.color: Theme.border
+            border.width: 1
+        }
+        onClosed: {
+            root.popupOpen = false
+            input.focus = false
+        }
 
         ListView {
             anchors.fill: parent
-            anchors.margins: 5
+            clip: true
             spacing: 2
             model: root.filtered
             delegate: Rectangle {

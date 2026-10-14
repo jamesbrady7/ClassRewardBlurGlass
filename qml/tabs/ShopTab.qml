@@ -51,36 +51,36 @@ Column {
         Item { width: 1; height: 1 }
     }
 
-    // 学生选择 + 学生操作（选择行整体置顶，弹出列表不被下方奖券遮挡）
+    // 学生选择 + 学生操作（下拉现在是 Popup，渲染在窗口覆盖层，不用再调 z）
     Row {
         width: parent.width
         spacing: 8
-        z: picker.popupOpen ? 80 : 0
         StudentPicker {
             id: picker
             onPicked: root.currentStudentId = id
         }
+        // 纯图标按钮：底色同本页奖券的删除钮（白色半透明），只留符号、不要文字
         IconChip {
             icon: "undo"
-            text: "撤回"
             fg: Theme.amber
-            bg: Theme.amberSoft
+            bg: "#55ffffff"
+            bordered: false
             anchors.verticalCenter: parent.verticalCenter
             onClicked: { if (root.currentStudentId) mainWin.toast.show(reward.undoLast(root.currentStudentId)); else mainWin.toast.show("请先选择学生") }
         }
         IconChip {
             icon: "clock"
-            text: "历史"
             fg: Theme.blue
-            bg: Theme.blueSoft
+            bg: "#55ffffff"
+            bordered: false
             anchors.verticalCenter: parent.verticalCenter
             onClicked: { if (root.currentStudentId) mainWin.dlgHistory.openDialog(root.currentStudentId); else mainWin.toast.show("请先选择学生") }
         }
         IconChip {
             icon: "bag"
-            text: "背包"
             fg: Theme.purple
-            bg: Theme.purpleSoft
+            bg: "#55ffffff"
+            bordered: false
             anchors.verticalCenter: parent.verticalCenter
             onClicked: { if (root.currentStudentId) mainWin.dlgBackpack.openDialog(root.currentStudentId); else mainWin.toast.show("请先选择学生") }
         }
