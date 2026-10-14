@@ -146,46 +146,11 @@ Column {
                                         anchors.verticalCenter: parent.verticalCenter
                                     }
                                     Item { width: 1; height: 1 }
-                                    Rectangle {
-                                        height: 30; radius: 15
-                                        color: Theme.pink
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        width: subTxt.implicitWidth + 20
-                                        Text {
-                                            id: subTxt
-                                            text: "－" + stuStep.value + " 分"
-                                            anchors.centerIn: parent
-                                            color: "#ffffff"
-                                            font.pixelSize: Theme.fontSmall
-                                            font.bold: true
-                                            font.family: Theme.fontFamily
-                                        }
-                                        MouseArea {
-                                            anchors.fill: parent
-                                            cursorShape: Qt.PointingHandCursor
-                                            onClicked: root.adjustStu(false, stuRow.item)
-                                        }
-                                    }
-                                    Rectangle {
-                                        height: 30; radius: 15
-                                        color: Theme.accent
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        width: addTxt.implicitWidth + 20
-                                        Text {
-                                            id: addTxt
-                                            text: "＋" + stuStep.value + " 分"
-                                            anchors.centerIn: parent
-                                            color: "#ffffff"
-                                            font.pixelSize: Theme.fontSmall
-                                            font.bold: true
-                                            font.family: Theme.fontFamily
-                                        }
-                                        MouseArea {
-                                            anchors.fill: parent
-                                            cursorShape: Qt.PointingHandCursor
-                                            onClicked: root.adjustStu(true, stuRow.item)
-                                        }
-                                    }
+                                    // 与批量操作/小组榜**逐字同款**：加分 / 扣分 文字按钮
+                                    // （原来是自己画的实心圆钮，粉底"－N 分"/绿底"＋N 分"，且没有悬停反馈）
+                                    // 分值由上方「分值」胶囊统一设定，这两个按钮只负责应用
+                                    CuteButton { tone: "primary"; text: "加分"; anchors.verticalCenter: parent.verticalCenter; onClicked: root.adjustStu(true, stuRow.item) }
+                                    CuteButton { tone: "danger"; text: "扣分"; anchors.verticalCenter: parent.verticalCenter; onClicked: root.adjustStu(false, stuRow.item) }
                                 }
                             }
                         }
@@ -284,46 +249,9 @@ Column {
                                         anchors.verticalCenter: parent.verticalCenter
                                     }
                                     Item { width: 1; height: 1 }
-                                    Rectangle {
-                                        height: 30; radius: 15
-                                        color: Theme.pink
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        width: gsub.implicitWidth + 20
-                                        Text {
-                                            id: gsub
-                                            text: "－" + grpStep.value + " 分"
-                                            anchors.centerIn: parent
-                                            color: "#ffffff"
-                                            font.pixelSize: Theme.fontSmall
-                                            font.bold: true
-                                            font.family: Theme.fontFamily
-                                        }
-                                        MouseArea {
-                                            anchors.fill: parent
-                                            cursorShape: Qt.PointingHandCursor
-                                            onClicked: root.adjustGrp(false, grpRow.item)
-                                        }
-                                    }
-                                    Rectangle {
-                                        height: 30; radius: 15
-                                        color: Theme.accent
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        width: gadd.implicitWidth + 20
-                                        Text {
-                                            id: gadd
-                                            text: "＋" + grpStep.value + " 分"
-                                            anchors.centerIn: parent
-                                            color: "#ffffff"
-                                            font.pixelSize: Theme.fontSmall
-                                            font.bold: true
-                                            font.family: Theme.fontFamily
-                                        }
-                                        MouseArea {
-                                            anchors.fill: parent
-                                            cursorShape: Qt.PointingHandCursor
-                                            onClicked: root.adjustGrp(true, grpRow.item)
-                                        }
-                                    }
+                                    // 同上：加分 / 扣分 文字按钮（与批量操作、小组榜一致）
+                                    CuteButton { tone: "primary"; text: "加分"; anchors.verticalCenter: parent.verticalCenter; onClicked: root.adjustGrp(true, grpRow.item) }
+                                    CuteButton { tone: "danger"; text: "扣分"; anchors.verticalCenter: parent.verticalCenter; onClicked: root.adjustGrp(false, grpRow.item) }
                                 }
                             }
                         }
