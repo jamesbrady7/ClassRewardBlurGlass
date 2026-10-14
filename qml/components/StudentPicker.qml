@@ -36,10 +36,28 @@ Item {
         // 平时=半透明白玻璃（原来是 Theme.surface 纯白不透明），浓度与同排的三颗图标钮、
         // 以及奖券的删除钮一致（都是 #55ffffff 这一档）；悬停/展开时提亮
         color: root.popupOpen ? "#e0ffffff" : (boxMa.containsMouse ? "#a8ffffff" : "#55ffffff")
-        border.color: root.popupOpen ? Theme.accent : Theme.inputBorder
+        // 焦点边框用**主题里的灰**（原来是强调色绿 #0fa88f，和这套浅色玻璃不搭）；
+        // 悬停也给一档更深的灰，形成"灰阶阶梯"：静止 inputBorder → 悬停 → 展开 textMuted
+        border.color: root.popupOpen ? Theme.textMuted
+                                    : (boxMa.containsMouse ? "#bcc5d2" : Theme.inputBorder)
         border.width: 1
         Behavior on color { ColorAnimation { duration: 140 } }
         Behavior on border.color { ColorAnimation { duration: 140 } }
+
+        // 展开时由边框**向框内渐隐**的内阴影（内凹感）：贴边最重、约 55% 处消失，
+        // 所以只压住上半边的"内壁"，不会糊到文字。声明在文字之前=压在文字下面。
+        Rectangle {
+            anchors.fill: parent
+            anchors.margins: 1
+            radius: Math.max(0, box.radius - 1)
+            visible: opacity > 0.01
+            opacity: root.popupOpen ? 1 : 0
+            gradient: Gradient {
+                GradientStop { position: 0.0;  color: Qt.rgba(0.35, 0.40, 0.50, 0.15) }
+                GradientStop { position: 0.55; color: Qt.rgba(0.35, 0.40, 0.50, 0.0) }
+            }
+            Behavior on opacity { NumberAnimation { duration: 170; easing.type: Easing.OutCubic } }
+        }
 
         // 放大镜
         Canvas {
@@ -145,9 +163,11 @@ Item {
                 radius: Theme.radiusSmall
                 // 悬停=明确的浅色高亮（原来用 Theme.bgTop，压在纯白弹层上几乎看不出）；
                 // 选中=薄荷底 + 深色字 + 右侧 ✓（与悬停区分开）
+                // ⚠️ **这里绝不能挂 Behavior 淡入淡出**：鼠标快速划过列表时，上一行还在淡出、
+                //    下一行已在淡入，一串半亮行叠成拖影，看起来就是"高亮在闪"。
+                //    全站的约定也是——Behavior 只挂单个控件（按钮/Tab/导航项），列表行一律瞬时切换。
                 color: root.currentId === modelData.id ? Theme.accentSoft
                      : itemMouse.containsMouse ? "#e9eef5" : "transparent"
-                Behavior on color { ColorAnimation { duration: 110 } }
                 Row {
                     anchors.fill: parent
                     anchors.leftMargin: 10
