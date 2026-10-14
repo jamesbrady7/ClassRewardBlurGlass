@@ -9,6 +9,8 @@ Canvas {
     width: 20; height: 20
     antialiasing: true
 
+    // ⚠️ 线宽变化也必须重绘：先前没有这条，改 strokeW 画布不会重画（悬停加粗就失效）
+    onStrokeWChanged: requestPaint()
     onNameChanged: requestPaint()
     onColorChanged: requestPaint()
     onWidthChanged: requestPaint()

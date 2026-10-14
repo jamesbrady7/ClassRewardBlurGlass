@@ -57,20 +57,13 @@ Item {
                 model: [1, -1]          // 上=加、下=减
                 delegate: Item {
                     width: 18; height: 15
-                    // 悬停提示：淡白圆角底（见顶部说明②，必须内缩）
-                    Rectangle {
-                        anchors.centerIn: parent
-                        width: 16; height: 14
-                        radius: height / 2
-                        color: "#ffffff"
-                        opacity: spinMa.containsMouse ? 0.9 : 0
-                        Behavior on opacity { NumberAnimation { duration: 120 } }
-                    }
+                    // 悬停反馈 = **符号本身加粗**（原来是一层白色高亮底，已去掉）
                     CanvasIcon {
                         anchors.centerIn: parent
                         name: modelData > 0 ? "plus" : "minus"
                         width: 11; height: 11
-                        color: Theme.textSecondary
+                        strokeW: spinMa.containsMouse ? 3.1 : 1.7     // 明显加粗
+                        color: spinMa.containsMouse ? Theme.textPrimary : Theme.textSecondary
                     }
                     MouseArea {
                         id: spinMa
