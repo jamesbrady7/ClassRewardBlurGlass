@@ -9,6 +9,10 @@ Item {
 
     property string currentId: ""
     property string currentLabel: ""
+    // 隐藏姓名：调用方（数据分析页的"隐藏姓名"开关）传进来。
+    // 开启时**下拉行与选中回显也要一起打码** —— 否则卡片上藏了名字、
+    // 下拉里照样能看见，等于没藏。
+    property bool nameHidden: false
     property bool popupOpen: false
     signal picked(string id)
 
@@ -42,6 +46,11 @@ Item {
         onTextEdited: (t) => { root.query = t; root.popupOpen = true }
         onAccepted: root.popupOpen = false
         onClicked: if (!root.popupOpen) root.popupOpen = true
+        // 点「×」：清掉选中项与查询，收起下拉（文字已由 SearchBox 清空）
+        onCleared: {
+            root.currentId = ""; root.currentLabel = ""
+            root.query = ""; root.popupOpen = false
+        }
     }
 
     // popupOpen 是唯一开关：外部（包括 Popup 自己关闭时）都只改这个属性
@@ -85,7 +94,8 @@ Item {
                 readonly property bool sel: root.currentId === modelData.id
                 // 悬停或选中（"热"态）：文字放大 + 加粗；移开/取消选中自动恢复
                 readonly property bool hot: itemMouse.containsMouse || sel
-                readonly property string label: modelData.studentId + "  " + modelData.name
+                readonly property string label: modelData.studentId + "  "
+                                                + (root.nameHidden ? "***" : modelData.name)
                                                 + "（可用 " + modelData.available + " 分）"
                 readonly property color fg: sel ? Theme.accentDark : Theme.textPrimary
                 // 字号有**过渡**（150ms）：直接绑 hot 会"啪"地跳，很突兀。
@@ -150,7 +160,8 @@ Item {
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
                         root.currentId = modelData.id
-                        root.currentLabel = modelData.studentId + "  " + modelData.name
+                        root.currentLabel = modelData.studentId + "  "
+                                            + (root.nameHidden ? "***" : modelData.name)
                         root.query = ""
                         box.text = ""
                         root.popupOpen = false

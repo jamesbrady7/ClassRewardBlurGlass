@@ -30,36 +30,39 @@ Item {
         id: eyeCanvas
         anchors.centerIn: parent
         width: 22
-        height: 15
+        height: 16
         onPaint: {
             var ctx = getContext("2d")
             ctx.reset()
             ctx.lineCap = "round"
             ctx.lineJoin = "round"
 
-            // 杏仁轮廓：上下两条对称的二次曲线
+            // 杏仁轮廓：上下两条对称的二次曲线。
+            // 控制点离中线 k → 镜片高度正好是 k（二次贝塞尔在 t=0.5 的偏移是控制点偏移的一半，
+            // 上下各一半，合成 k）。原来 k=7、宽 19 → 2.7:1 太扁，现在 k=11 → 1.7:1。
+            var cy = 8, k = 11
             ctx.strokeStyle = root.eyeOpen ? Theme.textSecondary : Theme.textMuted
             ctx.lineWidth = 1.6
             ctx.beginPath()
-            ctx.moveTo(1.5, 7.5)
-            ctx.quadraticCurveTo(11, 0.5, 20.5, 7.5)
-            ctx.quadraticCurveTo(11, 14.5, 1.5, 7.5)
+            ctx.moveTo(1.5, cy)
+            ctx.quadraticCurveTo(11, cy - k, 20.5, cy)
+            ctx.quadraticCurveTo(11, cy + k, 1.5, cy)
             ctx.closePath()
             ctx.stroke()
 
-            // 瞳孔
+            // 瞳孔（随镜片一起放大，留出眼白）
             ctx.fillStyle = root.eyeOpen ? Theme.textPrimary : Theme.textMuted
             ctx.beginPath()
-            ctx.arc(11, 7.5, 2.7, 0, Math.PI * 2)
+            ctx.arc(11, cy, 3.1, 0, Math.PI * 2)
             ctx.fill()
 
-            // 隐藏态：一道斜杠压过整只眼
+            // 隐藏态：一道斜杠压过整只眼（通用"不可见"符号）
             if (!root.eyeOpen) {
                 ctx.strokeStyle = Theme.textPrimary
                 ctx.lineWidth = 1.8
                 ctx.beginPath()
-                ctx.moveTo(4.2, 12.9)
-                ctx.lineTo(17.8, 2.1)
+                ctx.moveTo(4.0, 14.4)
+                ctx.lineTo(18.0, 1.6)
                 ctx.stroke()
             }
         }

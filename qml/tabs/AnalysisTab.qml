@@ -33,28 +33,25 @@ Column {
             anchors.verticalCenter: parent.verticalCenter
         }
         Item { width: 8; height: 1 }
-        // 「全班」：选中态必须用**实色**。
-        // ⚠️ 原来写的是 `tone: mode==="all" ? "soft" : "secondary"` ——
-        //    CuteButton 里 filled = tone!=="secondary" && tone!=="soft"，
-        //    这两档**都是未填充的玻璃**，选中与未选中长得一模一样 →
-        //    点下去毫无视觉反馈，用户报"全班按钮没有作用"。改成 primary（实色薄荷）。
-        CuteButton {
-            tone: root.mode === "all" ? "primary" : "secondary"
-            text: "全班"
-            anchors.verticalCenter: parent.verticalCenter
-            onClicked: {
-                root.mode = "all"; root.query = ""
-                picker.currentId = ""; picker.currentLabel = ""; picker.text = ""
-            }
-        }
-        // 搜索：**照搬积分商店那一套**（组件内是同一个 SearchBox）
-        //   · 输入即实时按 姓名/学号 过滤下拉；· 选人即切换单人模式；· 点别处/Esc 关闭
-        //   顺带干掉了原来那个"搜索按钮"（RoundBtn）——它的样式被指难看，且要先点按钮才生效
+        // 搜索（照搬积分商店那一套）：
+        //   · 默认就是**全班视图**（不再有「全班」按钮）
+        //   · 输入即按 姓名/学号 模糊过滤下拉；选人即切单人模式
+        //   · 选中后搜索栏右侧出现「×」，点它即清空并**回到全班视图**（见下面的 Connections）
         StudentPicker {
             id: picker
             width: 260
             anchors.verticalCenter: parent.verticalCenter
+            // 「隐藏姓名」要一起管住下拉里的名字 —— 否则卡片上藏了、下拉里照样看得见
+            nameHidden: root.hideName
             onPicked: (id) => { root.mode = "single"; root.query = id }
+        }
+        // 选中项被清掉（点「×」）→ 回到全班视图。
+        // 用 Connections 监听而不是在各处手动改，这样"×"、点别处、Esc 等任何清空路径都覆盖。
+        Connections {
+            target: picker
+            function onCurrentIdChanged() {
+                if (picker.currentId === "") { root.mode = "all"; root.query = "" }
+            }
         }
         Row {
             spacing: 6

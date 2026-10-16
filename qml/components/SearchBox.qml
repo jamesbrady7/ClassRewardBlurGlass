@@ -19,13 +19,14 @@ Item {
     signal textEdited(string t)
     signal accepted()
     signal clicked()
+    signal cleared()          // 点了右侧「×」：文字已清空，调用方再收拾自己的状态
 
     width: 240
     height: 38
 
     // 输入区左右留白：左边给放大镜、右边给清除位
     readonly property int _leftPad: 34
-    readonly property int _rightPad: 16
+    readonly property int _rightPad: 36
 
     Rectangle {
         id: box
@@ -145,6 +146,46 @@ Item {
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
             onClicked: { input.forceActiveFocus(); root.clicked() }
+        }
+
+        // 右侧「×」：有内容（输入了字 或 有 doneLabel）才出现。
+        // 只负责清掉文字，其余状态（选中项/模式）由调用方在 onCleared 里处理。
+        Item {
+            id: clearBtn
+            width: 22; height: 22
+            anchors.right: parent.right; anchors.rightMargin: 9
+            anchors.verticalCenter: parent.verticalCenter
+            visible: input.text.length > 0 || root.doneLabel !== ""
+            opacity: visible ? 1 : 0
+            Behavior on opacity { NumberAnimation { duration: 120 } }
+            Rectangle {
+                anchors.fill: parent
+                radius: width / 2
+                color: clearMa.containsMouse ? "#3affffff" : "transparent"
+                Behavior on color { ColorAnimation { duration: 120 } }
+            }
+            Canvas {
+                anchors.centerIn: parent
+                width: 10; height: 10
+                onPaint: {
+                    var c = getContext("2d"); c.reset()
+                    c.strokeStyle = Theme.textMuted
+                    c.lineWidth = 1.6
+                    c.lineCap = "round"
+                    c.beginPath()
+                    c.moveTo(1, 1); c.lineTo(9, 9)
+                    c.moveTo(9, 1); c.lineTo(1, 9)
+                    c.stroke()
+                }
+            }
+            MouseArea {
+                id: clearMa
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                // 先清文字（会触发 textEdited），再发 cleared —— 调用方在 cleared 里做收尾
+                onClicked: { input.text = ""; root.cleared() }
+            }
         }
     }
 }
