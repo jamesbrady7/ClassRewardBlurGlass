@@ -13,8 +13,9 @@ ColumnLayout {
         return "#" + a + g.slice(1)
     }
 
+    property string searchText: ""          // 搜索框内容（SearchBox 的 onTextEdited 同步进来）
     property var filteredStudents: {
-        var q = searchInput.text.trim().toLowerCase()
+        var q = root.searchText.trim().toLowerCase()
         var arr = []
         for (var i = 0; i < reward.students.length; i++) {
             var s = reward.students[i]
@@ -98,42 +99,14 @@ ColumnLayout {
             onClicked: mainWin.dlgImport.openDialog()
         }
 
-        // 搜索框（固定宽度、紧凑高度）
-        Rectangle {
+        // 搜索框：与积分商店同一套（组件见 components/SearchBox.qml —— 全站只此一份实现）
+        SearchBox {
             Layout.preferredWidth: 320
             Layout.maximumWidth: 420
             Layout.alignment: Qt.AlignVCenter
             height: 32
-            radius: Theme.radiusPill
-            color: Theme.surface
-            border.color: searchInput.activeFocus ? Theme.accent : Theme.inputBorder
-            border.width: 1
-            Text {
-                text: "🔍"
-                anchors.left: parent.left; anchors.leftMargin: 14
-                anchors.verticalCenter: parent.verticalCenter
-                font.pixelSize: Theme.fontBody
-            }
-            Text {
-                visible: searchInput.text.length === 0
-                text: "搜索姓名或学号…"
-                anchors.left: parent.left; anchors.leftMargin: 40
-                anchors.verticalCenter: parent.verticalCenter
-                color: Theme.textMuted
-                font.pixelSize: Theme.fontBody
-                font.family: Theme.fontFamily
-            }
-            TextInput {
-                id: searchInput
-                anchors.fill: parent
-                anchors.leftMargin: 40
-                anchors.rightMargin: 14
-                verticalAlignment: Text.AlignVCenter
-                color: Theme.textPrimary
-                font.pixelSize: Theme.fontBody
-                font.family: Theme.fontFamily
-                clip: true
-            }
+            placeholder: "搜索姓名或学号…"
+            onTextEdited: (t) => root.searchText = t
         }
 
         Item { Layout.fillWidth: true; height: 1 }

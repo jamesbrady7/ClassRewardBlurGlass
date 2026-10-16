@@ -33,46 +33,28 @@ Column {
             anchors.verticalCenter: parent.verticalCenter
         }
         Item { width: 8; height: 1 }
+        // 「全班」：选中态必须用**实色**。
+        // ⚠️ 原来写的是 `tone: mode==="all" ? "soft" : "secondary"` ——
+        //    CuteButton 里 filled = tone!=="secondary" && tone!=="soft"，
+        //    这两档**都是未填充的玻璃**，选中与未选中长得一模一样 →
+        //    点下去毫无视觉反馈，用户报"全班按钮没有作用"。改成 primary（实色薄荷）。
         CuteButton {
-            tone: root.mode === "all" ? "soft" : "secondary"
+            tone: root.mode === "all" ? "primary" : "secondary"
             text: "全班"
             anchors.verticalCenter: parent.verticalCenter
-            onClicked: { root.mode = "all"; root.query = "" }
-        }
-        Rectangle {
-            width: 120; height: 34
-            radius: Theme.radiusSmall
-            color: Theme.surface
-            border.color: searchInput.activeFocus ? Theme.accent : Theme.inputBorder
-            border.width: 1
-            anchors.verticalCenter: parent.verticalCenter
-            Text {
-                visible: searchInput.text.length === 0
-                text: "输入学号"
-                anchors.left: parent.left; anchors.leftMargin: 10
-                anchors.verticalCenter: parent.verticalCenter
-                color: Theme.textMuted
-                font.pixelSize: Theme.fontSmall
-                font.family: Theme.fontFamily
-            }
-            TextInput {
-                id: searchInput
-                anchors.fill: parent
-                anchors.leftMargin: 10
-                anchors.rightMargin: 10
-                verticalAlignment: Text.AlignVCenter
-                color: Theme.textPrimary
-                font.pixelSize: Theme.fontBody
-                font.family: Theme.fontFamily
+            onClicked: {
+                root.mode = "all"; root.query = ""
+                picker.currentId = ""; picker.currentLabel = ""; picker.text = ""
             }
         }
-        RoundBtn {
-            size: 36
-            bg: Theme.accentSoft
-            fg: Theme.accentDark
-            icon: "search"
+        // 搜索：**照搬积分商店那一套**（组件内是同一个 SearchBox）
+        //   · 输入即实时按 姓名/学号 过滤下拉；· 选人即切换单人模式；· 点别处/Esc 关闭
+        //   顺带干掉了原来那个"搜索按钮"（RoundBtn）——它的样式被指难看，且要先点按钮才生效
+        StudentPicker {
+            id: picker
+            width: 260
             anchors.verticalCenter: parent.verticalCenter
-            onClicked: { if (searchInput.text.trim()) { root.mode = "single"; root.query = searchInput.text } }
+            onPicked: (id) => { root.mode = "single"; root.query = id }
         }
         Row {
             spacing: 6
