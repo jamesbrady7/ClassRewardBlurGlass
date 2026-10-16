@@ -32,7 +32,9 @@ Item {
     Rectangle {
         id: box
         width: parent.width; height: 38
-        radius: Theme.radiusSmall
+        // 形状改成与**花名册搜索栏**一致的全圆胶囊（原来 radiusSmall = 圆角矩形）；
+        // 配色/悬停/展开/内阴影等效果一律不变。高度仍是 38（花名册那个是 32）。
+        radius: Theme.radiusPill
         // 平时=半透明白玻璃（原来是 Theme.surface 纯白不透明），浓度与同排的三颗图标钮、
         // 以及奖券的删除钮一致（都是 #55ffffff 这一档）；悬停/展开时提亮
         color: root.popupOpen ? "#e0ffffff" : (boxMa.containsMouse ? "#a8ffffff" : "#55ffffff")
@@ -58,7 +60,10 @@ Item {
                     var a = 0.58 * Math.pow(1 - i / N, 1.4)      // 贴边最亮，向内快速衰减
                     var ins = i + 1
                     var x = ins, y = ins, ww = w - 2 * ins, hh = h - 2 * ins
-                    var rr = Math.max(1, base - ins)
+                    // ⚠️ 必须钳到 min(ww,hh)/2：radius 是 radiusPill(=999) 时，
+                    //    `base - ins` 会远大于半个框，二次贝塞尔路径直接画反、形状崩掉。
+                    //    圆角矩形时 min() 取到的仍是 base，行为不变。
+                    var rr = Math.max(1, Math.min(base, ww / 2, hh / 2))
                     ctx.strokeStyle = "rgba(255,255,255," + a.toFixed(3) + ")"
                     ctx.lineWidth = 1
                     ctx.beginPath()
