@@ -17,17 +17,11 @@ Column {
         }
         return arr
     }
-    function catColor(cat) {
-        return cat === "普通" ? Theme.blueSoft
-             : cat === "稀有" ? Theme.purpleSoft
-             : cat === "史诗" ? Theme.amberSoft
-             : Theme.redSoft
-    }
+    // 分类色映射已挪到 Theme（catSoft / catFg）—— 商店和背包共用同一份，别再各写一套。
+    // 原来这里还有一份 catColor，全文件没人用，一并删掉。
+    // 未知分类兜底成红（保持原行为；Theme.catFg 对未知返回空串，好让调用方自己决定兜底）。
     function catFg(cat) {
-        return cat === "普通" ? Theme.blue
-             : cat === "稀有" ? Theme.purple
-             : cat === "史诗" ? Theme.amber
-             : Theme.red
+        return Theme.catFg(cat) || Theme.red
     }
     // 奖券底：等级色的半透明底色（透明渐变感，无边框盒子）
     function tintCat(cat) {

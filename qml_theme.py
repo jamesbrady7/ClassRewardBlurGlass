@@ -6,7 +6,7 @@
 # 设计语言（与 QSS 版一致，QML 侧落地）：
 #   「清新 · 高级」明亮主题 —— 近白灰蓝背景 + 白色卡片 + 翡翠主色
 # ============================================================
-from PySide6.QtCore import QObject, Property
+from PySide6.QtCore import QObject, Property, Slot
 
 # 小组条纹色板（与旧版 view/widgets/student_card.py 保持一致）
 GROUP_STRIPES = ['#0fa88f', '#4c8de5', '#e76a9e', '#e8a93c', '#8b6fe8', '#22a06b']
@@ -48,6 +48,21 @@ class Theme(QObject):
     @Property(str, constant=True)
     def inputBorder(self):
         return '#d9dfe9'
+
+    # ── 奖励分类配色（普通/稀有/史诗/传说）──────────────────────
+    # 原来这套映射只写在 ShopTab.qml 里，背包那边要按分类上色就得再抄一份 →
+    # 挪到 Theme 里，两处共用；以后加分类只改这一处。
+    @Slot(str, result=str)
+    def catSoft(self, cat):
+        """分类的浅色底（卡片/圆底用）"""
+        return {'普通': self.blueSoft, '稀有': self.purpleSoft,
+                '史诗': self.amberSoft, '传说': self.redSoft}.get(cat, '')
+
+    @Slot(str, result=str)
+    def catFg(self, cat):
+        """分类的实色（标签底/文字用）"""
+        return {'普通': self.blue, '稀有': self.purple,
+                '史诗': self.amber, '传说': self.red}.get(cat, '')
 
     @Property(str, constant=True)
     def groove(self):

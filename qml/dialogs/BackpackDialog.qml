@@ -26,7 +26,12 @@ Modal {
                     spacing: 10
                     Rectangle {
                         width: 34; height: 34; radius: 17
-                        color: modelData.isBlind ? Theme.amberSoft : Theme.accentSoft
+                        // 圆底按**奖励分类**上色（普通蓝 / 稀有紫 / 史诗琥珀 / 传说红），
+                        // 原来只按"是不是盲盒"分两色（琥珀/薄荷绿）→ 一张「传说」和一张
+                        // 「普通」在背包里长得一模一样，分类根本看不出来。
+                        // 分类缺失时（如盲盒本身）才回退到原来的两色。
+                        color: Theme.catSoft(modelData.category)
+                               || (modelData.isBlind ? Theme.amberSoft : Theme.accentSoft)
                         Text {
                             text: modelData.isBlind ? "🎁" : "🎫"
                             anchors.centerIn: parent

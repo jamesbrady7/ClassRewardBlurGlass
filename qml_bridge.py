@@ -248,13 +248,16 @@ class RewardBridge(QObject):
         s = cls.get_student_by_id(self._active_sid)
         if not s:
             return []
+        # 分类要按 reward_id 反查奖励表 —— 物品本身只存 reward_id，不存分类
+        cat_of = {r.id: (r.category or '') for r in (cls.rewards or [])}
         out = []
         for it in (s.items or []):
             if it.used:
                 continue
             out.append({'id': it.id, 'name': it.name,
                         'time': datetime.datetime.fromtimestamp(it.acquired_time).strftime('%Y-%m-%d'),
-                        'isBlind': it.reward_id == 'r_blindbox'})
+                        'isBlind': it.reward_id == 'r_blindbox',
+                        'category': cat_of.get(it.reward_id, '')})
         return out
 
     @Property('QVariantList', notify=dataChanged)
