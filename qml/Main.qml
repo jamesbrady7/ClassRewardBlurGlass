@@ -111,6 +111,13 @@ Window {
         anchors.horizontalCenter: parent.horizontalCenter
         source: backgroundLayer
         glassBlur: !systemGlass       // 穿透模式：模糊交给 DWM，这里只留半透明 tint
+        // ── tint 必须按模式分档 ───────────────────────────────
+        // 穿透模式：DWM 已经在窗后糊化桌面了，面板再叠 80% 白（默认 #ccffffff）
+        //   就是一条**实心白带** —— 实测标题栏 alpha=204(80%)、紧挨着它的下方 alpha=0，
+        //   差 80 个点，所以看着特别突兀。
+        //   降到 35% 让桌面透过来（再低文字在深色壁纸上会不好认）。
+        // 自绘模式：面板自己模糊 captured 的背景，80% 白是当初配好的，**不动**。
+        tint: systemGlass ? "#59ffffff" : "#ccffffff"
 
         MouseArea {
             anchors.fill: parent

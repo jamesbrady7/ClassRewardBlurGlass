@@ -41,19 +41,10 @@ Modal {
                     Column {
                         width: parent.width - 130
                         anchors.verticalCenter: parent.verticalCenter
-                        // 名称 + 分类标签（标签色同商店奖励券，一眼看出这张券是哪一档）
+                        // 分类标签 + 名称（标签在前；标签色同商店奖励券，一眼看出这张券是哪一档）
                         Row {
                             width: parent.width
                             spacing: 6
-                            Text {
-                                text: modelData.name
-                                color: Theme.textPrimary
-                                font.pixelSize: Theme.fontBody
-                                font.bold: true
-                                font.family: Theme.fontFamily
-                                elide: Text.ElideRight
-                                width: Math.min(implicitWidth, parent.width - (catBadge.visible ? catBadge.width + 6 : 0))
-                            }
                             Rectangle {
                                 id: catBadge
                                 visible: modelData.category !== ""
@@ -71,6 +62,16 @@ Modal {
                                     font.bold: true
                                     font.family: Theme.fontFamily
                                 }
+                            }
+                            Text {
+                                text: modelData.name
+                                color: Theme.textPrimary
+                                font.pixelSize: Theme.fontBody
+                                font.bold: true
+                                font.family: Theme.fontFamily
+                                elide: Text.ElideRight
+                                width: Math.min(implicitWidth,
+                                                parent.width - catBadge.width - 6)
                             }
                         }
                         Text {
