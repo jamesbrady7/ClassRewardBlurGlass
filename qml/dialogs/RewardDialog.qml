@@ -25,14 +25,35 @@ Modal {
                 }
                 Stepper { id: costStepper; value: 5; max: 999 }
             }
+            // 分类标签：**每个分类用自己的颜色**（普通蓝/稀有紫/史诗琥珀/传说红）
+            // 原来用 CuteButton 的 soft/secondary 两档玻璃色 —— 四个标签长得一样，看不出谁是谁。
+            // CuteButton 的 tone 只能映射固定几套 scheme，给不了任意色，所以这里自绘。
+            // 选中=实色底+白字，未选=同色系浅底+分类色字（沿用商店奖励券的配色语言）。
             Row {
                 spacing: 6
                 Repeater {
                     model: ["普通", "稀有", "史诗", "传说"]
-                    delegate: CuteButton {
-                        tone: root.cat === modelData ? "soft" : "secondary"
-                        text: modelData
-                        onClicked: root.cat = modelData
+                    delegate: Rectangle {
+                        readonly property bool on: root.cat === modelData
+                        width: catLabel.implicitWidth + 28
+                        height: 32
+                        radius: Theme.radiusPill
+                        color: on ? Theme.catFg(modelData) : Theme.catSoft(modelData)
+                        Behavior on color { ColorAnimation { duration: 140 } }
+                        Text {
+                            id: catLabel
+                            anchors.centerIn: parent
+                            text: modelData
+                            color: on ? "#ffffff" : Theme.catFg(modelData)
+                            font.pixelSize: Theme.fontSmall
+                            font.bold: on
+                            font.family: Theme.fontFamily
+                        }
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.cat = modelData
+                        }
                     }
                 }
             }

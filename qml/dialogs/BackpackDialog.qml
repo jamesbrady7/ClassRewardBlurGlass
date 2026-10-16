@@ -41,14 +41,37 @@ Modal {
                     Column {
                         width: parent.width - 130
                         anchors.verticalCenter: parent.verticalCenter
-                        Text {
-                            text: modelData.name
-                            color: Theme.textPrimary
-                            font.pixelSize: Theme.fontBody
-                            font.bold: true
-                            font.family: Theme.fontFamily
-                            elide: Text.ElideRight
+                        // 名称 + 分类标签（标签色同商店奖励券，一眼看出这张券是哪一档）
+                        Row {
                             width: parent.width
+                            spacing: 6
+                            Text {
+                                text: modelData.name
+                                color: Theme.textPrimary
+                                font.pixelSize: Theme.fontBody
+                                font.bold: true
+                                font.family: Theme.fontFamily
+                                elide: Text.ElideRight
+                                width: Math.min(implicitWidth, parent.width - (catBadge.visible ? catBadge.width + 6 : 0))
+                            }
+                            Rectangle {
+                                id: catBadge
+                                visible: modelData.category !== ""
+                                width: badgeText.implicitWidth + 16
+                                height: 17
+                                radius: 8.5
+                                anchors.verticalCenter: parent.verticalCenter
+                                color: Theme.catFg(modelData.category)
+                                Text {
+                                    id: badgeText
+                                    anchors.centerIn: parent
+                                    text: modelData.category
+                                    color: "#ffffff"
+                                    font.pixelSize: 10
+                                    font.bold: true
+                                    font.family: Theme.fontFamily
+                                }
+                            }
                         }
                         Text {
                             text: "获得于 " + modelData.time

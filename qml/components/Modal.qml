@@ -17,10 +17,14 @@ Rectangle {
 
     anchors.fill: parent
     color: "#33000000"
-    visible: open
+    // ⚠️ 不能写 `visible: open`：hide() 里 open 一置 false，整个弹窗立刻不可见，
+    //    **关闭动画根本播不出来**（只有打开有动画）。改成跟着淡出进度走 ——
+    //    opacity 归零过程中保持可见，播完自然消失。
+    visible: opacity > 0.001
     opacity: 0
     z: 90
-    Behavior on opacity { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+    // 200ms：要覆盖住下面 Card 那条 200ms 的 scale 回弹，否则会被提前切掉
+    Behavior on opacity { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
 
     function show() { open = true; opacity = 1 }
     function hide() { open = false; opacity = 0; closed() }
@@ -54,7 +58,7 @@ Rectangle {
                 width: parent.width
                 height: 30
                 Text {
-                    width: parent.width - 40
+                    width: parent.width - 38
                     text: root.title
                     color: Theme.textPrimary
                     font.pixelSize: Theme.fontSection
@@ -63,11 +67,15 @@ Rectangle {
                     elide: Text.ElideRight
                     verticalAlignment: Text.AlignVCenter
                 }
-                Rectangle {
-                    width: 28; height: 28; radius: Theme.radiusPill
-                    color: Theme.bgTop
-                    Text { text: "✕"; anchors.centerIn: parent; color: Theme.textSecondary; font.pixelSize: 14 }
-                    MouseArea { anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.hide() }
+                // 关闭按钮：与整个软件的关闭按钮**同一套**（标题栏那颗 CircleButton：
+                // 玻璃圆面 + raised 圆外双球 + close 图标 + 同款悬停/按下反馈）。
+                // 原来是自绘的 28px 圆角方块 + 文字"✕"，观感和主界面不搭。
+                CircleButton {
+                    size: 30
+                    raised: true
+                    shadow: false
+                    icon: "close"
+                    onClicked: root.hide()
                 }
             }
 
