@@ -22,7 +22,7 @@
      "studentId": "01",
      "name": "李小乐",
      "groupId": "",
-     "earnedPoints": 25,
+     "earnedPoints": 38,
      "redeemedPoints": 0,
      "doublePointsUntil": 0,
      "items": [],
@@ -70,6 +70,13 @@
        "groupId": ""
       },
       {
+       "timestamp": 1792221799.0,
+       "type": "earn",
+       "points": 6,
+       "description": "纪律",
+       "groupId": ""
+      },
+      {
        "timestamp": 1792299967.8082428,
        "type": "undo",
        "points": 0,
@@ -81,6 +88,20 @@
        "type": "earn",
        "points": 1,
        "description": "作业",
+       "groupId": ""
+      },
+      {
+       "timestamp": 1792308186.5837739,
+       "type": "earn",
+       "points": 4,
+       "description": "纪律",
+       "groupId": ""
+      },
+      {
+       "timestamp": 1792308193.905195,
+       "type": "earn",
+       "points": 3,
+       "description": "考试",
        "groupId": ""
       }
      ]
