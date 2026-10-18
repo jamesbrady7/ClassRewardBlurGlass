@@ -270,7 +270,11 @@ Column {
         Repeater {
             model: reward.categories
             delegate: CuteButton {
-                tone: root.cat === modelData ? "soft" : "secondary"
+                // ⚠️ 原来写的是 soft / secondary —— CuteButton 里 filled = tone!=="secondary"
+                //    && tone!=="soft"，**这两档都是未填充的玻璃**，选中与未选中长得一模一样，
+                //    所以点了看着"无法选中"（数据分析的「全班」按钮当初也是这个坑）。
+                //    改成 primary（实色），与批量操作页的分类标签完全一致。
+                tone: root.cat === modelData ? "primary" : "secondary"
                 text: modelData
                 anchors.verticalCenter: parent.verticalCenter
                 onClicked: root.cat = modelData

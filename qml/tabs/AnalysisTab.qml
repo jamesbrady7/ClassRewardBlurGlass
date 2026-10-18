@@ -29,30 +29,26 @@ Column {
         }
         return m
     }
-    readonly property int classMaxCum: {
-        var best = 0
+    // 趋势图现在画的是**每天**的净分（用户给定：单日加分 ≤ 8、扣分 ≤ 5），
+    // 所以这里给的是**全班单日极值**，用来兜住超常数据（正常时轴恒为 −5..+8）。
+    readonly property var _dailyExt: {
+        var hi = 0, lo = 0
         for (var i = 0; i < reward.analysis.length; i++) {
-            var s = 0, tx = reward.analysis[i].transactions
+            var m = {}
+            var tx = reward.analysis[i].transactions
             for (var j = 0; j < tx.length; j++) {
-                if (tx[j].type === "earn") s += tx[j].points
-                else if (tx[j].type === "deduct") s -= tx[j].points
+                var t = tx[j]
+                if (t.type !== "earn" && t.type !== "deduct") continue
+                var d = new Date(t.ts * 1000)
+                var k = d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate()
+                m[k] = (m[k] || 0) + (t.type === "earn" ? t.points : -t.points)
             }
-            best = Math.max(best, s)
+            for (var kk in m) { hi = Math.max(hi, m[kk]); lo = Math.min(lo, m[kk]) }
         }
-        return best
+        return { hi: hi, lo: lo }
     }
-    readonly property int classMinCum: {
-        var worst = 0
-        for (var i = 0; i < reward.analysis.length; i++) {
-            var s = 0, tx = reward.analysis[i].transactions
-            for (var j = 0; j < tx.length; j++) {
-                if (tx[j].type === "earn") s += tx[j].points
-                else if (tx[j].type === "deduct") s -= tx[j].points
-            }
-            worst = Math.min(worst, s)
-        }
-        return worst
-    }
+    readonly property real classMaxDaily: _dailyExt.hi
+    readonly property real classMinDaily: _dailyExt.lo
 
     spacing: Theme.spacing
 
@@ -172,15 +168,30 @@ Column {
                         contentHeight: height
                         clip: true
                         boundsBehavior: Flickable.StopAtBounds
-                        ScrollBar.horizontal: ScrollBar { policy: ScrollBar.AsNeeded }
+                        // 细而淡的滚动条：3px 圆角、半透明白；默认样式又粗又带箭头，很土
+                        ScrollBar.horizontal: ScrollBar {
+                            id: hbar
+                            policy: ScrollBar.AsNeeded
+                            background: Rectangle {
+                                implicitHeight: 3
+                                radius: 1.5
+                                color: "#26ffffff"
+                            }
+                            contentItem: Rectangle {
+                                implicitHeight: 3
+                                radius: 1.5
+                                color: hbar.pressed ? "#8cffffff" : "#66ffffff"
+                                Behavior on color { ColorAnimation { duration: 120 } }
+                            }
+                        }
                         TrendChart {
                             id: trendChart
                             width: trendScroll.contentWidth
                             height: 300
                             viewWidth: trendScroll.width
                             transactions: student.transactions
-                            classMaxCum: root.classMaxCum
-                            classMinCum: root.classMinCum
+                            classMaxDaily: root.classMaxDaily
+                            classMinDaily: root.classMinDaily
                         }
                     }
                 }
