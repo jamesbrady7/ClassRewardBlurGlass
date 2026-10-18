@@ -53,19 +53,23 @@ Modal {
                     model: root.grades
                     delegate: Rectangle {
                         property bool hov: false
+                        readonly property bool on: index === root.gradeIdx
                         width: 68
                         height: 32
                         radius: Theme.radiusPill
-                        color: index === root.gradeIdx ? Theme.accent
-                             : hov ? "#eef4f8" : "#f0f3f8"
-                        border.color: index === root.gradeIdx ? "transparent" : "transparent"
+                        // 未选 = 全站统一的半透明白玻璃（#55ffffff，悬停提亮到 #a8ffffff）；
+                        // 选中 = 主题实色 + 白字。原来未选用的是 #f0f3f8 实色浅灰，
+                        // 与别处的玻璃面不一致，且切换时是硬跳、没有过渡。
+                        color: on ? Theme.accent : (hov ? "#a8ffffff" : "#55ffffff")
+                        Behavior on color { ColorAnimation { duration: 140 } }
                         Text {
                             text: modelData
                             anchors.centerIn: parent
-                            color: index === root.gradeIdx ? "#ffffff" : Theme.textSecondary
+                            color: on ? "#ffffff" : Theme.textSecondary
                             font.pixelSize: Theme.fontBody
-                            font.bold: index === root.gradeIdx
+                            font.bold: on
                             font.family: Theme.fontFamily
+                            Behavior on color { ColorAnimation { duration: 140 } }
                         }
                         MouseArea {
                             anchors.fill: parent
@@ -79,32 +83,15 @@ Modal {
                 }
             }
 
-            Text {
-                text: "班级序号（阿拉伯数字）"
-                color: Theme.textSecondary
-                font.pixelSize: Theme.fontSmall
-                font.family: Theme.fontFamily
-            }
-            Rectangle {
+            // 与全站对话框输入框同一套（components/Field.qml）：
+            // 半透明白玻璃底、**无描边**、聚焦提亮 + 边缘向内渐隐的内阴影
+            Field {
+                id: noField
+                label: "班级序号（阿拉伯数字）"
                 width: parent.width
-                height: 38
-                radius: Theme.radiusSmall
-                color: Theme.surface
-                border.color: noInput.activeFocus ? Theme.accent : Theme.inputBorder
-                border.width: 1
-                TextInput {
-                    id: noInput
-                    anchors.fill: parent
-                    anchors.leftMargin: 12
-                    anchors.rightMargin: 12
-                    verticalAlignment: Text.AlignVCenter
-                    color: Theme.textPrimary
-                    font.pixelSize: Theme.fontBody
-                    font.family: Theme.fontFamily
-                    text: root.classNo
-                    validator: IntValidator { bottom: 1; top: 20 }
-                    onTextChanged: root.classNo = text
-                }
+                input.text: root.classNo
+                input.validator: IntValidator { bottom: 1; top: 20 }
+                input.onTextChanged: root.classNo = input.text
             }
             Text {
                 text: "预览：" + root.grades[root.gradeIdx] + (root.classNo.trim() || "1") + "班"
