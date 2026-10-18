@@ -59,30 +59,36 @@ Column {
             onPicked: root.currentStudentId = id
         }
         // 纯图标按钮：底色同本页奖券的删除钮（白色半透明），只留符号、不要文字
-        IconChip {
-            icon: "undo"
-            fg: Theme.amber
-            bg: "#55ffffff"
-            bordered: false
-            hoverHighlight: true
+        // 撤回 / 历史 / 背包：改成**花名册学生卡片上那种按钮**（RoundBtn：
+        // 圆形软色底 + 彩色 emoji 字形 + 悬停加粗），配色也沿用花名册的映射
+        // （undo 紫 / history 琥珀 / backpack 粉）。
+        RoundBtn {
+            size: 34
+            bg: Theme.purpleSoft
+            fg: "#7d55d6"
+            glyph: "🔙"
+            glyphSize: 18
+            hint: "撤回上一步"
             anchors.verticalCenter: parent.verticalCenter
             onClicked: { if (root.currentStudentId) mainWin.toast.show(reward.undoLast(root.currentStudentId)); else mainWin.toast.show("请先选择学生") }
         }
-        IconChip {
-            icon: "clock"
-            fg: Theme.blue
-            bg: "#55ffffff"
-            bordered: false
-            hoverHighlight: true
+        RoundBtn {
+            size: 34
+            bg: Theme.amberSoft
+            fg: "#cf8d12"
+            glyph: "🕘"
+            glyphSize: 18
+            hint: "积分历史"
             anchors.verticalCenter: parent.verticalCenter
             onClicked: { if (root.currentStudentId) mainWin.dlgHistory.openDialog(root.currentStudentId); else mainWin.toast.show("请先选择学生") }
         }
-        IconChip {
-            icon: "bag"
-            fg: Theme.purple
-            bg: "#55ffffff"
-            bordered: false
-            hoverHighlight: true
+        RoundBtn {
+            size: 34
+            bg: Theme.pinkSoft
+            fg: "#cf5a90"
+            glyph: "🎒"
+            glyphSize: 18
+            hint: "奖励背包"
             anchors.verticalCenter: parent.verticalCenter
             onClicked: { if (root.currentStudentId) mainWin.dlgBackpack.openDialog(root.currentStudentId); else mainWin.toast.show("请先选择学生") }
         }
