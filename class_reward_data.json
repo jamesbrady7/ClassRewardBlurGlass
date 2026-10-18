@@ -22,7 +22,7 @@
           "studentId": "01",
           "name": "李小乐",
           "groupId": "",
-          "earnedPoints": 25,
+          "earnedPoints": 24,
           "redeemedPoints": 0,
           "doublePointsUntil": 0,
           "items": [],
@@ -49,10 +49,10 @@
               "groupId": "g1788349917592d5e30c"
             },
             {
-              "timestamp": 1788449317.6962438,
-              "type": "earn",
-              "points": 1,
-              "description": "课堂",
+              "timestamp": 1792299967.8082428,
+              "type": "undo",
+              "points": 0,
+              "description": "撤回上一步",
               "groupId": ""
             }
           ]
