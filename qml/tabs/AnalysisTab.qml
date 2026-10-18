@@ -17,6 +17,43 @@ Column {
         return reward.analysis.filter(function(a) { return a.studentId === q })
     }
 
+    // ── 图表刻度的"全班组量级" ─────────────────────────────
+    // 图表刻度必须按**全班**取（不是按单个学生，也不是写死）：
+    //   · 同一时刻所有学生共用同一档 → 形状/高低可比
+    //   · 档位表在图表组件里，数据长上去会整档上跳、永不封顶 → 撑得过一整个学期
+    readonly property int classMaxDim: {
+        var m = 0
+        for (var i = 0; i < reward.analysis.length; i++) {
+            var sc = reward.analysis[i].scores
+            for (var j = 0; j < sc.length; j++) m = Math.max(m, sc[j])
+        }
+        return m
+    }
+    readonly property int classMaxCum: {
+        var best = 0
+        for (var i = 0; i < reward.analysis.length; i++) {
+            var s = 0, tx = reward.analysis[i].transactions
+            for (var j = 0; j < tx.length; j++) {
+                if (tx[j].type === "earn") s += tx[j].points
+                else if (tx[j].type === "deduct") s -= tx[j].points
+            }
+            best = Math.max(best, s)
+        }
+        return best
+    }
+    readonly property int classMinCum: {
+        var worst = 0
+        for (var i = 0; i < reward.analysis.length; i++) {
+            var s = 0, tx = reward.analysis[i].transactions
+            for (var j = 0; j < tx.length; j++) {
+                if (tx[j].type === "earn") s += tx[j].points
+                else if (tx[j].type === "deduct") s -= tx[j].points
+            }
+            worst = Math.min(worst, s)
+        }
+        return worst
+    }
+
     spacing: Theme.spacing
 
     // 标题 + 工具栏
@@ -124,6 +161,7 @@ Column {
                         height: 300
                         scores: student.scores
                         categories: reward.categories
+                        classMax: root.classMaxDim
                     }
                     // 趋势图：日期多时可横向滚动
                     Flickable {
@@ -139,7 +177,10 @@ Column {
                             id: trendChart
                             width: trendScroll.contentWidth
                             height: 300
+                            viewWidth: trendScroll.width
                             transactions: student.transactions
+                            classMaxCum: root.classMaxCum
+                            classMinCum: root.classMinCum
                         }
                     }
                 }
