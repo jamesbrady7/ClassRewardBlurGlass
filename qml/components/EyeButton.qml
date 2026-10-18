@@ -41,7 +41,10 @@ Item {
             // 控制点离中线 k → 镜片高度正好是 k（二次贝塞尔在 t=0.5 的偏移是控制点偏移的一半，
             // 上下各一半，合成 k）。原来 k=7、宽 19 → 2.7:1 太扁，现在 k=11 → 1.7:1。
             var cy = 8, k = 11
-            ctx.strokeStyle = root.eyeOpen ? Theme.textSecondary : Theme.textMuted
+            // 显示姓名时**整体同色**（原来轮廓 textSecondary、瞳孔 textPrimary，两种色）；
+            // 隐藏态保持原样（轮廓/瞳孔 textMuted，斜杠 textPrimary）。
+            var ink = root.eyeOpen ? Theme.textSecondary : Theme.textMuted
+            ctx.strokeStyle = ink
             ctx.lineWidth = 1.6
             ctx.beginPath()
             ctx.moveTo(1.5, cy)
@@ -50,10 +53,13 @@ Item {
             ctx.closePath()
             ctx.stroke()
 
-            // 瞳孔（随镜片一起放大，留出眼白）
-            ctx.fillStyle = root.eyeOpen ? Theme.textPrimary : Theme.textMuted
+            // 瞳孔：边缘刚好**触及上下眼线**。
+            //   中线处镜片高度 = k = 11（二次曲线 t=0.5 的偏移是控制点的一半，上下各 k/2）；
+            //   描边 1.6 居中压在路径上，两侧各占 0.8 → 内缘间距 11 - 1.6 = 9.4
+            //   → 半径 9.4/2 = 4.7 时正好贴上内缘（原来 3.1 太小，像个小黑点）。
+            ctx.fillStyle = ink
             ctx.beginPath()
-            ctx.arc(11, cy, 3.1, 0, Math.PI * 2)
+            ctx.arc(11, cy, 4.7, 0, Math.PI * 2)
             ctx.fill()
 
             // 隐藏态：一道斜杠压过整只眼（通用"不可见"符号）
