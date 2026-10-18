@@ -130,7 +130,7 @@ Column {
             height: 360
             radius: Theme.radius
             // 底色与学生卡片一致：半透明白玻璃（浓度要低才透得出背后，见 RosterTab 的说明）
-            cardColor: "#4dffffff"
+            cardColor: Theme.cardGlass
             shadow: true
             liftOnHover: true
             Column {

@@ -141,7 +141,7 @@ ColumnLayout {
             // 底色 = 半透明白玻璃。
             // ⚠️ 浓度必须低：玻璃感来自"能透出背后"，72% 白等于一块实心白卡、玻璃感全无。
             //    30% 白时背后被 DWM 糊化的桌面会透上来，才是玻璃。
-            cardColor: "#4dffffff"
+            cardColor: Theme.cardGlass
             borderColor: "transparent"
             shadow: true
             liftOnHover: true
@@ -168,8 +168,8 @@ ColumnLayout {
                 Rectangle {
                     height: 34
                     radius: Theme.radiusPill
-                    color: "#f3f7fb"
-                    border.color: "#dde6f0"
+                    color: Theme.surface
+                    border.color: Theme.border
                     border.width: 1
                     width: scoreRow.implicitWidth + 26
                     anchors.verticalCenter: parent.verticalCenter
@@ -198,7 +198,7 @@ ColumnLayout {
                         }
                         Rectangle {
                             width: 1; height: 20
-                            color: "#dde6f0"
+                            color: Theme.divider
                             anchors.verticalCenter: parent.verticalCenter
                         }
                         Column {

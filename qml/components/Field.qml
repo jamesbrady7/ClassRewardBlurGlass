@@ -25,7 +25,7 @@ Column {
         // 底色：静息=半透明白玻璃，聚焦=提亮 —— 与积分商店搜索栏同一档
         // ⚠️ 静息不能再是 Theme.surface（纯白不透明）：那样"聚焦提亮"就没地方可提了，
         //    高亮必须靠静息态压暗来换取对比。
-        color: input.activeFocus ? "#e0ffffff" : "#55ffffff"
+        color: input.activeFocus ? Theme.glassActive : Theme.glassIdle
         // **不要边框**：原来聚焦时画 1px 强调色硬边，在这一片浅色玻璃上会读成"框了一条线"。
         // 聚焦的提示改由下面那圈"向内渐隐的内阴影"承担（同搜索栏展开态）。
         border.width: 0

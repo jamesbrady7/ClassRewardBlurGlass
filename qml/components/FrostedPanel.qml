@@ -7,7 +7,7 @@ Item {
     id: root
 
     property Item source: null
-    property color tint: "#ccffffff"
+    property color tint: Theme.titleTint
     property real blur: 1.0
     property real radius: Theme.radius
     // false = **系统背板模式**：背景已由 DWM Acrylic 在窗后实时糊化，这里不再自绘模糊，

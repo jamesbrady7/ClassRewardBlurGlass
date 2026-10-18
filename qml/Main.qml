@@ -117,7 +117,7 @@ Window {
         //   差 80 个点，所以看着特别突兀。
         //   降到 35% 让桌面透过来（再低文字在深色壁纸上会不好认）。
         // 自绘模式：面板自己模糊 captured 的背景，80% 白是当初配好的，**不动**。
-        tint: systemGlass ? "#59ffffff" : "#ccffffff"
+        tint: systemGlass ? Theme.titleTintGlass : Theme.titleTint
 
         MouseArea {
             anchors.fill: parent
@@ -190,6 +190,15 @@ Window {
                     font.pixelSize: Theme.fontSmall
                     font.family: Theme.fontFamily
                 }
+            }
+            // 昼夜切换：照原型的做法，同一个位置显示太阳 / 月亮
+            CircleButton {
+                size: 30
+                raised: true
+                shadow: false
+                icon: Theme.night ? "sun" : "moon"
+                anchors.verticalCenter: parent.verticalCenter
+                onClicked: Theme.toggleNight()
             }
             // 窗口按钮：照搬原型的做法 —— CircleButton + raised（圆外双球立体）
             //   最小化 / 放大·还原 / 关闭 同一套逻辑，只有图标不同
@@ -473,8 +482,8 @@ Window {
         visible: open
         z: 290
         radius: 10
-        color: "#f4f7fb"
-        border.color: "#c6d1de"
+        color: Theme.surface
+        border.color: Theme.border
         border.width: 1
         Column {
             anchors.fill: parent
@@ -528,7 +537,7 @@ Window {
             Rectangle { // 细分隔线，让菜单成整体
                 width: parent.width - 10
                 height: 1
-                color: "#dbe3ec"
+                color: Theme.divider
                 anchors.horizontalCenter: parent.horizontalCenter
             }
             Rectangle { // 删除
@@ -603,8 +612,8 @@ Window {
         visible: open
         z: 290
         radius: 10
-        color: "#f4f7fb"
-        border.color: "#c6d1de"
+        color: Theme.surface
+        border.color: Theme.border
         border.width: 1
         Column {
             anchors.fill: parent
@@ -653,7 +662,7 @@ Window {
             Rectangle {
                 width: parent.width - 10
                 height: 1
-                color: "#dbe3ec"
+                color: Theme.divider
                 anchors.horizontalCenter: parent.horizontalCenter
             }
             Rectangle {

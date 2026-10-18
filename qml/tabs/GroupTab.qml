@@ -170,7 +170,7 @@ Flickable {
                     property int val: 1          // 自填分值；由下面的 PointsPill 胶囊直接改
                     width: 300
                     radius: Theme.radius
-                    cardColor: "#4dffffff"
+                    cardColor: Theme.cardGlass
                     borderColor: "transparent"
                     shadow: true
                     liftOnHover: true

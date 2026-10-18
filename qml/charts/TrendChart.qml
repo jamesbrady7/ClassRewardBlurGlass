@@ -136,9 +136,9 @@ Item {
             var y0 = g.py(0)
 
             // 其余刻度线：虚线，延伸到最右端
-            ctx.strokeStyle = "#dfe9e4"; ctx.lineWidth = 0.7
+            ctx.strokeStyle = Theme.chartGrid; ctx.lineWidth = 0.7
             ctx.setLineDash([3, 4])
-            ctx.fillStyle = "#6b7d75"; ctx.font = "8px 'MiSans'"
+            ctx.fillStyle = Theme.chartLabel; ctx.font = "8px 'MiSans'"
             ctx.textAlign = "right"; ctx.textBaseline = "middle"
             for (var yv = Math.ceil(root.bottomVal / 2) * 2; yv <= root.topVal; yv += 2) {
                 if (Math.abs(yv) < 0.001) continue
@@ -149,9 +149,9 @@ Item {
             ctx.setLineDash([])
 
             // X 轴（0 线）：实线加粗
-            ctx.strokeStyle = "#9fd8c6"; ctx.lineWidth = 1.8
+            ctx.strokeStyle = Theme.chartAxis; ctx.lineWidth = 1.8
             ctx.beginPath(); ctx.moveTo(root.padL, y0); ctx.lineTo(right, y0); ctx.stroke()
-            ctx.fillStyle = "#6b7d75"; ctx.textAlign = "right"; ctx.textBaseline = "middle"
+            ctx.fillStyle = Theme.chartLabel; ctx.textAlign = "right"; ctx.textBaseline = "middle"
             ctx.fillText("0", root.padL - 6, y0)
 
             if (!pts.length) return
@@ -177,7 +177,7 @@ Item {
             }
 
             // 折线（从 0 点起笔）
-            ctx.strokeStyle = "#0e8c77"; ctx.lineWidth = 2
+            ctx.strokeStyle = Theme.chartInk; ctx.lineWidth = 2
             ctx.lineJoin = "round"
             ctx.beginPath()
             for (i = 0; i < pts.length; i++) {
@@ -193,14 +193,14 @@ Item {
                 var neg = pts[i].val < 0
                 ctx.beginPath(); ctx.arc(pts[i].x, pts[i].y, i === root.selIdx ? 5 : 4, 0, Math.PI * 2)
                 ctx.fillStyle = "#ffffff"; ctx.fill()
-                ctx.strokeStyle = neg ? "#e3686b" : "#0e8c77"; ctx.lineWidth = 2; ctx.stroke()
+                ctx.strokeStyle = neg ? "#e3686b" : Theme.chartInk; ctx.lineWidth = 2; ctx.stroke()
 
                 ctx.font = "bold 9px 'MiSans'"
-                ctx.fillStyle = neg ? "#e3686b" : "#0e8c77"
+                ctx.fillStyle = neg ? "#e3686b" : Theme.chartInk
                 ctx.fillText(pts[i].val > 0 ? "+" + pts[i].val : String(pts[i].val), pts[i].x, pts[i].y - 10)
 
                 ctx.font = "8px 'MiSans'"
-                ctx.fillStyle = "#6b7d75"
+                ctx.fillStyle = Theme.chartLabel
                 ctx.fillText(pts[i].date, pts[i].x, y0 + 13)         // 贴近 X 轴下方，每天都写
             }
         }
@@ -227,7 +227,7 @@ Item {
 
         Rectangle {                                  // 小尖尖（旋转 45° 的小方块，半截探出）
             width: 10; height: 10
-            color: "#0e8c77"
+            color: Theme.chartInk
             rotation: 45
             x: body.width / 2 - 5
             y: bubble.up ? body.height - 5 : 1
@@ -237,7 +237,7 @@ Item {
             width: col.implicitWidth + 20
             height: col.implicitHeight + 12
             radius: 7
-            color: "#0e8c77"
+            color: Theme.chartInk
             Column {
                 id: col
                 anchors.centerIn: parent
@@ -270,5 +270,11 @@ Item {
             root.selIdx = bestD <= 18 ? (root.selIdx === best ? -1 : best) : -1
             cv.requestPaint()
         }
+    }
+
+    // 昼夜切换时重绘（Canvas 不会因为 Theme 变化自动重画）
+    Connections {
+        target: Theme
+        function onThemeChanged() { cv.requestPaint() }
     }
 }

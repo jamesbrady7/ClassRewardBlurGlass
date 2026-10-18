@@ -35,7 +35,7 @@ Item {
         anchors.fill: parent
         radius: Theme.radiusPill
         // 半透明白玻璃；悬停提亮、展开更亮（三档与同排图标钮一致）
-        color: root.active ? "#e0ffffff" : (boxMa.containsMouse ? "#a8ffffff" : "#55ffffff")
+        color: root.active ? Theme.glassActive : (boxMa.containsMouse ? Theme.glassHover : Theme.glassIdle)
         // 只有展开态用硬边；平时交给下面那圈"向内渐隐的白边"
         border.color: Theme.textMuted
         border.width: root.active ? 1 : 0

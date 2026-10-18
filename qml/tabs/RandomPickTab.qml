@@ -60,7 +60,7 @@ Column {
                 height: 118
                 radius: Theme.radius
                 // 与前几页同款半透明玻璃卡（原为浅翠实色 + 描边）
-                cardColor: "#4dffffff"
+                cardColor: Theme.cardGlass
                 shadow: true
                 Column {
                     anchors.fill: parent
@@ -89,7 +89,7 @@ Column {
 
             Card {
                 width: parent.width
-                cardColor: "#4dffffff"
+                cardColor: Theme.cardGlass
                 shadow: true
                 anchors.top: stuCtrl.bottom
                 anchors.topMargin: 8
@@ -170,7 +170,7 @@ Column {
                 height: 118
                 radius: Theme.radius
                 // 与前几页同款半透明玻璃卡（原为浅粉实色 + 描边）
-                cardColor: "#4dffffff"
+                cardColor: Theme.cardGlass
                 shadow: true
                 Column {
                     anchors.fill: parent
@@ -192,7 +192,7 @@ Column {
 
             Card {
                 width: parent.width
-                cardColor: "#4dffffff"
+                cardColor: Theme.cardGlass
                 shadow: true
                 anchors.top: grpCtrl.bottom
                 anchors.topMargin: 8

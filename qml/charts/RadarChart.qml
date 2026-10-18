@@ -82,7 +82,7 @@ Canvas {
             a = start + i * stepA
             ctx.beginPath(); ctx.moveTo(cx, cy)
             ctx.lineTo(cx + r * Math.cos(a), cy + r * Math.sin(a))
-            ctx.strokeStyle = "#e8eee9"; ctx.lineWidth = 0.6; ctx.stroke()
+            ctx.strokeStyle = Theme.chartGrid; ctx.lineWidth = 0.6; ctx.stroke()
         }
 
         // 分数多边形：半径只取**正部分**（负值落在圆心）
@@ -96,7 +96,7 @@ Canvas {
         ctx.closePath()
         ctx.fillStyle = "rgba(15,168,143,0.18)"     // 半透明填充
         ctx.fill()
-        ctx.strokeStyle = "#0e8c77"; ctx.lineWidth = 2; ctx.stroke()
+        ctx.strokeStyle = Theme.chartInk; ctx.lineWidth = 2; ctx.stroke()
 
         // 每个维度的分值点画成实心小圆点 —— 让"分值点即顶点"一眼可见
         //（负分维度落在圆心，用红点，与标红的数值呼应）
@@ -105,7 +105,7 @@ Canvas {
             a = start + i * stepA
             x = cx + v * r * Math.cos(a); y = cy + v * r * Math.sin(a)
             ctx.beginPath(); ctx.arc(x, y, 2.6, 0, Math.PI * 2)
-            ctx.fillStyle = root.scores[i] < 0 ? "#d2554f" : "#0e8c77"
+            ctx.fillStyle = root.scores[i] < 0 ? "#d2554f" : Theme.chartInk
             ctx.fill()
         }
 
@@ -115,12 +115,18 @@ Canvas {
             a = start + i * stepA
             x = cx + (r + 22) * Math.cos(a); y = cy + (r + 22) * Math.sin(a)
             var neg = root.scores[i] < 0
-            ctx.fillStyle = neg ? "#d2554f" : "#0e8c77"
+            ctx.fillStyle = neg ? "#d2554f" : Theme.chartInk
             ctx.font = "10px 'MiSans'"
             ctx.fillText(root.categories[i], x, y - 7)
             ctx.fillStyle = neg ? "#d2554f" : "#5b6472"
             ctx.font = "9px 'MiSans'"
             ctx.fillText(root.scores[i] > 0 ? "+" + root.scores[i] : root.scores[i], x, y + 7)
         }
+    }
+
+    // 昼夜切换时重绘（Canvas 不会因为 Theme 变化自动重画）
+    Connections {
+        target: Theme
+        function onThemeChanged() { root.requestPaint() }
     }
 }

@@ -167,7 +167,7 @@ Column {
                     width: 30; height: 30; radius: 15
                     // 悬停提亮（白玻璃底提不动，直接换更亮的白）
                     // ⚠️ 不加 Behavior：这个钮在列表行里，扫过整列时同样会拖出"半亮拖影"
-                    color: delMa.containsMouse ? "#a8ffffff" : "#55ffffff"
+                    color: delMa.containsMouse ? Theme.glassHover : Theme.glassIdle
                     anchors.verticalCenter: parent.verticalCenter
                     Text { text: "🗑"; anchors.centerIn: parent; font.pixelSize: 14 }
                     MouseArea {

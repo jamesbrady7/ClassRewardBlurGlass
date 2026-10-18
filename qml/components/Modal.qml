@@ -12,7 +12,7 @@ Rectangle {
     // 弹窗面板底色：**半透明白**（原来用 Card 的默认 Theme.surface = 纯白不透明）。
     // 本应用是毛玻璃风格，面板透一点才和整体一致 —— 能隐约看到后面被压暗的页面内容。
     // 想更透就往 #c4ffffff 调、想更实就往 #e8ffffff 调，只改这一个值。
-    property color panelColor: "#d9ffffff"
+    property color panelColor: Theme.chipFace
     signal closed()
 
     anchors.fill: parent

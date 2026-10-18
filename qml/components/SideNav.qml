@@ -33,7 +33,7 @@ Item {
         anchors.fill: parent
         source: root.blurSource
         radius: Theme.radius
-        tint: "#8cffffff"
+        tint: Theme.navTint
         blur: 1.0
         glassBlur: !systemGlass       // 穿透模式：模糊交给 DWM，这里只留半透明 tint
         shadow: true

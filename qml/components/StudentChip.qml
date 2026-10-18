@@ -57,7 +57,7 @@ Item {
             // ⚠️ 原型这里用 50%/74% 白，是因为它底下是较深/彩色的背板；本应用页面本身偏白，
             //    50% 白落在白卡上几乎看不见（实测只有压在彩色色块上的方块显形）。
             //    提高白度拉开与卡片的对比：静止 85%、悬停纯白
-            ctx.fillStyle = chip.hovered ? "#ffffffff" : "#d9ffffff"
+            ctx.fillStyle = chip.hovered ? "#ffffffff" : Theme.chipFace
             ctx.fill()
         }
         onWidthChanged: requestPaint()

@@ -22,7 +22,7 @@ Item {
     Rectangle {
         anchors.fill: parent
         radius: width / 2
-        color: ma.containsMouse ? "#a8ffffff" : "#55ffffff"
+        color: ma.containsMouse ? Theme.glassHover : Theme.glassIdle
         Behavior on color { ColorAnimation { duration: 150 } }
     }
 
@@ -80,5 +80,11 @@ Item {
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
         onClicked: root.clicked()
+    }
+
+    // 昼夜切换时重绘（Canvas 不会因为 Theme 变化自动重画）
+    Connections {
+        target: Theme
+        function onThemeChanged() { eyeCanvas.requestPaint() }
     }
 }

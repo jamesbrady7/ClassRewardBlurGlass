@@ -61,7 +61,7 @@ Modal {
                         //   未选 = 33% 白玻璃；悬停 = 66% 白；选中 = **纯白**（亮度差本身就够区分）
                         // ⚠️ 选中**不加粗、不放大** —— 只靠底色高亮表达选中（用户明确要求）。
                         //    原来选中用的是 Theme.accent 绿底 + 白字加粗，两者都不对。
-                        color: on ? "#ffffff" : (hov ? "#a8ffffff" : "#55ffffff")
+                        color: on ? "#ffffff" : (hov ? Theme.glassHover : Theme.glassIdle)
                         Behavior on color { ColorAnimation { duration: 140 } }
                         Text {
                             text: modelData

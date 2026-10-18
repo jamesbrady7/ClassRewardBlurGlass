@@ -47,7 +47,7 @@ Column {
         width: parent.width
         height: grid.height + 28          // 高度随行数自适应（满班 5 行时 ≈ 282 + 28）
         radius: Theme.radius
-        cardColor: "#4dffffff"
+        cardColor: Theme.cardGlass
         shadow: true                        // 与花名册/小组榜/数据分析的卡片同款：半透明玻璃 + 柔和投影
         Flickable {
             id: badges
@@ -89,7 +89,7 @@ Column {
         width: parent.width
         height: 56
         radius: Theme.radius
-        cardColor: "#4dffffff"
+        cardColor: Theme.cardGlass
         shadow: true
         Row {
             anchors.fill: parent
