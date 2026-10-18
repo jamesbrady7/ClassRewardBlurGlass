@@ -23,8 +23,12 @@ Canvas {
     // 气泡：当前选中的数据点（-1 = 未选）
     property int selIdx: -1
 
-    readonly property real topVal: Math.max(8, Math.ceil(classMaxDaily / 5) * 5)
-    readonly property real bottomVal: Math.min(-5, Math.floor(classMinDaily / 5) * 5)
+    // ⚠️ 别写成 ceil(v/5)*5 —— 那样 v=8 时会被抬到 10（多出一整个空档）。
+    //    只有**真的超过** 8 / 低于 −5 时才扩档。
+    readonly property real topVal: classMaxDaily > 8
+                                    ? Math.ceil(classMaxDaily / 5) * 5 : 8
+    readonly property real bottomVal: classMinDaily < -5
+                                      ? Math.floor(classMinDaily / 5) * 5 : -5
 
     property real pxPerDay: Math.max(14, Math.min(48, (viewWidth - 54) / Math.max(1, _spanDays())))
     function _spanDays() {
@@ -164,19 +168,28 @@ Canvas {
         ctx.stroke()
 
         // 数据点 + 值 + 日期
+        // ⚠️ 标签要**防重叠**：数据跨几十天时每天只有十几像素，标签会糊成一团。
+        //    离上一个已画标签太近就跳过（点本身照画）。
         ctx.textAlign = "center"
+        var lastValX = -999, lastDateX = -999
         for (i = 0; i < pts.length; i++) {
             var neg = pts[i].d.val < 0
             ctx.beginPath(); ctx.arc(pts[i].x, pts[i].y, i === root.selIdx ? 5 : 4, 0, Math.PI * 2)
             ctx.fillStyle = "#ffffff"; ctx.fill()
             ctx.strokeStyle = neg ? "#e3686b" : "#0e8c77"; ctx.lineWidth = 2; ctx.stroke()
 
-            ctx.font = "bold 9px 'MiSans'"
-            ctx.fillStyle = neg ? "#e3686b" : "#0e8c77"
-            ctx.fillText(pts[i].d.val > 0 ? "+" + pts[i].d.val : String(pts[i].d.val), pts[i].x, pts[i].y - 10)
-            ctx.font = "8px 'MiSans'"
-            ctx.fillStyle = "#6b7d75"
-            ctx.fillText(pts[i].d.date, pts[i].x, padT + ch + 13)
+            if (pts[i].x - lastValX >= 22) {
+                ctx.font = "bold 9px 'MiSans'"
+                ctx.fillStyle = neg ? "#e3686b" : "#0e8c77"
+                ctx.fillText(pts[i].d.val > 0 ? "+" + pts[i].d.val : String(pts[i].d.val), pts[i].x, pts[i].y - 10)
+                lastValX = pts[i].x
+            }
+            if (pts[i].x - lastDateX >= 34) {
+                ctx.font = "8px 'MiSans'"
+                ctx.fillStyle = "#6b7d75"
+                ctx.fillText(pts[i].d.date, pts[i].x, padT + ch + 13)
+                lastDateX = pts[i].x
+            }
         }
 
         // ── 气泡：当天的明细 ──
