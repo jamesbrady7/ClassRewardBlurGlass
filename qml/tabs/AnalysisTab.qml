@@ -61,7 +61,8 @@ Column {
                 onClicked: root.hideName = !root.hideName
             }
             Text {
-                text: root.hideName ? "显示姓名" : "隐藏姓名"
+                // 显示的是**当前状态**（不是点击后的动作）：已隐藏 / 已显示
+                text: root.hideName ? "已隐藏" : "已显示"
                 color: Theme.textMuted
                 font.pixelSize: Theme.fontSmall
                 font.family: Theme.fontFamily

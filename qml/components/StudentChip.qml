@@ -36,7 +36,14 @@ Item {
     Canvas {
         id: face
         anchors.fill: parent
-        visible: !chip.selected
+        // ⚠️ 不能写 `visible: !chip.selected`：选中那一瞬间这层**直接消失**，而彩色面还要
+        //    130ms 淡入 —— 悬停时这层是纯白（#ffffffff），于是"白色高亮闪一下、颜色才填上"。
+        //
+        //    做法：**这层保持不透明，让上面的彩色面淡入把它盖住**（彩色面本来就叠在它之上）。
+        //    试过"两层交叉淡出"(1-sel / sel)，中途会发淡——两个半透明层叠起来，
+        //    合成后的不透明度并不等于 1。而"底层不动 + 上层淡入"不存在这个问题：
+        //    sel=0 时看到玻璃面、sel=1 时被彩色面完全盖住，中间任何一帧都是实心的。
+        visible: chip.sel < 0.999          // 完全选中后不必再画（被彩色面盖住了）
         onPaint: {
             var ctx = getContext("2d"); ctx.reset()
             var w = width, h = height, r = w / 2
