@@ -26,7 +26,9 @@ Item {
     readonly property real bottomVal: classMinDaily < -5
                                       ? Math.floor(classMinDaily / 5) * 5 : -5
 
-    property real pxPerDay: Math.max(14, Math.min(48, (viewWidth - 54) / Math.max(1, _spanDays())))
+    // 每天至少 34px：日期标签（"8/30" 约 20px）要放得下，否则只能靠"跳过"来避免重叠。
+    // 宁可让图变宽、横向滚动，也要把**每一天的日期都写出来**。
+    property real pxPerDay: Math.max(34, Math.min(48, (viewWidth - 54) / Math.max(1, _spanDays())))
     function _spanDays() {
         var ds = _days()
         if (ds.length < 2) return 1
@@ -100,11 +102,15 @@ Item {
         for (var k in agg) out.push(k + (agg[k] > 0 ? " +" : " ") + agg[k] + " 分")
         return out.length ? out : ["无记录"]
     }
-    readonly property var _selPt: {
+    readonly property var selPt: {
         if (selIdx < 0) return null
         var pts = _pts(_geom())
         return (selIdx < pts.length && !pts[selIdx].anchor) ? pts[selIdx] : null
     }
+    // ⚠️ 收起时 selPt 变 null —— 如果 x/y 直接用它，气泡会在淡出途中**瞬移到左上角**。
+    //    所以记住最后一次的位置，淡出期间原地消失。
+    property var lastPt: null
+    onSelPtChanged: if (selPt) lastPt = selPt
 
     onTransactionsChanged: { selIdx = -1; cv.requestPaint() }
     onClassMaxDailyChanged: cv.requestPaint()
@@ -178,7 +184,6 @@ Item {
 
             // 数据点 + 每个点标分数 + **日期写在 X 轴正下方**
             ctx.textAlign = "center"
-            var lastDateX = -999
             for (i = 0; i < pts.length; i++) {
                 if (pts[i].anchor) continue
                 var neg = pts[i].val < 0
@@ -190,12 +195,9 @@ Item {
                 ctx.fillStyle = neg ? "#e3686b" : "#0e8c77"
                 ctx.fillText(pts[i].val > 0 ? "+" + pts[i].val : String(pts[i].val), pts[i].x, pts[i].y - 10)
 
-                if (pts[i].x - lastDateX >= 34) {
-                    ctx.font = "8px 'MiSans'"
-                    ctx.fillStyle = "#6b7d75"
-                    ctx.fillText(pts[i].date, pts[i].x, y0 + 13)     // ← 贴近 X 轴下方
-                    lastDateX = pts[i].x
-                }
+                ctx.font = "8px 'MiSans'"
+                ctx.fillStyle = "#6b7d75"
+                ctx.fillText(pts[i].date, pts[i].x, y0 + 13)         // 贴近 X 轴下方，每天都写
             }
         }
     }
@@ -203,12 +205,12 @@ Item {
     // ── 气泡：QML 元素（可动画），与折线同色，带小尖尖 ──
     Item {
         id: bubble
-        readonly property var pt: root._selPt
+        readonly property var pt: root.selPt || root.lastPt
         readonly property bool up: pt ? (pt.y - height - 16 >= 2) : true
 
         // 入场：淡化 + 轻微缩放（不再生硬地"啪"一下出现）
-        opacity: pt ? 1 : 0
-        scale: pt ? 1 : 0.9
+        opacity: root.selPt ? 1 : 0
+        scale: root.selPt ? 1 : 0.9
         transformOrigin: up ? Item.Bottom : Item.Top
         visible: opacity > 0.01
         Behavior on opacity { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }

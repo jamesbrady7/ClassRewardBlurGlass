@@ -110,6 +110,12 @@ class RewardBridge(QObject):
     def undoLast(self, sid):
         return self._ctrl.undo_last_operation(sid) or ''
 
+    @Slot(result=str)
+    def undoLastAny(self):
+        """撤销全班最后一笔加/扣分（不限学生）"""
+        self.dataChanged.emit()
+        return self._ctrl.undo_last_any() or ''
+
     @Slot(str, str, result=str)
     def importStudents(self, csvText, gid):
         """解析「学号,姓名」多行文本，批量导入。返回 '成功X 跳过Y'。"""

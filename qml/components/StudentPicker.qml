@@ -13,6 +13,9 @@ Item {
     // 开启时**下拉行与选中回显也要一起打码** —— 否则卡片上藏了名字、
     // 下拉里照样能看见，等于没藏。
     property bool nameHidden: false
+    // 选中学生后、**在框内名字右侧**显示的操作按钮（调用方传一个 Component）
+    property Component actions: null
+    readonly property bool actionsOn: currentId !== "" && actions !== null
     property bool popupOpen: false
     signal picked(string id)
 
@@ -43,6 +46,8 @@ Item {
         doneLabel: (root.currentId !== "" && box.text.length === 0)
                    ? ("✓ " + root.currentLabel) : ""
         active: root.popupOpen
+        // 有操作按钮时，名字要给它们让出位置
+        extraRightPad: actLoader.visible ? actLoader.width + 8 : 0
         onTextEdited: (t) => { root.query = t; root.popupOpen = true }
         onAccepted: root.popupOpen = false
         onClicked: if (!root.popupOpen) root.popupOpen = true
@@ -51,6 +56,17 @@ Item {
             root.currentId = ""; root.currentLabel = ""
             root.query = ""; root.popupOpen = false
         }
+    }
+
+    // 框内操作按钮（学生名字右侧、× 的左边）
+    Loader {
+        id: actLoader
+        sourceComponent: root.actions
+        active: root.actionsOn
+        visible: active
+        anchors.right: box.right
+        anchors.rightMargin: 37          // 让开最右边的「×」
+        anchors.verticalCenter: box.verticalCenter
     }
 
     // popupOpen 是唯一开关：外部（包括 Popup 自己关闭时）都只改这个属性

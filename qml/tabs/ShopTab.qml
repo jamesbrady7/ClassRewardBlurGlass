@@ -57,40 +57,41 @@ Column {
         StudentPicker {
             id: picker
             onPicked: root.currentStudentId = id
+            // 选中学生后，**在搜索框内、学生名字右侧**出现这三颗针对该学生的按钮
+            // （空状态时不显示；× 仍然可以直接清掉选中）
+            actions: Component {
+                Row {
+                    spacing: 4
+                    RoundBtn {
+                        size: 28; bg: Theme.purpleSoft; fg: "#7d55d6"; glyph: "🔙"; glyphSize: 14
+                        hint: "撤销这个学生的上一步"
+                        onClicked: mainWin.toast.show(reward.undoLast(picker.currentId))
+                    }
+                    RoundBtn {
+                        size: 28; bg: Theme.amberSoft; fg: "#cf8d12"; glyph: "🕘"; glyphSize: 14
+                        hint: "这个学生的积分历史"
+                        onClicked: mainWin.dlgHistory.openDialog(picker.currentId)
+                    }
+                    RoundBtn {
+                        size: 28; bg: Theme.pinkSoft; fg: "#cf5a90"; glyph: "🎒"; glyphSize: 14
+                        hint: "这个学生的奖励背包"
+                        onClicked: mainWin.dlgBackpack.openDialog(picker.currentId)
+                    }
+                }
+            }
         }
         // 纯图标按钮：底色同本页奖券的删除钮（白色半透明），只留符号、不要文字
-        // 撤回 / 历史 / 背包：改成**花名册学生卡片上那种按钮**（RoundBtn：
-        // 圆形软色底 + 彩色 emoji 字形 + 悬停加粗），配色也沿用花名册的映射
-        // （undo 紫 / history 琥珀 / backpack 粉）。
+        // 搜索框外只保留一颗「撤销上一步」——**不限学生**，撤销全班最近发生的那一笔
+        //（针对某个学生的撤销/历史/背包已经挪进搜索框内、学生名字后面）
         RoundBtn {
             size: 34
             bg: Theme.purpleSoft
             fg: "#7d55d6"
             glyph: "🔙"
             glyphSize: 18
-            hint: "撤回上一步"
+            hint: "撤销上一步（全班）"
             anchors.verticalCenter: parent.verticalCenter
-            onClicked: { if (root.currentStudentId) mainWin.toast.show(reward.undoLast(root.currentStudentId)); else mainWin.toast.show("请先选择学生") }
-        }
-        RoundBtn {
-            size: 34
-            bg: Theme.amberSoft
-            fg: "#cf8d12"
-            glyph: "🕘"
-            glyphSize: 18
-            hint: "积分历史"
-            anchors.verticalCenter: parent.verticalCenter
-            onClicked: { if (root.currentStudentId) mainWin.dlgHistory.openDialog(root.currentStudentId); else mainWin.toast.show("请先选择学生") }
-        }
-        RoundBtn {
-            size: 34
-            bg: Theme.pinkSoft
-            fg: "#cf5a90"
-            glyph: "🎒"
-            glyphSize: 18
-            hint: "奖励背包"
-            anchors.verticalCenter: parent.verticalCenter
-            onClicked: { if (root.currentStudentId) mainWin.dlgBackpack.openDialog(root.currentStudentId); else mainWin.toast.show("请先选择学生") }
+            onClicked: mainWin.toast.show(reward.undoLastAny())
         }
         Item { width: 1; height: 1 }
         CuteButton {

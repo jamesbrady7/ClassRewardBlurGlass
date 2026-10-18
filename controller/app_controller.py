@@ -208,6 +208,39 @@ class AppController:
                 else: return '该奖励已被使用，无法撤销。'
         return '没有可撤回的操作'
 
+    def undo_last_any(self):
+        """撤回**整个班级**里最后一笔加/扣分（不限学生）。
+
+        与 undo_last_operation(sid) 的区别：
+          · 那个是"这个学生自己的最后一笔"（学生卡片 / 学生选择器旁的按钮用）
+          · 这个是"全班最近发生的那一笔"（商店搜索框外那颗「撤销上一步」用）
+        每个学生只需看自己最后一笔有效操作，取全班时间最新的那笔。
+        """
+        cls = self.current_class()
+        if not cls:
+            return '没有可撤回的操作'
+        best = None
+        for s in cls.students:
+            for i in range(len(s.transactions) - 1, -1, -1):
+                t = s.transactions[i]
+                if t.type in ('earn', 'deduct'):
+                    if best is None or t.timestamp > best[2].timestamp:
+                        best = (s, i, t)
+                    break
+        if best is None:
+            return '没有可撤回的操作'
+        s, i, t = best
+        if t.type == 'earn':
+            s.earned_points -= t.points
+            msg = '已撤销 %s 的加分（%d分）' % (s.name, t.points)
+        else:
+            s.earned_points += t.points
+            msg = '已撤销 %s 的扣分（%d分）' % (s.name, t.points)
+        del s.transactions[i]
+        s.transactions.append(Transaction(time.time(), 'undo', 0, '撤回上一步', s.group_id))
+        self.save()
+        return msg
+
     # ---- 积分商店 ----
     def add_reward(self, name, cost, cat='普通', desc=''):
         """添加奖品"""

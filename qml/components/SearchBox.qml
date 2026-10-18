@@ -26,7 +26,9 @@ Item {
 
     // 输入区左右留白：左边给放大镜、右边给清除位
     readonly property int _leftPad: 34
-    readonly property int _rightPad: 36
+    // 右侧留白：默认给"×"；调用方可以再加大（比如在学生名字后塞操作按钮）
+    property int extraRightPad: 0
+    readonly property int _rightPad: 36 + extraRightPad
 
     Rectangle {
         id: box
