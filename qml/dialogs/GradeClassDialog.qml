@@ -57,17 +57,18 @@ Modal {
                         width: 68
                         height: 32
                         radius: Theme.radiusPill
-                        // 未选 = 全站统一的半透明白玻璃（#55ffffff，悬停提亮到 #a8ffffff）；
-                        // 选中 = 主题实色 + 白字。原来未选用的是 #f0f3f8 实色浅灰，
-                        // 与别处的玻璃面不一致，且切换时是硬跳、没有过渡。
-                        color: on ? Theme.accent : (hov ? "#a8ffffff" : "#55ffffff")
+                        // 全部走白色系（用户要求"高亮不要用绿色，白色即可，和整体风格一致"）：
+                        //   未选 = 33% 白玻璃；悬停 = 66% 白；选中 = **纯白**（亮度差本身就够区分）
+                        // ⚠️ 选中**不加粗、不放大** —— 只靠底色高亮表达选中（用户明确要求）。
+                        //    原来选中用的是 Theme.accent 绿底 + 白字加粗，两者都不对。
+                        color: on ? "#ffffff" : (hov ? "#a8ffffff" : "#55ffffff")
                         Behavior on color { ColorAnimation { duration: 140 } }
                         Text {
                             text: modelData
                             anchors.centerIn: parent
-                            color: on ? "#ffffff" : Theme.textSecondary
+                            // 纯白底上用深字；未选仍在浅玻璃上用次要色
+                            color: on ? Theme.textPrimary : Theme.textSecondary
                             font.pixelSize: Theme.fontBody
-                            font.bold: on
                             font.family: Theme.fontFamily
                             Behavior on color { ColorAnimation { duration: 140 } }
                         }
