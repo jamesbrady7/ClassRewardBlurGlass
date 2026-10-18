@@ -197,21 +197,24 @@ Column {
         // 底色取主题粉 #e76a9e 的 20% 透明度（同奖券底色的 tintCat 手法），文字色跟着底色一起改成粉
         color: "#33" + Theme.pink.slice(1)
         border.width: 0
-        Row {
+        // 文字靠左、按钮**贴最右**（原来用 Row + 1px 弹簧，按钮实际紧跟在文字后面）
+        Text {
+            text: "🎁 盲盒券（10 分）· 随机抽取奖励"
+            color: Theme.pink
+            font.pixelSize: Theme.fontBody
+            font.bold: true
+            font.family: Theme.fontFamily
             anchors.left: parent.left; anchors.leftMargin: 16
+            anchors.verticalCenter: parent.verticalCenter
+        }
+        CuteButton {
+            tone: "primary"
+            text: "兑换盲盒"
             anchors.right: parent.right; anchors.rightMargin: 12
             anchors.verticalCenter: parent.verticalCenter
-            spacing: 10
-            Text { text: "🎁 盲盒券（10 分）· 随机抽取奖励"; color: Theme.pink; font.pixelSize: Theme.fontBody; font.bold: true; font.family: Theme.fontFamily; anchors.verticalCenter: parent.verticalCenter }
-            Item { width: 1; height: 1 }
-            CuteButton {
-                tone: "primary"
-                text: "兑换盲盒"
-                anchors.verticalCenter: parent.verticalCenter
-                onClicked: {
-                    if (!root.currentStudentId) { mainWin.toast.show("请先选择学生"); return }
-                    mainWin.toast.show(reward.buyBlindBox(root.currentStudentId))
-                }
+            onClicked: {
+                if (!root.currentStudentId) { mainWin.toast.show("请先选择学生"); return }
+                mainWin.toast.show(reward.buyBlindBox(root.currentStudentId))
             }
         }
     }

@@ -91,7 +91,7 @@ Item {
     }
 
     // 气泡里要显示的明细（同维度合并）
-    readonly property var _bubbleLines: {
+    readonly property var bubbleLines: {
         if (selIdx < 0) return []
         var pts = _pts(_geom())
         if (selIdx >= pts.length || pts[selIdx].anchor) return []
@@ -111,6 +111,10 @@ Item {
     //    所以记住最后一次的位置，淡出期间原地消失。
     property var lastPt: null
     onSelPtChanged: if (selPt) lastPt = selPt
+    // ⚠️ 气泡内容也要留住上一次的：收起时 selIdx 归 -1 → bubbleLines 变空 →
+    //    气泡会在淡出途中**缩成一个小绿块**（"绿色小图形闪一下"就是这个）。
+    property var lastLines: []
+    onBubbleLinesChanged: if (bubbleLines.length) lastLines = bubbleLines
 
     onTransactionsChanged: { selIdx = -1; cv.requestPaint() }
     onClassMaxDailyChanged: cv.requestPaint()
@@ -239,7 +243,7 @@ Item {
                 anchors.centerIn: parent
                 spacing: 1
                 Repeater {
-                    model: root._bubbleLines
+                    model: root.selIdx >= 0 ? root.bubbleLines : root.lastLines
                     delegate: Text {
                         text: modelData
                         color: "#ffffff"

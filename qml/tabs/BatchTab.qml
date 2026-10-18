@@ -121,6 +121,11 @@ Column {
                     allSwitch.checked = root.total > 0 && root.checkedCount === root.total
                 }
             }
+            Pill {
+                text: "已选 " + (root.sel ? root.sel.split(',').length : 0) + " 人"
+                bg: Theme.accentSoft; fg: Theme.accentDark
+                anchors.verticalCenter: parent.verticalCenter
+            }
             Item { width: 6; height: 1 }
             Text { text: "分值"; anchors.verticalCenter: parent.verticalCenter; color: Theme.textSecondary; font.family: Theme.fontFamily }
             // 分值微调胶囊（样式/几何约束见 components/PointsPill.qml，全站统一样式）
@@ -146,11 +151,6 @@ Column {
             CuteButton { tone: "primary"; text: "加分"; anchors.verticalCenter: parent.verticalCenter; onClicked: root.op(true) }
             CuteButton { tone: "danger"; text: "扣分"; anchors.verticalCenter: parent.verticalCenter; onClicked: root.op(false) }
             Item { width: 6; height: 1 }
-            Pill {
-                text: "已选 " + (root.sel ? root.sel.split(',').length : 0) + " 人"
-                bg: Theme.accentSoft; fg: Theme.accentDark
-                anchors.verticalCenter: parent.verticalCenter
-            }
         }
     }
 
