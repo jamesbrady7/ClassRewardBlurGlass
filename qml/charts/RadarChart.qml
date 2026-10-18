@@ -94,9 +94,20 @@ Canvas {
             if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y)
         }
         ctx.closePath()
-        ctx.fillStyle = "rgba(15,168,143,0.18)"
+        ctx.fillStyle = "rgba(15,168,143,0.18)"     // 半透明填充
         ctx.fill()
         ctx.strokeStyle = "#0e8c77"; ctx.lineWidth = 2; ctx.stroke()
+
+        // 每个维度的分值点画成实心小圆点 —— 让"分值点即顶点"一眼可见
+        //（负分维度落在圆心，用红点，与标红的数值呼应）
+        for (i = 0; i < n; i++) {
+            v = Math.max(0, Math.min(root.scores[i], root.maxVal)) / root.maxVal
+            a = start + i * stepA
+            x = cx + v * r * Math.cos(a); y = cy + v * r * Math.sin(a)
+            ctx.beginPath(); ctx.arc(x, y, 2.6, 0, Math.PI * 2)
+            ctx.fillStyle = root.scores[i] < 0 ? "#d2554f" : "#0e8c77"
+            ctx.fill()
+        }
 
         // 维度标签 + 分数（负分标红 —— 扣分维度在雷达上半径归零，靠这里区分）
         ctx.textAlign = "center"; ctx.textBaseline = "middle"
