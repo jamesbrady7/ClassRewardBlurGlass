@@ -152,8 +152,17 @@ ColumnLayout {
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: 8
 
-                Avatar { text: card.student.name; bgColor: card.student.groupColor; size: 34 }
-                Pill { text: "#" + card.student.studentId; bg: Theme.accentSoft; fg: Theme.accentDark; bold: true; anchors.verticalCenter: parent.verticalCenter }
+                // 姓名的首字圆（Avatar）已去掉：姓名就在右边，圆里那个字没带任何信息
+                // 学号：**无底色 + 透白描边**（原来是 accentSoft 实底）。
+                // 底色留空让玻璃卡透上来，靠一圈亮边把它和卡片分开。
+                Pill {
+                    text: "#" + card.student.studentId
+                    bg: "transparent"
+                    fg: Theme.accentDark
+                    borderColor: Theme.chipFace
+                    bold: true
+                    anchors.verticalCenter: parent.verticalCenter
+                }
                 Text {
                     text: card.student.name
                     color: Theme.textPrimary
@@ -162,21 +171,30 @@ ColumnLayout {
                     font.family: Theme.fontFamily
                     anchors.verticalCenter: parent.verticalCenter
                 }
-                Pill { text: card.student.group; bg: Theme.blueSoft; fg: Theme.blue; anchors.verticalCenter: parent.verticalCenter }
+                // 分组：**透白底 + 无边框**（原来是 blueSoft 实底）
+                // 用 chipFace 而不是 glassIdle：卡片本身已经是 30% 白，再叠 33% 白等于没变；
+                // chipFace（白天 85% / 夜间 17%）才压得出层次，且昼夜都有对应值。
+                Pill {
+                    text: card.student.group
+                    bg: Theme.chipFace
+                    fg: Theme.blue
+                    borderColor: "transparent"
+                    anchors.verticalCenter: parent.verticalCenter
+                }
 
-                // 总分 / 可用分：浅色积分卡（与软件浅色清新一致）
+                // 总分 / 可用分：**透白玻璃胶囊 + 无边框**（原来是纯白实底 + 灰边，
+                // 是整行唯一的实心盒子，跟旁边的玻璃胶囊不是一套）。
+                // 配色：总分=中性深灰（只读的累计值）、可用=主题青绿加粗（能花的钱，全行唯一强调色）。
                 Rectangle {
                     height: 34
                     radius: Theme.radiusPill
-                    color: Theme.surface
-                    border.color: Theme.border
-                    border.width: 1
+                    color: Theme.chipFace
                     width: scoreRow.implicitWidth + 26
                     anchors.verticalCenter: parent.verticalCenter
                     Row {
                         id: scoreRow
                         anchors.centerIn: parent
-                        spacing: 16
+                        spacing: 18        // 原来是 16 + 一条竖分隔线；去掉分隔线、靠间距分离更轻
                         Column {
                             spacing: 1
                             anchors.verticalCenter: parent.verticalCenter
@@ -196,11 +214,6 @@ ColumnLayout {
                                 anchors.horizontalCenter: parent.horizontalCenter
                             }
                         }
-                        Rectangle {
-                            width: 1; height: 20
-                            color: Theme.divider
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
                         Column {
                             spacing: 1
                             anchors.verticalCenter: parent.verticalCenter
@@ -213,6 +226,7 @@ ColumnLayout {
                             }
                             Text {
                                 text: card.student.available
+                                // 青绿=主题主色（用的是 text-safe 的 accentDark，与 accent 同色系、对比度更高）
                                 color: Theme.accentDark
                                 font.pixelSize: Theme.fontBody
                                 font.bold: true
