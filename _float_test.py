@@ -117,7 +117,7 @@ def main():
     # 自检模式：FLOAT_SHOTS=<目录> 时依次切形态、存图、退出（开发用）
     shot_dir = os.environ.get('FLOAT_SHOTS')
     if shot_dir:
-        seq = ['ball', 'menu', 'batch', 'pick', 'settings']
+        seq = ['ball', 'menu', 'batch', 'pick', 'settings', 'confirm']
         idx = {'i': -1}
 
         def shoot_step():

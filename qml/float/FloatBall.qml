@@ -35,13 +35,20 @@ Window {
     readonly property bool isBall: mode === 0 || mode === 1
     readonly property bool isCard: mode >= 2
     readonly property bool dragging: ballMa.pressed && ballMa.moved   // 正在拖动（会暂时关掉毛玻璃）
+    // 形态切换后要等背板重抓到位再显示，否则旧截图会被拉伸一帧（=方形闪影）
+    property bool captureSettled: true
 
     width: 100; height: 100
     x: Math.max(16, Screen.width - width - 28)
     y: Math.max(16, Screen.height - height - 140)
 
     // ── 窗口尺寸跟着形态走，锚定**右下角**（球默认在右下，卡片向左上长） ──
-    onModeChanged: applySize(mode)
+    onModeChanged: {
+        win.captureSettled = false          // 先藏背板，等新截图
+        settleTimer.restart()
+        applySize(mode)
+    }
+    Timer { id: settleTimer; interval: 150; onTriggered: win.captureSettled = true }
     function applySize(m) {
         var right = win.x + win.width
         var bottom = win.y + win.height
@@ -49,7 +56,8 @@ Window {
         else if (m === 1) { win.width = 320; win.height = 320 }
         else if (m === 2) { win.width = 412; win.height = 396 }
         else if (m === 3) { win.width = 412; win.height = 340 }
-        else              { win.width = 412; win.height = 208 }
+        else if (m === 4) { win.width = 412; win.height = 208 }
+        else              { win.width = 320; win.height = 156 }   // 5=退出确认
         win.x = Math.max(12, Math.min(right - win.width, Screen.width - win.width - 12))
         win.y = Math.max(12, Math.min(bottom - win.height, Screen.height - win.height - 12))
     }
@@ -67,7 +75,7 @@ Window {
         // ⚠️ 拖动时**关掉背板**：抓屏是 260ms 一次，窗口在动但截图还停在旧位置，
         //    四角就会露出一块"旧位置的方形残影"。拖的时候退化成纯 tint 的圆，
         //    松手后再淡回来（下一帧就重抓了）。
-        opacity: win.dragging ? 0 : 1
+        opacity: (win.dragging || !win.captureSettled) ? 0 : 1
         Behavior on opacity { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
     }
 
@@ -119,7 +127,8 @@ Window {
             }
         }
 
-        Timer { id: holdTimer; interval: 1200; onTriggered: Qt.quit() }
+        // 长按填满 → **弹确认**（不直接退，防手指停在球上误伤）
+        Timer { id: holdTimer; interval: 1200; onTriggered: { win.holdP = 0; win.mode = 5 } }
         NumberAnimation {
             id: holdRing
             target: win; property: "holdP"
@@ -144,7 +153,8 @@ Window {
             onPositionChanged: function(m) {
                 // 窗口坐标 + 窗口位置 = 光标屏幕坐标；拖动时两者同步移动，所以这个和是稳定的
                 var gx = win.x + m.x, gy = win.y + m.y
-                if (!moved && Math.abs(gx - grab.x) + Math.abs(gy - grab.y) <= 8) return
+                // 阈值 14px：手指点按时本来就会抖几像素，8px 会把"点击"误判成"拖动"
+                if (!moved && Math.abs(gx - grab.x) + Math.abs(gy - grab.y) <= 14) return
                 if (!moved) { holdRing.stop(); holdTimer.stop(); win.holdP = 0 }
                 moved = true
                 win.x = wx + (gx - grab.x)
@@ -174,16 +184,16 @@ Window {
         }
 
         Repeater {
-            // 位置是**相对球心**的偏移（负数=左上）。球在右下角，所以气泡只往左上走。
-            // 布局取舍：
-            //   · 离球不能太远（原来弧线半径 180，离球 88px，太飘）→ 改成紧凑簇，最近的一颗离球 28px
-            //   · 四个之间要拉开（原来在 90° 弧上挤在一起，彼此只隔 9px）→ 2×2 错落，相邻间隔 16px+
-            //   · 常用的「批量 / 抽取」放在离手最近的右下两格
+            // 位置 = 相对球心的偏移，角度从左(180°)到上(90°)，沿球边缘排成一条弧。
+            // 深浅交替（106 / 176 交替）：
+            //   · 4 个 84px 在 90° 内无法既贴球又不重叠（贴到 20px 需要气泡缩到 ~41px，触摸太小）
+            //   · 交替后：两颗离球仅 14px（贴着边），另两颗外错 84px，
+            //     相邻两两的中心距都是 ~99px（间隔 15px）→ 既贴边、又不挤
             model: [
-                { g: "👥", m: 2,  ox:  -88, oy:  -84 },
-                { g: "🎲", m: 3,  ox: -188, oy:  -96 },
-                { g: "⚙", m: 4,  ox:  -84, oy: -186 },
-                { g: "🖥", m: -1, ox: -189, oy: -182 }
+                { g: "👥", m: 2,  ox: -106, oy:    0 },   // 正左，贴球
+                { g: "🎲", m: 3,  ox: -152, oy:  -88 },   // 左上，外错
+                { g: "⚙", m: 4,  ox:  -53, oy:  -92 },   // 上方，贴球
+                { g: "🖥", m: -1, ox:    0, oy: -176 }    // 正上，外错
             ]
             delegate: Item {
                 id: bub
@@ -419,12 +429,43 @@ Window {
                 tone: "danger"; text: "退出悬浮球"
                 implicitWidth: 220; implicitHeight: 56; fontSize: 19
                 anchors.horizontalCenter: parent.horizontalCenter
-                onClicked: Qt.quit()
+                onClicked: win.mode = 5
             }
             Text {
                 text: "提示：长按球 1.2 秒也可以退出"
                 anchors.horizontalCenter: parent.horizontalCenter
                 color: Theme.textMuted; font.pixelSize: 15; font.family: Theme.fontFamily
+            }
+        }
+    }
+
+    // ── 5 · 退出确认（长按 / 设置里点退出都走这里） ──
+    Item {
+        anchors.fill: parent
+        visible: win.mode === 5
+
+        Column {
+            anchors.centerIn: parent
+            spacing: 20
+            Text {
+                text: "退出悬浮球？"
+                anchors.horizontalCenter: parent.horizontalCenter
+                color: Theme.textPrimary
+                font.pixelSize: 20; font.bold: true; font.family: Theme.fontFamily
+            }
+            Row {
+                anchors.horizontalCenter: parent.horizontalCenter
+                spacing: 18
+                CuteButton {
+                    tone: "secondary"; text: "取消"
+                    implicitWidth: 124; implicitHeight: 56; fontSize: 19
+                    onClicked: win.mode = 0
+                }
+                CuteButton {
+                    tone: "danger"; text: "退出"
+                    implicitWidth: 124; implicitHeight: 56; fontSize: 19
+                    onClicked: Qt.quit()
+                }
             }
         }
     }
