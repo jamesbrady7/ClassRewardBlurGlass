@@ -17,6 +17,10 @@ Item {
     // 径向渐变、边缘真正模糊，不会像硬边矩形阴影那样四周均匀外扩成"描边环"
     property bool shadow: false
     property color shadowColor: "#38202830"
+    // 把 source **从画面里藏起来**，只拿它当模糊源。
+    // 用途：source 是一张"桌面截图"时——它必须可渲染（否则没有纹理），
+    // 但绝不能自己画出来（方形的四角会从圆角/圆形之外露出来）。
+    property bool hideSource: false
 
     function updateRect() {
         if (root.source) {
@@ -44,6 +48,7 @@ Item {
         id: fx
         anchors.fill: parent
         sourceItem: root.glassBlur ? root.source : null
+        hideSource: root.hideSource
         visible: false
     }
 

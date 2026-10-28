@@ -68,18 +68,50 @@ Window {
         win.captureSettled = false
         settleTimer.restart()
     }
-    Timer { id: settleTimer; interval: 150; onTriggered: win.captureSettled = true }
+    // 新截图一到就恢复（版本号变了说明 provider 已经换了新图）；
+    // 定时器只作兜底，防止抓图停了以后玻璃一直不出现。
+    onBackdropVersionChanged: if (!win.captureSettled) win.captureSettled = true
+    Timer { id: settleTimer; interval: 400; onTriggered: win.captureSettled = true }
 
-    // ── 背后桌面截图（各元素毛玻璃的模糊源，同时充当窗口"背景"）──
-    Image {
-        id: backdrop
+    // ══════════════════════════════════════════════════════════
+    //  毛玻璃面（每个气泡自己一块）
+    //  ⚠️ **不要把截图铺成窗口背景**：那样窗口的空隙会显示"滞后的桌面"，
+    //     拖动/切换瞬间就露成一块方形残影、圆边还会和真实桌面对不上（看起来像边缘发锐）。
+    //     这里把截图按元素位置裁出来、只放在元素内部（clip 裁剪盒），空隙保持真透明。
+    // ══════════════════════════════════════════════════════════
+    component Glass: Item {
+        id: gs
+        property real sx: 0            // 本元素在窗口内的左上角
+        property real sy: 0
+        property real corner: width / 2
+        property color faceTint: "#aaffffff"
+        property color shadowTint: "#4a1a2230"
         anchors.fill: parent
-        source: "image://floatbackdrop/v" + backdropVersion
-        fillMode: Image.PreserveAspectCrop
-        cache: false
-        // 拖动中 / 刚切形态：先藏起来，避免"旧截图被拉伸"的方形残影
-        opacity: (win.dragging || !win.captureSettled) ? 0 : 1
-        Behavior on opacity { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
+
+        Item {
+            id: clipBox
+            anchors.fill: parent
+            clip: true
+            Image {
+                width: Math.max(1, win.width)
+                height: Math.max(1, win.height)
+                x: -gs.sx
+                y: -gs.sy
+                source: "image://floatbackdrop/v" + win.backdropVersion
+                fillMode: Image.Stretch
+                cache: false
+            }
+        }
+        FrostedPanel {
+            anchors.fill: parent
+            source: clipBox
+            hideSource: true                      // 只当模糊源，绝不自己画出来（方形四角会露馅）
+            radius: gs.corner
+            glassBlur: win.captureSettled && !win.dragging
+            tint: gs.faceTint
+            shadow: true
+            shadowColor: gs.shadowTint
+        }
     }
 
     // ══════════════════════════════════════════════════════════
@@ -92,15 +124,7 @@ Window {
         y: win.ballOffY
         visible: win.isBall
 
-        FrostedPanel {
-            anchors.fill: parent
-            source: backdrop
-            radius: width / 2
-            glassBlur: true
-            tint: "#aaffffff"
-            shadow: true
-            shadowColor: "#4a1a2230"
-        }
+        Glass { sx: win.ballOffX; sy: win.ballOffY; faceTint: "#aaffffff"; shadowTint: "#4a1a2230" }
 
         Text {
             anchors.centerIn: parent
@@ -202,15 +226,11 @@ Window {
                 scale: 0.30 + 0.70 * p
                 opacity: p
 
-                FrostedPanel {
-                    anchors.fill: parent
-                    source: backdrop
-                    radius: width / 2
-                    glassBlur: true
-                    tint: bma.pressed ? "#d9ffffff" : "#b3ffffff"
+                Glass {
+                    sx: bub.x; sy: bub.y
+                    faceTint: bma.pressed ? "#d9ffffff" : "#b3ffffff"
                     // 投影压淡：原来那圈灰晕贴着圆边，看起来像描了一圈边
-                    shadow: true
-                    shadowColor: "#2b1a2230"
+                    shadowTint: "#2b1a2230"
                 }
                 Text {
                     anchors.centerIn: parent
@@ -237,15 +257,12 @@ Window {
     // ══════════════════════════════════════════════════════════
     //  卡片共用玻璃底
     // ══════════════════════════════════════════════════════════
-    FrostedPanel {
-        anchors.fill: parent
+    Glass {
         visible: win.isCard
-        source: backdrop
-        radius: 22
-        glassBlur: true
-        tint: "#aaffffff"
-        shadow: true
-        shadowColor: "#4a1a2230"
+        sx: 0; sy: 0
+        corner: 22
+        faceTint: "#aaffffff"
+        shadowTint: "#4a1a2230"
     }
 
     // ══════════════════════════════════════════════════════════

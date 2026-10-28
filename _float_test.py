@@ -98,9 +98,12 @@ def main():
         except Exception:
             pass
 
+    # 抓图频率只影响"玻璃里的画面有多新"（实测单次 ~18ms，别调太密）。
+    # 窗口里**不再整张贴背景图**（那会在拖动/切换时露出方形残影），
+    # 每个气泡各自裁自己那一小块，空隙是真透明的 → 频率低也不会露馅。
     timer = QTimer()
     timer.timeout.connect(grab)
-    timer.start(260)
+    timer.start(300)
 
     # ⚠️ 窗口尺寸一变就**立刻重抓**：
     #    否则旧的小尺寸截图会被 PreserveAspectCrop 拉伸铺满新窗口
