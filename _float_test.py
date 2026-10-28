@@ -137,13 +137,40 @@ class Glass(QQuickImageProvider):
         if not src.isNull():
             crop = src.copy(x, y, w, h)
             if not crop.isNull():
-                sw, sh = max(1, w // 4), max(1, h // 4)
+                sw, sh = max(1, w // 2), max(1, h // 2)
                 small = crop.scaled(sw, sh, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
                 p.drawImage(0, 0, small.scaled(w, h, Qt.IgnoreAspectRatio, Qt.SmoothTransformation))
 
         p.fillRect(QRectF(0, 0, w, h), QColor(255, 255, 255, ta))
         p.end()
         return out
+
+
+def _dwm_blur(hwnd, reg):
+    """DwmEnableBlurBehindWindow + 区域，并用 SWP_FRAMECHANGED 强制刷新（否则有时不生效）"""
+    try:
+        g = ctypes.windll.gdi32
+        g.CreateRectRgn.restype = wintypes.HRGN
+        g.CreateRectRgn.argtypes = [ctypes.c_int] * 4
+        g.SetRectRgn.argtypes = [wintypes.HRGN] + [ctypes.c_int] * 4
+        g.CombineRgn.argtypes = [wintypes.HRGN, wintypes.HRGN, wintypes.HRGN, ctypes.c_int]
+        hrgn = g.CreateRectRgn(0, 0, 0, 0)
+        tmp = g.CreateRectRgn(0, 0, 0, 0)
+        for r in reg:
+            g.SetRectRgn(tmp, r.left(), r.top(), r.right() + 1, r.bottom() + 1)
+            g.CombineRgn(hrgn, hrgn, tmp, 2)
+
+        class BB(ctypes.Structure):
+            _fields_ = [('dwFlags', wintypes.DWORD), ('fEnable', wintypes.BOOL),
+                        ('hRgnBlur', wintypes.HRGN), ('fTransitionOnMaximized', wintypes.BOOL)]
+        bb = BB(3, True, hrgn, False)
+        ctypes.windll.dwmapi.DwmEnableBlurBehindWindow(hwnd, ctypes.byref(bb))
+        u = ctypes.windll.user32
+        u.SetWindowPos.argtypes = [wintypes.HWND, wintypes.HWND, ctypes.c_int, ctypes.c_int,
+                                   ctypes.c_int, ctypes.c_int, wintypes.UINT]
+        u.SetWindowPos(hwnd, 0, 0, 0, 0, 0, 0x0020 | 0x0002 | 0x0001 | 0x0004)  # FRAMECHANGED|NOMOVE|NOSIZE|NOZORDER
+    except Exception as e:
+        print("[dwm] 失败 %r" % (e,), flush=True)
 
 
 def _circle(cx, cy, r):
@@ -174,6 +201,8 @@ def main():
     engine.rootContext().setContextProperty("reward", bridge)
     engine.rootContext().setContextProperty("Theme", theme)
     engine.rootContext().setContextProperty("systemGlass", False)
+    engine.rootContext().setContextProperty(
+        "floatNoActivateCtx", os.environ.get('FLOAT_NOACTIVATE', '1') != '0')
     engine.rootContext().setContextProperty(
         "floatNoActivateCtx", os.environ.get('FLOAT_NOACTIVATE', '1') != '0')
     engine.load(QUrl.fromLocalFile(os.path.join(BASE, 'qml', 'float', 'FloatBall.qml')))
@@ -210,6 +239,7 @@ def main():
             else:
                 reg = QRegion(0, 0, int(win.width()), int(win.height()))
             win.setMask(reg)
+            _dwm_blur(int(win.winId()), reg)
         except Exception as e:
             print("[float] mask 失败：%r" % (e,))
 

@@ -71,11 +71,15 @@ Window {
 
     readonly property bool dragging: ballMa.pressed && ballMa.moved
 
-    onModeChanged: maskTimer.restart()
+    onModeChanged: {
+        maskTimer.restart()
+        if (mode === 0) closeHold.restart()      // 收回动画播完前保持可见
+    }
+    Timer { id: closeHold; interval: 420 }
     // 形态变了 → 让 Python 重算窗口遮罩（Acrylic 只糊遮罩范围内）
     Timer { id: maskTimer; interval: 0; onTriggered: win.maskVersion++ }
     property int maskVersion: 0
-    property int backdropVersion: 0     // 桌面截图版本（变了就换贴图）
+    property int backdropVersion: 0
     // ⚠️ 由 Python 在 load **之前**用 context property 传入：窗口创建后再改 flags 会让 Qt 重建窗口，
     //    之前设好的窗口遮罩就丢了（表现为 Acrylic 又糊满整个矩形）。
     property bool floatNoActivateCtx: true
@@ -86,15 +90,15 @@ Window {
     //     拖动/切换瞬间就露成一块方形残影、圆边还会和真实桌面对不上（看起来像边缘发锐）。
     //     这里把截图按元素位置裁出来、只放在元素内部（clip 裁剪盒），空隙保持真透明。
     // ══════════════════════════════════════════════════════════
-    // 毛玻璃面：**模糊 / 圆角遮罩 / 白色 tint 全在 Python 端烘成一张 RGBA 图**，这里只贴图。
-    // （系统 Acrylic 在这个窗口上不认窗口遮罩 → 只能整矩形糊，圆形会露方角，所以不用它。）
-    // 贴图 URL 带"元素在窗口内的位置"，切形态/拖动时由 Python 重新裁+烘。
+    // 毛玻璃面：**模糊/圆角遮罩/白色 tint 全在 Python 端烘成一张 RGBA 图**，这里只贴图。
+    // （系统 Acrylic / DwmEnableBlurBehindWindow 在这个悬浮窗里都不生效——最小复现里正常，
+    //   但落地到这个窗口就不糊，原因未定位；抓屏又在 UI 线程外，所以走烘焙。）
     component Glass: Item {
         id: gs
         property real sx: 0
         property real sy: 0
         property real corner: width / 2
-        property int tintA: 150
+        property int tintA: 120
         anchors.fill: parent
 
         SoftShadow {
@@ -125,7 +129,7 @@ Window {
         visible: win.isBall
 
         // 白色压到 62%：再厚就把下面的模糊盖没了，看着只是"白色半透明"
-        Glass { sx: win.ballOffX; sy: win.ballOffY; tintA: 150 }
+        Glass { sx: win.ballOffX; sy: win.ballOffY; tintA: 72 }
 
         Text {
             anchors.centerIn: parent
@@ -199,26 +203,31 @@ Window {
     Item {
         id: menuLayer
         anchors.fill: parent
-        visible: win.mode === 1
+        // 收回时必须继续可见到动画播完（否则会"啪"地消失）
+        visible: win.mode === 1 || closeHold.running
 
         property real t: win.mode === 1 ? 1 : 0
         Behavior on t {
-            NumberAnimation { duration: 340; easing.type: Easing.OutBack; easing.overshoot: 1.5 }
+            NumberAnimation { duration: 380; easing.type: Easing.OutCubic }
         }
 
         Repeater {
             // 相对**球心**的偏移。R=105、气泡 68px：
             //   离球边 21px（贴着）、相邻中心距 80px（间隔 12px）
             // 84px 的旧气泡在半个圆内排不下四个，所以缩到 68px。
+            // 弹出顺序 = 数组顺序：软件主界面 → 批量选择 → 随机抽取 → 设置
+            // 位置沿球边从"上"顺时针扫到"左下"，读起来是一条自然的弧
             model: [
-                { g: "👥", m: 2,  ox:  -74, oy:   74 },   // 左下（离手最近）
-                { g: "🎲", m: 3,  ox: -105, oy:    0 },   // 左
-                { g: "🖥", m: -1, ox:  -74, oy:  -74 },   // 左上
-                { g: "⚙", m: 4,  ox:    0, oy: -105 }    // 上
+                { g: "🖥", m: -1, ox:    0, oy: -105 },   // ① 上：软件主界面
+                { g: "👥", m: 2,  ox:  -74, oy:  -74 },   // ② 左上：批量选择
+                { g: "🎲", m: 3,  ox: -105, oy:    0 },   // ③ 左：随机抽取
+                { g: "⚙", m: 4,  ox:  -74, oy:   74 }     // ④ 左下：设置
             ]
             delegate: Item {
                 id: bub
-                readonly property real p: Math.max(0, Math.min(1, (menuLayer.t - index * 0.10) / 0.70))
+                // 打开：按 index 依次；收回：反过来（后出来的先消失）
+                readonly property int seq: (win.mode === 1) ? index : (3 - index)
+                readonly property real p: Math.max(0, Math.min(1, (menuLayer.t - seq * 0.12) / 0.64))
                 readonly property real cx: win.ballOffX + 50
                 readonly property real cy: win.ballOffY + 50
 
@@ -227,11 +236,12 @@ Window {
                 // 弹出全靠 0.55→1 的缩放 + 淡入：不超出自家的遮罩圆，也就不会被裁。
                 x: cx + modelData.ox - width / 2
                 y: cy + modelData.oy - height / 2
-                scale: 0.55 + 0.45 * p
-                opacity: p
+                // 从很小放大到原尺寸（不是从半透明淡入）
+                scale: 0.06 + 0.94 * p
+                opacity: Math.min(1, p * 1.6)
 
                 // 白色别太厚：70% 白会把下面那层模糊盖得看不见（只剩"白色半透明"）
-                Glass { sx: bub.x; sy: bub.y; tintA: bma.pressed ? 215 : 118 }
+                Glass { sx: bub.x; sy: bub.y; tintA: bma.pressed ? 170 : 64 }
                 Text {
                     anchors.centerIn: parent
                     text: modelData.g
@@ -257,7 +267,7 @@ Window {
     // ══════════════════════════════════════════════════════════
     //  卡片共用玻璃底
     // ══════════════════════════════════════════════════════════
-    Glass { visible: win.isCard; sx: 0; sy: 0; corner: 22; tintA: 165 }
+    Glass { visible: win.isCard; sx: 0; sy: 0; corner: 16; tintA: 150 }
 
     // ══════════════════════════════════════════════════════════
     //  2 · 批量：50 人网格，按人加分
