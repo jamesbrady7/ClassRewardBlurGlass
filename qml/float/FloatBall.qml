@@ -17,10 +17,14 @@ Window {
 
     visible: true
     color: "transparent"
-    flags: Qt.Tool | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint
-           | (floatNoActivate ? Qt.WindowDoesNotAcceptFocus : 0)
+    // ⚠️ 不能用 Qt.Tool：那会让窗口变成 WS_POPUP，**系统 Acrylic 就不生效了**（实测渲染成纯白）。
+    //    必须跟主程序一样带 Min/Max hint（OVERLAPPED 样式）。任务栏/ALT+TAB 里隐藏，
+    //    由 Python 端补一个 WS_EX_TOOLWINDOW 扩展样式来做到。
+    flags: Qt.Window | Qt.FramelessWindowHint
+           | Qt.WindowMinimizeButtonHint | Qt.WindowMaximizeButtonHint
+           | Qt.WindowStaysOnTopHint
+           | (floatNoActivateCtx ? Qt.WindowDoesNotAcceptFocus : 0)
 
-    property int backdropVersion: 0
     property bool floatNoActivate: true
 
     // ── 形态 ──
@@ -64,20 +68,17 @@ Window {
     property var picked: []               // 抽取结果
     property string flashMsg: ""
     property real holdP: 0
-    property bool captureSettled: true
-    property bool menuAnimating: false     // 气泡弹出/收回动画进行中（这期间不用毛玻璃贴图）
+
     readonly property bool dragging: ballMa.pressed && ballMa.moved
 
-    onModeChanged: {
-        win.captureSettled = false
-        settleTimer.restart()
-        if (mode === 0 || mode === 1) { win.menuAnimating = true; menuAnimTimer.restart() }
-    }
-    Timer { id: menuAnimTimer; interval: 420; onTriggered: win.menuAnimating = false }
-    // 新截图一到就恢复（版本号变了说明 provider 已经换了新图）；
-    // 定时器只作兜底，防止抓图停了以后玻璃一直不出现。
-    onBackdropVersionChanged: if (!win.captureSettled) win.captureSettled = true
-    Timer { id: settleTimer; interval: 400; onTriggered: win.captureSettled = true }
+    onModeChanged: maskTimer.restart()
+    // 形态变了 → 让 Python 重算窗口遮罩（Acrylic 只糊遮罩范围内）
+    Timer { id: maskTimer; interval: 0; onTriggered: win.maskVersion++ }
+    property int maskVersion: 0
+    property int backdropVersion: 0     // 桌面截图版本（变了就换贴图）
+    // ⚠️ 由 Python 在 load **之前**用 context property 传入：窗口创建后再改 flags 会让 Qt 重建窗口，
+    //    之前设好的窗口遮罩就丢了（表现为 Acrylic 又糊满整个矩形）。
+    property bool floatNoActivateCtx: true
 
     // ══════════════════════════════════════════════════════════
     //  毛玻璃面（每个气泡自己一块）
@@ -85,40 +86,31 @@ Window {
     //     拖动/切换瞬间就露成一块方形残影、圆边还会和真实桌面对不上（看起来像边缘发锐）。
     //     这里把截图按元素位置裁出来、只放在元素内部（clip 裁剪盒），空隙保持真透明。
     // ══════════════════════════════════════════════════════════
+    // 毛玻璃面：**模糊 / 圆角遮罩 / 白色 tint 全在 Python 端烘成一张 RGBA 图**，这里只贴图。
+    // （系统 Acrylic 在这个窗口上不认窗口遮罩 → 只能整矩形糊，圆形会露方角，所以不用它。）
+    // 贴图 URL 带"元素在窗口内的位置"，切形态/拖动时由 Python 重新裁+烘。
     component Glass: Item {
         id: gs
-        property real sx: 0              // 本元素在窗口内的左上角（截图按它裁剪）
+        property real sx: 0
         property real sy: 0
         property real corner: width / 2
-        property int tintA: 158          // 白色 tint 的 alpha（0-255）
+        property int tintA: 150
         anchors.fill: parent
 
-        // 柔和投影（Canvas，只在尺寸变化时重绘；动画期间是纯变换，不重绘）
         SoftShadow {
             anchors.fill: parent
-            anchors.margins: -13
+            anchors.margins: -12
             softColor: "#3a1a2230"
         }
-
-        // 毛玻璃贴图：**模糊/圆角遮罩/白色 tint 全部在 Python 端烘好**
-        // （本窗口是无边框 alpha 窗口，MultiEffect + maskSource 在这里实测渲染不出内容）
         Image {
             anchors.fill: parent
             cache: false
-            visible: win.captureSettled && !win.dragging
-            // ⚠️ 分隔符不能用 | ：URL 里会被编码成 %7C，provider 端解析会失败
+            smooth: true
             source: "image://floatglass/"
                     + Math.round(gs.sx) + "_" + Math.round(gs.sy) + "_"
                     + Math.round(width) + "_" + Math.round(height) + "_"
                     + Math.round(gs.corner) + "_" + gs.tintA
                     + "?v" + win.backdropVersion
-        }
-        // 拖动 / 刚切形态：没有可用截图，只留一层纯色
-        Rectangle {
-            anchors.fill: parent
-            radius: gs.corner
-            visible: !(win.captureSettled && !win.dragging && !win.menuAnimating)
-            color: "#e0ffffff"
         }
     }
 
@@ -133,7 +125,7 @@ Window {
         visible: win.isBall
 
         // 白色压到 62%：再厚就把下面的模糊盖没了，看着只是"白色半透明"
-        Glass { sx: win.ballOffX; sy: win.ballOffY; tintA: 146 }
+        Glass { sx: win.ballOffX; sy: win.ballOffY; tintA: 150 }
 
         Text {
             anchors.centerIn: parent
@@ -163,7 +155,7 @@ Window {
             }
         }
 
-        Timer { id: holdTimer; interval: 1200; onTriggered: { win.holdP = 0; win.mode = 5 } }
+        Timer { id: holdTimer; interval: 1200; onTriggered: { win.holdP = 0; ballMa.held = true; win.mode = 5 } }
         NumberAnimation { id: holdRing; target: win; property: "holdP"; from: 0; to: 1; duration: 1200 }
 
         MouseArea {
@@ -173,11 +165,13 @@ Window {
             property real bx0: 0
             property real by0: 0
             property bool moved: false
+            property bool held: false      // 长按已触发 → 松手时不要再切气泡层
 
             onPressed: function(m) {
                 grab = Qt.point(win.x + m.x, win.y + m.y)
                 bx0 = win.ballX; by0 = win.ballY
                 moved = false
+                held = false
                 holdRing.restart(); holdTimer.restart()
             }
             onPositionChanged: function(m) {
@@ -192,7 +186,7 @@ Window {
             }
             onReleased: {
                 holdRing.stop(); holdTimer.stop(); win.holdP = 0
-                if (moved) return
+                if (moved || held) return          // 拖动 / 长按都不当作"点一下"
                 win.mode = (win.mode === 1) ? 0 : 1
             }
             onCanceled: { holdRing.stop(); holdTimer.stop(); win.holdP = 0 }
@@ -225,18 +219,19 @@ Window {
             delegate: Item {
                 id: bub
                 readonly property real p: Math.max(0, Math.min(1, (menuLayer.t - index * 0.10) / 0.70))
-                readonly property real easeOut: 0.45 + 0.55 * p     // 从球心飞出去
                 readonly property real cx: win.ballOffX + 50
                 readonly property real cy: win.ballOffY + 50
 
                 width: 68; height: 68
-                x: cx + modelData.ox * easeOut - width / 2
-                y: cy + modelData.oy * easeOut - height / 2
-                scale: 0.30 + 0.70 * p
+                // 位置**固定**（窗口遮罩按这些圆心算，Acyrlic 只糊这些圆）。
+                // 弹出全靠 0.55→1 的缩放 + 淡入：不超出自家的遮罩圆，也就不会被裁。
+                x: cx + modelData.ox - width / 2
+                y: cy + modelData.oy - height / 2
+                scale: 0.55 + 0.45 * p
                 opacity: p
 
                 // 白色别太厚：70% 白会把下面那层模糊盖得看不见（只剩"白色半透明"）
-                Glass { sx: bub.x; sy: bub.y; tintA: bma.pressed ? 220 : 112 }
+                Glass { sx: bub.x; sy: bub.y; tintA: bma.pressed ? 215 : 118 }
                 Text {
                     anchors.centerIn: parent
                     text: modelData.g
@@ -262,7 +257,7 @@ Window {
     // ══════════════════════════════════════════════════════════
     //  卡片共用玻璃底
     // ══════════════════════════════════════════════════════════
-    Glass { visible: win.isCard; sx: 0; sy: 0; corner: 22; tintA: 162 }
+    Glass { visible: win.isCard; sx: 0; sy: 0; corner: 22; tintA: 165 }
 
     // ══════════════════════════════════════════════════════════
     //  2 · 批量：50 人网格，按人加分
