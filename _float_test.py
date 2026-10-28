@@ -85,7 +85,9 @@ def main():
         try:
             if not win.isVisible():
                 return
-            g = win.screen().grabWindow(0, int(win.x()), int(win.y()),
+            # 自检时可抓旁边的区域（避免拍到本窗口自己形成反馈回路）
+            dx = int(os.environ.get('FLOAT_CAPTURE_OFFSET', '0'))
+            g = win.screen().grabWindow(0, int(win.x()) - dx, int(win.y()),
                                         int(win.width()), int(win.height()))
             if g.isNull():
                 return
@@ -98,6 +100,19 @@ def main():
     timer = QTimer()
     timer.timeout.connect(grab)
     timer.start(260)
+
+    # ⚠️ 窗口尺寸一变就**立刻重抓**：
+    #    否则旧的小尺寸截图会被 PreserveAspectCrop 拉伸铺满新窗口
+    #    （表现为切换形态时出现一个巨大的白色模糊圆球）
+    def regrab():
+        provider.img = QImage()      # 先清空，避免旧图被拉伸
+        grab()
+
+    for sig in ('widthChanged', 'heightChanged'):
+        try:
+            getattr(win, sig).connect(regrab)
+        except Exception:
+            pass
 
     # 自检模式：FLOAT_SHOTS=<目录> 时依次切形态、存图、退出（开发用）
     shot_dir = os.environ.get('FLOAT_SHOTS')

@@ -3,52 +3,49 @@ import "../components"
 
 // 课堂快捷悬浮球（测试版 · 独立窗口，不改主程序）
 // ─────────────────────────────────────────────────────────────
-// 形态：球 →(点) 菜单 4 个图标 →(点) 批量 / 抽取 / 设置
-//      菜单与卡片里都有 × 收回到球；设置里有"退出悬浮球"。
+// 形态：球 →(点) **四个独立气泡**从球边弹出 →(点) 批量 / 抽取 / 设置
+//      气泡层再点一下球 = 收回；卡片左上 ‹ 回气泡层、右上 × 直接回球
 //
 // 触摸优先：**全程只用单指点击/拖动**，不依赖 hover、不依赖右键
-//   · 点球 = 展开菜单（按压瞬间有高亮，触摸屏没有悬停）
-//   · 按着球拖动 = 挪位置；位移超过 8px 才算拖，否则算点
-//   · 所有可点区域 ≥ 64px，字 ≥ 17px（讲台前两米要看得清）
+//   · 点球 = 弹出气泡；按住拖动 = 挪位置（位移 >8px 才算拖）
+//   · 按住球 1.2 秒 = 退出（球边填一圈进度，中途松手取消）
+//   · 所有可点区域 ≥ 68px，字 ≥ 17px
 //
-// 毛玻璃：本窗口**不用系统 Acrylic**（那会把整个矩形窗口都糊上，球的四个方角会露出来）。
-//   改为自绘：FrostedPanel 抓「窗口背后的桌面截图」→ 高斯模糊 → 圆角/圆形遮罩 → 叠 tint。
-//   截图由 Python 每 260ms 抓一次（image://floatbackdrop），并已把本窗口排除在抓图之外。
+// 毛玻璃：本窗口**不用系统 Acrylic**（那会把整个矩形窗口都糊上，圆形球会露方角）。
+//   改为自绘：Python 每 260ms 抓「窗口背后的桌面」→ 每个元素各自 FrostedPanel 模糊 + 形状遮罩。
+//   窗口尺寸只在三种形态间切换，不逐帧改，避免闪烁。
 Window {
     id: win
 
     visible: true
     color: "transparent"
-    // Tool=不进任务栏；StaysOnTop=压住 PPT；DoesNotAcceptFocus=不抢 PPT 的键盘焦点
     flags: Qt.Tool | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint
            | (floatNoActivate ? Qt.WindowDoesNotAcceptFocus : 0)
 
-    // 由 Python 驱动：抓图版本号（变一次就重新取一次 image://floatbackdrop）
     property int backdropVersion: 0
-    // 是否"不抢焦点"（Windows WS_EX_NOACTIVATE）。对 PPT 放映友好，但先留开关便于排查输入问题。
     property bool floatNoActivate: true
 
-    property int mode: 0                 // 0=球 1=菜单 2=批量 3=抽取 4=设置
-    property var selGroups: []           // 批量：选中的小组 id
-    property string cat: ""              // 操作分类
-    property var picked: []              // 抽取结果
-    property string flashMsg: ""         // 操作反馈（触摸屏没有 toast，就地显示）
-    property real holdP: 0               // 长按进度 0..1（填满即退出）
+    property int mode: 0                 // 0=球 1=气泡 2=批量 3=抽取 4=设置
+    property var selGroups: []
+    property string cat: ""
+    property var picked: []
+    property string flashMsg: ""
+    property real holdP: 0
 
-    readonly property bool isBall: mode === 0
+    readonly property bool isBall: mode === 0 || mode === 1
+    readonly property bool isCard: mode >= 2
 
-    // 球/卡片的尺寸（窗口 = 可见内容，避免透明区域挡住下面的 PPT 点击）
     width: 100; height: 100
     x: Math.max(16, Screen.width - width - 28)
     y: Math.max(16, Screen.height - height - 140)
 
-    // ── 窗口尺寸随形态变化，锚定**右下角**（球默认在右下，卡片向左上长） ──
+    // ── 窗口尺寸跟着形态走，锚定**右下角**（球默认在右下，卡片向左上长） ──
     onModeChanged: applySize(mode)
     function applySize(m) {
         var right = win.x + win.width
         var bottom = win.y + win.height
         if (m === 0)      { win.width = 100; win.height = 100 }
-        else if (m === 1) { win.width = 352; win.height = 136 }
+        else if (m === 1) { win.width = 360; win.height = 360 }
         else if (m === 2) { win.width = 412; win.height = 396 }
         else if (m === 3) { win.width = 412; win.height = 340 }
         else              { win.width = 412; win.height = 208 }
@@ -56,7 +53,10 @@ Window {
         win.y = Math.max(12, Math.min(bottom - win.height, Screen.height - win.height - 12))
     }
 
-    // ── 背后桌面截图（毛玻璃的模糊源） ──
+    // ── 背后桌面截图（各元素毛玻璃的模糊源） ──
+    // 背后桌面截图：既是各元素 FrostedPanel 的模糊源，也顺便当窗口"背景"。
+    // 它是可见的（ShaderEffectSource 需要有东西可渲染），但因为本窗口已被排除在抓图之外，
+    // 画出来的就是**真实的桌面**，静止画面下与"透明"看不出差别（代价：最多 260ms 的滞后）。
     Image {
         id: backdrop
         anchors.fill: parent
@@ -65,37 +65,38 @@ Window {
         cache: false
     }
 
-    // ── 玻璃面：球是圆的、卡片是圆角 ──
-    FrostedPanel {
-        anchors.fill: parent
-        source: backdrop
-        radius: win.isBall ? width / 2 : 22
-        glassBlur: true
-        tint: "#aaffffff"          // 比主程序的卡片（30% 白）实一些：它是浮在 PPT 上的独立面板
-        shadow: true
-        shadowColor: "#4a1a2230"
-    }
-
     // ══════════════════════════════════════════════════════════
-    //  0 · 球
+    //  球（0 / 1 态都可见，气泡层里它还是"收起"按钮）
     // ══════════════════════════════════════════════════════════
     Item {
-        anchors.fill: parent
+        id: ballItem
+        width: 100; height: 100
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
         visible: win.isBall
+
+        FrostedPanel {
+            anchors.fill: parent
+            source: backdrop
+            radius: width / 2
+            glassBlur: true
+            tint: "#aaffffff"
+            shadow: true
+            shadowColor: "#4a1a2230"
+        }
 
         Text {
             anchors.centerIn: parent
             text: "⚡"
             font.pixelSize: 40
-            // 触摸没有 hover，按压瞬间给一点缩放的"按下去"手感
             scale: ballMa.pressed ? 0.94 : 1.0
             Behavior on scale { NumberAnimation { duration: 90; easing.type: Easing.OutQuad } }
         }
 
-        // 长按退出：沿球边缘填充一圈进度（1.2 秒填满 → 松手前填满即退出）
+        // 长按退出：沿球边填充一圈进度
         Canvas {
             anchors.fill: parent
-            property real p: win.holdP          // 绑定到进度；p 一变就重绘
+            property real p: win.holdP
             visible: p > 0.01
             onPChanged: requestPaint()
             onWidthChanged: requestPaint()
@@ -122,7 +123,7 @@ Window {
         MouseArea {
             id: ballMa
             anchors.fill: parent
-            property point grab: Qt.point(0, 0)      // 按下时的**屏幕坐标**
+            property point grab: Qt.point(0, 0)
             property real wx: 0
             property real wy: 0
             property bool moved: false
@@ -131,57 +132,118 @@ Window {
                 grab = Qt.point(win.x + m.x, win.y + m.y)
                 wx = win.x; wy = win.y
                 moved = false
-                holdRing.restart()          // 长按退出：环形进度开始填
+                holdRing.restart()
                 holdTimer.restart()
             }
             onPositionChanged: function(m) {
                 // 窗口坐标 + 窗口位置 = 光标屏幕坐标；拖动时两者同步移动，所以这个和是稳定的
                 var gx = win.x + m.x, gy = win.y + m.y
                 if (!moved && Math.abs(gx - grab.x) + Math.abs(gy - grab.y) <= 8) return
-                if (!moved) { holdRing.stop(); holdTimer.stop(); win.holdP = 0 }   // 开始拖动 = 取消长按
+                if (!moved) { holdRing.stop(); holdTimer.stop(); win.holdP = 0 }
                 moved = true
                 win.x = wx + (gx - grab.x)
                 win.y = wy + (gy - grab.y)
             }
             onReleased: {
                 holdRing.stop(); holdTimer.stop(); win.holdP = 0
-                if (!moved) win.mode = 1                  // 位移没超过阈值 → 当成一次点击
+                if (moved) return
+                win.mode = (win.mode === 1) ? 0 : 1      // 点球：弹出气泡 / 再点收回
             }
             onCanceled: { holdRing.stop(); holdTimer.stop(); win.holdP = 0 }
         }
     }
 
     // ══════════════════════════════════════════════════════════
-    //  1 · 菜单：四个图标
+    //  1 · 四个独立气泡（从球边错峰弹出）
     // ══════════════════════════════════════════════════════════
     Item {
+        id: menuLayer
         anchors.fill: parent
         visible: win.mode === 1
 
-        // 四个图标贴在底部一行；× 单独占右上角，不与按钮重叠
-        Row {
-            anchors.bottom: parent.bottom
-            anchors.bottomMargin: 14
-            anchors.horizontalCenter: parent.horizontalCenter
-            spacing: 12
-            IconBtn { glyph: "⚡"; onTapped: win.mode = 2 }
-            IconBtn { glyph: "🎲"; onTapped: win.mode = 3 }
-            IconBtn { glyph: "🖥"; onTapped: { win.flashMsg = "完整界面：合并后接上"; flashTimer.restart() } }
-            IconBtn { glyph: "⚙"; onTapped: win.mode = 4 }
+        // 展开进度：OutBack 回弹 = "啵"地弹出来的手感
+        property real t: win.mode === 1 ? 1 : 0
+        Behavior on t {
+            NumberAnimation { duration: 340; easing.type: Easing.OutBack; easing.overshoot: 1.5 }
         }
-        CloseBtn { anchors.right: parent.right; anchors.rightMargin: 10; anchors.top: parent.top; anchors.topMargin: 8 }
+
+        Repeater {
+            // ⚡批量 / 🎲抽取 / 🖥完整界面 / ⚙设置
+            model: [
+                { g: "👥", m: 2, tip: "批量" },
+                { g: "🎲", m: 3, tip: "抽取" },
+                { g: "🖥", m: -1, tip: "完整界面" },
+                { g: "⚙", m: 4, tip: "设置" }
+            ]
+            delegate: Item {
+                id: bub
+                // 从"左"到"上"铺开 90°：球在右下角，气泡全落在屏幕内
+                readonly property real ang: (180 - index * 30) * Math.PI / 180
+                // 错峰：每个气泡比前一个晚 10% 开始
+                readonly property real p: Math.max(0, Math.min(1, (menuLayer.t - index * 0.10) / 0.70))
+                readonly property real dist: 180 * (0.62 + 0.38 * p)   // 从球心飞出去
+                readonly property real bx: menuLayer.width - 50
+                readonly property real by: menuLayer.height - 50
+
+                width: 84; height: 84
+                x: bx + Math.cos(ang) * dist - width / 2
+                y: by - Math.sin(ang) * dist - height / 2
+                scale: 0.25 + 0.75 * p
+                opacity: p
+
+                FrostedPanel {
+                    anchors.fill: parent
+                    source: backdrop
+                    radius: width / 2
+                    glassBlur: true
+                    tint: bma.pressed ? "#d9ffffff" : "#b3ffffff"
+                    shadow: true
+                    shadowColor: "#4a1a2230"
+                }
+                Text {
+                    anchors.centerIn: parent
+                    text: modelData.g
+                    font.pixelSize: 32
+                }
+                MouseArea {
+                    id: bma
+                    anchors.fill: parent
+                    onClicked: {
+                        if (modelData.m < 0) { win.flashMsg = "完整界面：合并后接上"; flashTimer.restart() }
+                        else win.mode = modelData.m
+                    }
+                }
+            }
+        }
+
+        // 占位按钮的提示（贴在窗口左上角，不挡气泡）
+        FlashLine {
+            anchors.left: parent.left; anchors.leftMargin: 16
+            anchors.top: parent.top; anchors.topMargin: 14
+        }
     }
 
     // ══════════════════════════════════════════════════════════
-    //  2 · 批量：按小组加分
+    //  2·3·4 · 功能卡片（共用一块玻璃底）
     // ══════════════════════════════════════════════════════════
+    FrostedPanel {
+        anchors.fill: parent
+        visible: win.isCard
+        source: backdrop
+        radius: 22
+        glassBlur: true
+        tint: "#aaffffff"
+        shadow: true
+        shadowColor: "#4a1a2230"
+    }
+
+    // ── 2 · 批量：按小组加分 ──
     Item {
         anchors.fill: parent
         visible: win.mode === 2
 
         CardHead { title: "批量加分" }
 
-        // 小组（可多选）
         Flow {
             id: groupFlow
             anchors.top: parent.top; anchors.topMargin: 74
@@ -203,7 +265,6 @@ Window {
             }
         }
 
-        // 分类（单选）
         Flow {
             anchors.top: groupFlow.bottom; anchors.topMargin: 14
             anchors.left: parent.left; anchors.leftMargin: 20
@@ -220,7 +281,6 @@ Window {
             }
         }
 
-        // 分值 + 加减
         Row {
             anchors.bottom: parent.bottom; anchors.bottomMargin: 20
             anchors.horizontalCenter: parent.horizontalCenter
@@ -245,12 +305,13 @@ Window {
             }
         }
 
-        FlashLine { }
+        FlashLine {
+            anchors.bottom: parent.bottom; anchors.bottomMargin: 84
+            anchors.horizontalCenter: parent.horizontalCenter
+        }
     }
 
-    // ══════════════════════════════════════════════════════════
-    //  3 · 抽取：抽到谁 → 直接加分
-    // ══════════════════════════════════════════════════════════
+    // ── 3 · 抽取 ──
     Item {
         anchors.fill: parent
         visible: win.mode === 3
@@ -280,7 +341,6 @@ Window {
             }
         }
 
-        // 结果：大字
         Column {
             anchors.centerIn: parent
             anchors.verticalCenterOffset: 10
@@ -329,12 +389,13 @@ Window {
             }
         }
 
-        FlashLine { }
+        FlashLine {
+            anchors.bottom: parent.bottom; anchors.bottomMargin: 84
+            anchors.horizontalCenter: parent.horizontalCenter
+        }
     }
 
-    // ══════════════════════════════════════════════════════════
-    //  4 · 设置
-    // ══════════════════════════════════════════════════════════
+    // ── 4 · 设置 ──
     Item {
         anchors.fill: parent
         visible: win.mode === 4
@@ -360,8 +421,6 @@ Window {
     }
 
     // ══════════════════════════════════════════════════════════
-    //  就地反馈（触摸屏没有 hover 提示，操作结果必须立刻看到）
-    // ══════════════════════════════════════════════════════════
     Timer { id: flashTimer; interval: 1600; onTriggered: win.flashMsg = "" }
 
     // ══════════════════════════════════════════════════════════
@@ -384,7 +443,6 @@ Window {
     function doPick() {
         var raw = reward.randomPickStudents(pickCount.value)
         var out = []
-        // 抽中的是快照，用当前数据补齐（同随机抽取页的做法）
         for (var i = 0; i < raw.length; i++) {
             for (var j = 0; j < reward.students.length; j++) {
                 if (reward.students[j].id === raw[i].id) { out.push(reward.students[j]); break }
@@ -417,7 +475,6 @@ Window {
         height: 44
 
         BackBtn { anchors.left: parent.left; anchors.verticalCenter: parent.verticalCenter }
-        // 每张卡片都能**一次点击**回到球（触摸屏上少一次跳转就是少一次误触）
         CloseBtn { anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter }
         Text {
             anchors.centerIn: parent
@@ -441,19 +498,6 @@ Window {
         color: cma.pressed ? "#40ffffff" : "#20ffffff"
         Text { anchors.centerIn: parent; text: "×"; font.pixelSize: 22; color: Theme.textPrimary }
         MouseArea { id: cma; anchors.fill: parent; onClicked: win.mode = 0 }
-    }
-
-    component IconBtn: Rectangle {
-        id: ib
-        property string glyph: ""
-        signal tapped()
-        width: 68; height: 68; radius: 24
-        color: ima.pressed ? "#59ffffff" : "#26ffffff"
-        border.color: "#66ffffff"; border.width: 1
-        Behavior on color { ColorAnimation { duration: 90 } }
-        scale: ima.pressed ? 0.94 : 1.0
-        Text { anchors.centerIn: parent; text: ib.glyph; font.pixelSize: 32 }
-        MouseArea { id: ima; anchors.fill: parent; onClicked: ib.tapped() }
     }
 
     component BigChip: Rectangle {
@@ -482,8 +526,6 @@ Window {
     }
 
     component FlashLine: Text {
-        anchors.bottom: parent.bottom; anchors.bottomMargin: 84
-        anchors.horizontalCenter: parent.horizontalCenter
         text: win.flashMsg
         visible: text !== ""
         color: Theme.accentDark
