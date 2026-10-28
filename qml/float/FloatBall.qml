@@ -34,6 +34,7 @@ Window {
 
     readonly property bool isBall: mode === 0 || mode === 1
     readonly property bool isCard: mode >= 2
+    readonly property bool dragging: ballMa.pressed && ballMa.moved   // 正在拖动（会暂时关掉毛玻璃）
 
     width: 100; height: 100
     x: Math.max(16, Screen.width - width - 28)
@@ -45,7 +46,7 @@ Window {
         var right = win.x + win.width
         var bottom = win.y + win.height
         if (m === 0)      { win.width = 100; win.height = 100 }
-        else if (m === 1) { win.width = 360; win.height = 360 }
+        else if (m === 1) { win.width = 320; win.height = 320 }
         else if (m === 2) { win.width = 412; win.height = 396 }
         else if (m === 3) { win.width = 412; win.height = 340 }
         else              { win.width = 412; win.height = 208 }
@@ -63,6 +64,11 @@ Window {
         source: "image://floatbackdrop/v" + backdropVersion
         fillMode: Image.PreserveAspectCrop
         cache: false
+        // ⚠️ 拖动时**关掉背板**：抓屏是 260ms 一次，窗口在动但截图还停在旧位置，
+        //    四角就会露出一块"旧位置的方形残影"。拖的时候退化成纯 tint 的圆，
+        //    松手后再淡回来（下一帧就重抓了）。
+        opacity: win.dragging ? 0 : 1
+        Behavior on opacity { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
     }
 
     // ══════════════════════════════════════════════════════════
@@ -168,27 +174,29 @@ Window {
         }
 
         Repeater {
-            // ⚡批量 / 🎲抽取 / 🖥完整界面 / ⚙设置
+            // 位置是**相对球心**的偏移（负数=左上）。球在右下角，所以气泡只往左上走。
+            // 布局取舍：
+            //   · 离球不能太远（原来弧线半径 180，离球 88px，太飘）→ 改成紧凑簇，最近的一颗离球 28px
+            //   · 四个之间要拉开（原来在 90° 弧上挤在一起，彼此只隔 9px）→ 2×2 错落，相邻间隔 16px+
+            //   · 常用的「批量 / 抽取」放在离手最近的右下两格
             model: [
-                { g: "👥", m: 2, tip: "批量" },
-                { g: "🎲", m: 3, tip: "抽取" },
-                { g: "🖥", m: -1, tip: "完整界面" },
-                { g: "⚙", m: 4, tip: "设置" }
+                { g: "👥", m: 2,  ox:  -88, oy:  -84 },
+                { g: "🎲", m: 3,  ox: -188, oy:  -96 },
+                { g: "⚙", m: 4,  ox:  -84, oy: -186 },
+                { g: "🖥", m: -1, ox: -189, oy: -182 }
             ]
             delegate: Item {
                 id: bub
-                // 从"左"到"上"铺开 90°：球在右下角，气泡全落在屏幕内
-                readonly property real ang: (180 - index * 30) * Math.PI / 180
                 // 错峰：每个气泡比前一个晚 10% 开始
                 readonly property real p: Math.max(0, Math.min(1, (menuLayer.t - index * 0.10) / 0.70))
-                readonly property real dist: 180 * (0.62 + 0.38 * p)   // 从球心飞出去
+                readonly property real easeOut: 0.55 + 0.45 * p       // 从球心方向飞出去
                 readonly property real bx: menuLayer.width - 50
                 readonly property real by: menuLayer.height - 50
 
                 width: 84; height: 84
-                x: bx + Math.cos(ang) * dist - width / 2
-                y: by - Math.sin(ang) * dist - height / 2
-                scale: 0.25 + 0.75 * p
+                x: bx + modelData.ox * easeOut - width / 2
+                y: by + modelData.oy * easeOut - height / 2
+                scale: 0.30 + 0.70 * p
                 opacity: p
 
                 FrostedPanel {
@@ -197,8 +205,9 @@ Window {
                     radius: width / 2
                     glassBlur: true
                     tint: bma.pressed ? "#d9ffffff" : "#b3ffffff"
+                    // 投影压得很淡：原来那圈灰晕贴上圆边，看起来像描了一圈边
                     shadow: true
-                    shadowColor: "#4a1a2230"
+                    shadowColor: "#2b1a2230"
                 }
                 Text {
                     anchors.centerIn: parent
@@ -509,9 +518,8 @@ Window {
         height: small ? 44 : 52
         width: lbl.implicitWidth + (small ? 28 : 34)
         radius: height / 2
-        color: bc.active ? "#d90fa88f" : (bma2.pressed ? "#40ffffff" : "#33ffffff")
-        border.color: bc.active ? "transparent" : "#59ffffff"
-        border.width: bc.active ? 0 : 1
+        // 无描边：靠底色深浅区分（选中=实心青绿，未选=透白）
+        color: bc.active ? "#d90fa88f" : (bma2.pressed ? "#4dffffff" : "#3dffffff")
         Behavior on color { ColorAnimation { duration: 110 } }
         Text {
             id: lbl
