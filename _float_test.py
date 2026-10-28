@@ -52,7 +52,8 @@ def main():
     except Exception:
         pass
 
-    storage = StorageManager(os.path.join(BASE, 'class_reward_data.json'))
+    data_file = os.environ.get('FLOAT_DATA', 'class_reward_data.json')
+    storage = StorageManager(os.path.join(BASE, data_file))
     ctrl = AppController(storage)
     bridge = RewardBridge(ctrl)
     theme = Theme()          # 必须持引用，否则被 GC、QML 端读到 null
@@ -133,9 +134,9 @@ def main():
                 app.quit()
                 return
             m = idx['i']
-            if m == 2:      # 批量：预选两个组 + 一个分类，看选中态
-                gs = bridge.groups
-                win.setProperty("selGroups", [g["id"] for g in gs[:2]])
+            if m == 2:      # 批量：预选 3 个学生 + 一个分类，看选中态
+                st = bridge.students
+                win.setProperty("selStudents", [x["id"] for x in st[:3]])
                 win.setProperty("cat", "课堂")
             if m == 3:      # 抽取：预填两个结果，看大字排版
                 st = bridge.students
