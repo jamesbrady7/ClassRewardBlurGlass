@@ -29,12 +29,15 @@ Window {
     readonly property bool isCard: mode >= 2
 
     // ── 窗口尺寸（每种形态的"安全区"见下面的 ballX/ballY 夹取）──
-    width: mode === 0 ? 100
+    // ⚠️ 球态和气泡态**用同一个窗口尺寸**：点球时窗口几何不变，
+    //    否则系统窗口先动、QML 布局慢一帧 → 会看到一个"错位的球"闪一下。
+    //    球态只显示中间那一块，其余靠窗口遮罩（Python 端 setMask）做成点击穿透。
+    width: mode === 0 ? 240
          : mode === 1 ? 240
          : mode === 2 ? 470
          : mode === 3 ? 412
          : mode === 4 ? 412 : 320
-    height: mode === 0 ? 100
+    height: mode === 0 ? 310
           : mode === 1 ? 310
           : mode === 2 ? 430
           : mode === 3 ? 360
@@ -45,8 +48,8 @@ Window {
     property real ballY: Math.max(150, Screen.height - 320)
 
     // 球在窗口内的偏移：球态=0；气泡态=(140,150)（球的左/上要留出气泡的位置）；卡片态=窗口右下
-    readonly property real ballOffX: mode === 0 ? 0 : (mode === 1 ? 140 : width - 100)
-    readonly property real ballOffY: mode === 0 ? 0 : (mode === 1 ? 150 : height - 100)
+    readonly property real ballOffX: mode <= 1 ? 140 : width - 100
+    readonly property real ballOffY: mode <= 1 ? 150 : height - 100
 
     // 窗口位置 = 球的位置 − 球在窗口内的偏移；再夹一次屏幕边界
     // （卡片比球大得多，靠近屏幕左/上边时靠这一步把整张卡拖回屏内）
@@ -62,12 +65,15 @@ Window {
     property string flashMsg: ""
     property real holdP: 0
     property bool captureSettled: true
+    property bool menuAnimating: false     // 气泡弹出/收回动画进行中（这期间不用毛玻璃贴图）
     readonly property bool dragging: ballMa.pressed && ballMa.moved
 
     onModeChanged: {
         win.captureSettled = false
         settleTimer.restart()
+        if (mode === 0 || mode === 1) { win.menuAnimating = true; menuAnimTimer.restart() }
     }
+    Timer { id: menuAnimTimer; interval: 420; onTriggered: win.menuAnimating = false }
     // 新截图一到就恢复（版本号变了说明 provider 已经换了新图）；
     // 定时器只作兜底，防止抓图停了以后玻璃一直不出现。
     onBackdropVersionChanged: if (!win.captureSettled) win.captureSettled = true
@@ -81,40 +87,38 @@ Window {
     // ══════════════════════════════════════════════════════════
     component Glass: Item {
         id: gs
-        property real sx: 0            // 本元素在窗口内的左上角
+        property real sx: 0              // 本元素在窗口内的左上角（截图按它裁剪）
         property real sy: 0
         property real corner: width / 2
-        property color faceTint: "#7affffff"
-        property color shadowTint: "#4a1a2230"
+        property int tintA: 158          // 白色 tint 的 alpha（0-255）
         anchors.fill: parent
 
-        Item {
-            id: clipBox
+        // 柔和投影（Canvas，只在尺寸变化时重绘；动画期间是纯变换，不重绘）
+        SoftShadow {
             anchors.fill: parent
-            clip: true
-            // ⚠️ 必须跟着模糊一起开关：
-            //    FrostedPanel 在 glassBlur=false 时会把 sourceItem 置空，
-            //    此时 hideSource 就不再生效 → 这块方形的截图会重新显形（拖动时看到的那块方块）。
-            visible: win.captureSettled && !win.dragging
-            Image {
-                width: Math.max(1, win.width)
-                height: Math.max(1, win.height)
-                x: -gs.sx
-                y: -gs.sy
-                source: "image://floatbackdrop/v" + win.backdropVersion
-                fillMode: Image.Stretch
-                cache: false
-            }
+            anchors.margins: -13
+            softColor: "#3a1a2230"
         }
-        FrostedPanel {
+
+        // 毛玻璃贴图：**模糊/圆角遮罩/白色 tint 全部在 Python 端烘好**
+        // （本窗口是无边框 alpha 窗口，MultiEffect + maskSource 在这里实测渲染不出内容）
+        Image {
             anchors.fill: parent
-            source: clipBox
-            hideSource: true                      // 只当模糊源，绝不自己画出来（方形四角会露馅）
+            cache: false
+            visible: win.captureSettled && !win.dragging
+            // ⚠️ 分隔符不能用 | ：URL 里会被编码成 %7C，provider 端解析会失败
+            source: "image://floatglass/"
+                    + Math.round(gs.sx) + "_" + Math.round(gs.sy) + "_"
+                    + Math.round(width) + "_" + Math.round(height) + "_"
+                    + Math.round(gs.corner) + "_" + gs.tintA
+                    + "?v" + win.backdropVersion
+        }
+        // 拖动 / 刚切形态：没有可用截图，只留一层纯色
+        Rectangle {
+            anchors.fill: parent
             radius: gs.corner
-            glassBlur: win.captureSettled && !win.dragging
-            tint: gs.faceTint
-            shadow: true
-            shadowColor: gs.shadowTint
+            visible: !(win.captureSettled && !win.dragging && !win.menuAnimating)
+            color: "#e0ffffff"
         }
     }
 
@@ -129,7 +133,7 @@ Window {
         visible: win.isBall
 
         // 白色压到 62%：再厚就把下面的模糊盖没了，看着只是"白色半透明"
-        Glass { sx: win.ballOffX; sy: win.ballOffY; faceTint: "#9effffff"; shadowTint: "#4a1a2230" }
+        Glass { sx: win.ballOffX; sy: win.ballOffY; tintA: 146 }
 
         Text {
             anchors.centerIn: parent
@@ -231,13 +235,8 @@ Window {
                 scale: 0.30 + 0.70 * p
                 opacity: p
 
-                Glass {
-                    sx: bub.x; sy: bub.y
-                    // 白色别太厚：70% 白会把下面那层模糊糊得看不见（只剩"白色半透明"）
-                    faceTint: bma.pressed ? "#d9ffffff" : "#80ffffff"
-                    // 投影压淡：原来那圈灰晕贴着圆边，看起来像描了一圈边
-                    shadowTint: "#2b1a2230"
-                }
+                // 白色别太厚：70% 白会把下面那层模糊盖得看不见（只剩"白色半透明"）
+                Glass { sx: bub.x; sy: bub.y; tintA: bma.pressed ? 220 : 112 }
                 Text {
                     anchors.centerIn: parent
                     text: modelData.g
@@ -263,13 +262,7 @@ Window {
     // ══════════════════════════════════════════════════════════
     //  卡片共用玻璃底
     // ══════════════════════════════════════════════════════════
-    Glass {
-        visible: win.isCard
-        sx: 0; sy: 0
-        corner: 22
-        faceTint: "#aaffffff"
-        shadowTint: "#4a1a2230"
-    }
+    Glass { visible: win.isCard; sx: 0; sy: 0; corner: 22; tintA: 162 }
 
     // ══════════════════════════════════════════════════════════
     //  2 · 批量：50 人网格，按人加分

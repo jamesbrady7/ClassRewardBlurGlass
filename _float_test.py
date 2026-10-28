@@ -12,8 +12,9 @@ import ctypes
 
 sys.path.insert(0, os.getcwd())
 
-from PySide6.QtCore import QTimer, QUrl
-from PySide6.QtGui import QGuiApplication, QFont, QImage
+from PySide6.QtCore import QTimer, QUrl, Qt, QRectF
+from PySide6.QtGui import (QGuiApplication, QFont, QImage, QPainter, QColor,
+                           QPainterPath, QRegion)
 from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtQuick import QQuickWindow, QQuickImageProvider
 
@@ -26,6 +27,56 @@ from qml_bridge import RewardBridge
 from qml_theme import Theme
 
 BASE = os.path.dirname(os.path.abspath(__file__))
+
+
+class Glass(QQuickImageProvider):
+    """现场合成一块毛玻璃：裁剪桌面截图 → 模糊 → 圆角/圆形遮罩 → 叠白色 tint。
+    URL: image://floatglass/<x>_<y>_<w>_<h>_<r>_<tintA>?v=<版本>
+
+    为什么不在 QML 里用 MultiEffect：
+      本窗口是无边框半透明 + alpha 窗口，MultiEffect + maskSource 在这里实测**渲染不出内容**
+      （遮罩纹理为空 → 整层被裁掉）。改成"Python 烘好图、QML 只贴图"后：
+      结果可验证、动画期间也不用每帧重算模糊（动画因此才顺）。
+    """
+
+    def __init__(self, backdrop):
+        super().__init__(QQuickImageProvider.Image)
+        self.backdrop = backdrop          # 共享的「最新桌面截图」
+
+    def requestImage(self, iid, size, requestedSize):
+        try:
+            x, y, w, h, r, ta = [int(float(v)) for v in iid.split('?')[0].split('_')]
+        except Exception:
+            return QImage()
+        if w <= 0 or h <= 0:
+            return QImage()
+
+        src = self.backdrop.img
+        out = QImage(w, h, QImage.Format_ARGB32_Premultiplied)
+        out.fill(Qt.transparent)
+        p = QPainter(out)
+        p.setRenderHint(QPainter.Antialiasing)
+        path = QPainterPath()
+        path.addRoundedRect(QRectF(0, 0, w, h), r, r)
+        p.setClipPath(path)
+
+        # 模糊 = 缩小再放大（平滑插值），足够像毛玻璃且很便宜
+        if not src.isNull():
+            crop = src.copy(x, y, w, h)
+            if not crop.isNull():
+                sw, sh = max(1, w // 4), max(1, h // 4)
+                small = crop.scaled(sw, sh, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+                blurred = small.scaled(w, h, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+                p.drawImage(0, 0, blurred)
+
+        p.fillRect(QRectF(0, 0, w, h), QColor(255, 255, 255, ta))
+        p.end()
+        if os.environ.get('FLOAT_DUMP'):
+            try:
+                out.save(os.path.join(os.environ['FLOAT_DUMP'], 'glass_%d_%d_%d_%d.png' % (x, y, w, h)))
+            except Exception:
+                pass
+        return out
 
 
 class Backdrop(QQuickImageProvider):
@@ -61,6 +112,7 @@ def main():
     engine = QQmlApplicationEngine()
     provider = Backdrop()
     engine.addImageProvider("floatbackdrop", provider)
+    engine.addImageProvider("floatglass", Glass(provider))
     engine.rootContext().setContextProperty("reward", bridge)
     engine.rootContext().setContextProperty("Theme", theme)
     engine.rootContext().setContextProperty("systemGlass", False)
@@ -81,6 +133,27 @@ def main():
             ctypes.windll.user32.SetWindowDisplayAffinity(hwnd, 0x11)   # WDA_EXCLUDEFROMCAPTURE
         except Exception as e:
             print("[float] 抓图排除失败：%r" % (e,))
+
+    # 窗口遮罩：球态只保留圆球那块（其余**点击穿透**，不会挡住 PPT），其它形态整窗可点。
+    # 顺带让"球态=气泡态同一窗口尺寸"成立（点击时窗口几何不变 → 不会闪/错位）。
+    def apply_mask():
+        try:
+            if int(win.property("mode")) == 0:
+                bx = int(win.property("ballOffX") or 0)
+                by = int(win.property("ballOffY") or 0)
+                win.setMask(QRegion(bx - 16, by - 16, 132, 132))
+            else:
+                win.setMask(QRegion(0, 0, int(win.width()), int(win.height())))
+        except Exception as e:
+            print("[float] mask 失败：%r" % (e,))
+
+    apply_mask()
+    try:
+        win.modeChanged.connect(apply_mask)
+        win.widthChanged.connect(lambda: apply_mask())
+        win.heightChanged.connect(lambda: apply_mask())
+    except Exception:
+        pass
 
     def grab():
         try:
