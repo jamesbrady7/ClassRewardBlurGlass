@@ -84,7 +84,7 @@ Window {
         property real sx: 0            // 本元素在窗口内的左上角
         property real sy: 0
         property real corner: width / 2
-        property color faceTint: "#aaffffff"
+        property color faceTint: "#7affffff"
         property color shadowTint: "#4a1a2230"
         anchors.fill: parent
 
@@ -92,6 +92,10 @@ Window {
             id: clipBox
             anchors.fill: parent
             clip: true
+            // ⚠️ 必须跟着模糊一起开关：
+            //    FrostedPanel 在 glassBlur=false 时会把 sourceItem 置空，
+            //    此时 hideSource 就不再生效 → 这块方形的截图会重新显形（拖动时看到的那块方块）。
+            visible: win.captureSettled && !win.dragging
             Image {
                 width: Math.max(1, win.width)
                 height: Math.max(1, win.height)
@@ -124,7 +128,8 @@ Window {
         y: win.ballOffY
         visible: win.isBall
 
-        Glass { sx: win.ballOffX; sy: win.ballOffY; faceTint: "#aaffffff"; shadowTint: "#4a1a2230" }
+        // 白色压到 62%：再厚就把下面的模糊盖没了，看着只是"白色半透明"
+        Glass { sx: win.ballOffX; sy: win.ballOffY; faceTint: "#9effffff"; shadowTint: "#4a1a2230" }
 
         Text {
             anchors.centerIn: parent
@@ -228,7 +233,8 @@ Window {
 
                 Glass {
                     sx: bub.x; sy: bub.y
-                    faceTint: bma.pressed ? "#d9ffffff" : "#b3ffffff"
+                    // 白色别太厚：70% 白会把下面那层模糊糊得看不见（只剩"白色半透明"）
+                    faceTint: bma.pressed ? "#d9ffffff" : "#80ffffff"
                     // 投影压淡：原来那圈灰晕贴着圆边，看起来像描了一圈边
                     shadowTint: "#2b1a2230"
                 }
