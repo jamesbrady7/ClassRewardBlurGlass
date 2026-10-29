@@ -255,8 +255,11 @@ Window {
             name: "sparkle"
             width: 54; height: 54
             color: "#ffffff"
-            scale: ballMa.pressed ? 0.94 : 1.0
-            Behavior on scale { NumberAnimation { duration: 90; easing.type: Easing.OutQuad } }
+            // 点击时四芒星 q 弹放大再回落（OutBack 过冲，动效明显）
+            scale: ballMa.pressed ? 1.24 : 1.0
+            Behavior on scale {
+                NumberAnimation { duration: 260; easing.type: Easing.OutBack; easing.overshoot: 2.4 }
+            }
         }
 
         // 长按进度环
@@ -269,13 +272,18 @@ Window {
             onPaint: {
                 var c = getContext("2d")
                 c.reset()
-                c.strokeStyle = "#0fa88f"
-                c.lineWidth = 6
+                var cx = width / 2, cy = height / 2, r = width / 2 - 8
+                var a0 = -Math.PI / 2, a1 = -Math.PI / 2 + p * Math.PI * 2
                 c.lineCap = "round"
-                c.beginPath()
-                c.arc(width / 2, height / 2, width / 2 - 7,
-                      -Math.PI / 2, -Math.PI / 2 + p * Math.PI * 2)
-                c.stroke()
+                // 由内到外叠 4 层：芯亮、外圈淡 → 边缘自然渐隐（Canvas 没有模糊）
+                var layers = [[3.0, 0.95], [7.0, 0.42], [12.0, 0.20], [18.0, 0.09]]
+                for (var i = 0; i < layers.length; i++) {
+                    c.strokeStyle = "rgba(255,255,255," + layers[i][1] + ")"
+                    c.lineWidth = layers[i][0]
+                    c.beginPath()
+                    c.arc(cx, cy, r, a0, a1)
+                    c.stroke()
+                }
             }
         }
 
@@ -360,17 +368,27 @@ Window {
                 scale: 0.06 + 0.94 * p
                 opacity: Math.min(1, p * 1.6)
 
-                // 白色别太厚：70% 白会把下面那层模糊盖得看不见（只剩"白色半透明"）
-                Glass { soft: true; tintColor: bma.pressed ? "#8c000000" : "#52000000" }
-                FloatIcon {
-                    kind: modelData.k
-                    width: 26; height: 26
-                    weight: 2.2
-                    anchors.centerIn: parent
+                // 悬停时「气泡 + 图标」整组等比放大（OutBack = q 弹），移开自动复原。
+                // ⚠️ 缩放放在内层 Item 上：MouseArea 仍按原尺寸接收事件，不会因放大缩小而反复进出。
+                Item {
+                    anchors.fill: parent
+                    scale: bma.containsMouse ? 1.12 : 1.0
+                    Behavior on scale {
+                        NumberAnimation { duration: 240; easing.type: Easing.OutBack; easing.overshoot: 1.9 }
+                    }
+                    // 白色别太厚：70% 白会把下面那层模糊盖得看不见（只剩"白色半透明"）
+                    Glass { soft: true; tintColor: bma.pressed ? "#8c000000" : "#52000000" }
+                    FloatIcon {
+                        kind: modelData.k
+                        width: 26; height: 26
+                        weight: 2.2
+                        anchors.centerIn: parent
+                    }
                 }
                 MouseArea {
                     id: bma
                     anchors.fill: parent
+                    hoverEnabled: true
                     onClicked: {
                         if (modelData.m < 0) { win.flashMsg = "完整界面：合并后接上"; flashTimer.restart() }
                         else win.mode = modelData.m
@@ -397,7 +415,7 @@ Window {
         anchors.fill: parent
         visible: win.mode === 2
 
-        CardHead { title: "批量加分 · 已选 " + win.selStudents.length + " 人" }
+        CardHead { title: "批量加分" }   // 已选人数看标题栏右上的全选开关与高亮格即可（长标题会和开关重叠）
 
         Grid {
             id: stuGrid
@@ -411,12 +429,12 @@ Window {
                     id: sc
                     readonly property bool on: win.selStudents.indexOf(modelData.id) >= 0
                     width: 38; height: 38; radius: 12
-                    color: sc.on ? "#d90fa88f" : (scma.pressed ? "#33ffffff" : "#1affffff")
+                    color: sc.on ? "#b3ffffff" : (scma.pressed ? "#33ffffff" : "#1affffff")
                     Behavior on color { ColorAnimation { duration: 90 } }
                     Text {
                         anchors.centerIn: parent
                         text: modelData.name.length > 3 ? modelData.name.slice(0, 3) : modelData.name
-                        color: "#ffffff"
+                        color: sc.on ? "#1f2937" : "#ffffff"
                         font.pixelSize: 11
                         font.bold: sc.on
                         font.family: Theme.fontFamily
@@ -435,39 +453,12 @@ Window {
             }
         }
 
-        // 维度选择：放在网格下方并**居中**；最左是「全选」（逻辑同主界面：全选 ⇄ 取消全选）
+        // 维度选择：放在界面**最下方并居中**（原来的「全选」胶囊已改为标题栏里的开关）
         Row {
             id: catRow
-            anchors.top: stuGrid.bottom; anchors.topMargin: 12
+            anchors.bottom: parent.bottom; anchors.bottomMargin: 84
             anchors.horizontalCenter: parent.horizontalCenter
             spacing: 8
-
-            Rectangle {
-                readonly property bool allOn: reward.students.length > 0
-                                             && win.selStudents.length === reward.students.length
-                height: 40
-                width: allLbl.implicitWidth + 24
-                radius: height / 2
-                color: allOn ? "#59ffffff" : (allMa.pressed ? "#33ffffff" : "#1affffff")
-                Text {
-                    id: allLbl
-                    anchors.centerIn: parent
-                    text: "全选"
-                    color: "#ffffff"
-                    font.pixelSize: 14
-                    font.bold: allOn
-                    font.family: Theme.fontFamily
-                }
-                MouseArea {
-                    id: allMa
-                    anchors.fill: parent
-                    onClicked: {
-                        var all = reward.students.map(function(st) { return st.id })
-                        win.selStudents = (all.length > 0 && win.selStudents.length === all.length) ? [] : all
-                    }
-                }
-            }
-            Item { width: 6; height: 1 }
             Repeater {
                 model: reward.categories
                 delegate: Rectangle {
@@ -475,12 +466,12 @@ Window {
                     height: 40
                     width: lbl2.implicitWidth + 24
                     radius: height / 2
-                    color: on ? "#d90fa88f" : (cm.pressed ? "#33ffffff" : "#1affffff")
+                    color: on ? "#b3ffffff" : (cm.pressed ? "#33ffffff" : "#1affffff")
                     Text {
                         id: lbl2
                         anchors.centerIn: parent
                         text: modelData
-                        color: "#ffffff"
+                        color: on ? "#1f2937" : "#ffffff"
                         font.pixelSize: 14
                         font.bold: on
                         font.family: Theme.fontFamily
@@ -558,11 +549,7 @@ Window {
                     font.family: Theme.fontFamily
                 }
             }
-            Text {
-                text: win.picked.length ? "" : "点「抽取」"
-                anchors.horizontalCenter: parent.horizontalCenter
-                color: "#a6ffffff"; font.pixelSize: 15; font.family: Theme.fontFamily
-            }
+
         }
 
         // 底部（上）：抽 [N] 名/个 + 「抽取」
@@ -589,20 +576,26 @@ Window {
             }
         }
 
-        // 底部（下）：加分 / 扣分（「再抽」已去掉）
+        // 底部（下）：分值 + 加分 / 扣分（「再抽」已去掉）
         Row {
             anchors.bottom: parent.bottom; anchors.bottomMargin: 18
             anchors.horizontalCenter: parent.horizontalCenter
-            spacing: 14
+            spacing: 12
+            Text {
+                text: "分值"
+                anchors.verticalCenter: parent.verticalCenter
+                color: "#d9ffffff"; font.pixelSize: 15; font.family: Theme.fontFamily
+            }
+            PointsPill { id: pickPts; from: 1; to: 20; value: 1; anchors.verticalCenter: parent.verticalCenter }
             CuteButton {
                 tone: "primary"; text: "加分"
-                implicitWidth: 128; implicitHeight: 52; fontSize: 19
+                implicitWidth: 104; implicitHeight: 52; fontSize: 19
                 usable: win.picked.length > 0
                 onClicked: win.applyPicked(true)
             }
             CuteButton {
                 tone: "danger"; text: "扣分"
-                implicitWidth: 128; implicitHeight: 52; fontSize: 19
+                implicitWidth: 104; implicitHeight: 52; fontSize: 19
                 usable: win.picked.length > 0
                 onClicked: win.applyPicked(false)
             }
@@ -706,7 +699,7 @@ Window {
 
     function applyPicked(isAdd) {
         if (!win.picked.length) return
-        var n = pts.value
+        var n = pickPts.value
         var names = []
         if (win.pickKind === 0) {
             if (!win.cat) { flash("请先在「批量」里选一次分类"); return }
@@ -755,6 +748,35 @@ Window {
         }
 
         BackBtn { anchors.left: parent.left; anchors.verticalCenter: parent.verticalCenter }
+        // 批量页：全选开关（与主界面批量操作页同款 GlassSwitch），放在锁定按钮左边
+        Row {
+            visible: win.mode === 2
+            anchors.right: parent.right
+            anchors.rightMargin: 54
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: 6
+            Text {
+                text: "全选"
+                anchors.verticalCenter: parent.verticalCenter
+                color: "#d9ffffff"; font.pixelSize: 13; font.family: Theme.fontFamily
+            }
+            GlassSwitch {
+                id: allSwitch
+                anchors.verticalCenter: parent.verticalCenter
+                // ⚠️ 不用 checked: 绑定（点击会打断绑定），用 Connections 单向同步
+                onToggled: {
+                    var all = reward.students.map(function(st) { return st.id })
+                    win.selStudents = checked ? all : []
+                }
+                Connections {
+                    target: win
+                    function onSelStudentsChanged() {
+                        allSwitch.checked = reward.students.length > 0
+                                             && win.selStudents.length === reward.students.length
+                    }
+                }
+            }
+        }
         LockBtn {
             anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter
             visible: win.mode !== 4          // 设置页不需要锁定
