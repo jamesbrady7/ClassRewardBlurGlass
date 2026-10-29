@@ -426,6 +426,11 @@ def main():
         if not float_win.start():
             _log('[float] 悬浮球 QML 加载失败')
         else:
+            # 关主窗口 = 退出应用 → 连带关掉悬浮球（否则窗口都没了进程还赖着）
+            try:
+                roots[0].closing.connect(lambda: float_win.win and float_win.win.close())
+            except Exception:
+                pass
             _log('[float] 悬浮球已启动')
     except Exception as e:
         _log('[float] 悬浮球启动失败：%r' % (e,))

@@ -67,8 +67,10 @@ def main():
     engine.rootContext().setContextProperty("systemGlass", False)
     engine.rootContext().setContextProperty(
         "floatNoActivateCtx", os.environ.get('FLOAT_NOACTIVATE', '1') != '0')
-    engine.rootContext().setContextProperty(
-        "floatNoActivateCtx", os.environ.get('FLOAT_NOACTIVATE', '1') != '0')
+    # QML 会调 floatBridge.showMain()/closeBall()；单独跑测试时给个空壳
+    from float_window import _FloatBridge
+    _fb = _FloatBridge(None)
+    engine.rootContext().setContextProperty("floatBridge", _fb)
     engine.load(QUrl.fromLocalFile(os.path.join(BASE, 'qml', 'float', 'FloatBall.qml')))
 
     roots = engine.rootObjects()
@@ -76,6 +78,7 @@ def main():
         print("[float] QML 加载失败")
         sys.exit(1)
     win = roots[0]
+    _fb.win = win          # closeBall() 能关掉测试窗口
 
     # 任务栏/ALT+TAB 隐藏（默认关；需要时 FLOAT_TOOLWINDOW=1）
     if os.environ.get('FLOAT_TOOLWINDOW') == '1':
