@@ -71,11 +71,23 @@ Window {
 
     readonly property bool dragging: ballMa.pressed && ballMa.moved
 
+    // 供 Python 计算窗口遮罩/模糊区域。收回动画期间**保持气泡形状**，
+    // 否则一关就切成"只有球"的遮罩 → 气泡被瞬间裁掉，看不到收回动画。
+    property int maskMode: 0
     onModeChanged: {
-        maskTimer.restart()
-        if (mode === 0) closeHold.restart()      // 收回动画播完前保持可见
+        if (mode === 0) {
+            win.maskMode = 1
+            closeHold.restart()
+        } else {
+            win.maskMode = mode
+            maskTimer.restart()
+        }
     }
-    Timer { id: closeHold; interval: 420 }
+    Timer {
+        id: closeHold
+        interval: 400
+        onTriggered: { win.maskMode = win.mode; win.maskVersion++ }
+    }
     // 形态变了 → 让 Python 重算窗口遮罩（Acrylic 只糊遮罩范围内）
     Timer { id: maskTimer; interval: 0; onTriggered: win.maskVersion++ }
     property int maskVersion: 0
@@ -96,14 +108,8 @@ Window {
         id: gs
         property real corner: width / 2
         property color tintColor: "#59ffffff"
-        property color shadowTint: "#3a1a2230"
         anchors.fill: parent
 
-        SoftShadow {
-            anchors.fill: parent
-            anchors.margins: -12
-            softColor: gs.shadowTint
-        }
         Rectangle {
             anchors.fill: parent
             radius: gs.corner
@@ -122,7 +128,7 @@ Window {
         visible: win.isBall
 
         // 白色压到 62%：再厚就把下面的模糊盖没了，看着只是"白色半透明"
-        Glass { tintColor: "#4dffffff" }
+        Glass { tintColor: "#3dffffff" }
 
         Text {
             anchors.centerIn: parent
@@ -234,7 +240,7 @@ Window {
                 opacity: Math.min(1, p * 1.6)
 
                 // 白色别太厚：70% 白会把下面那层模糊盖得看不见（只剩"白色半透明"）
-                Glass { tintColor: bma.pressed ? "#8cffffff" : "#59ffffff" }
+                Glass { tintColor: bma.pressed ? "#7affffff" : "#4dffffff" }
                 Text {
                     anchors.centerIn: parent
                     text: modelData.g
@@ -260,7 +266,7 @@ Window {
     // ══════════════════════════════════════════════════════════
     //  卡片共用玻璃底
     // ══════════════════════════════════════════════════════════
-    Glass { visible: win.isCard; corner: 16; tintColor: "#8cffffff" }
+    Glass { visible: win.isCard; corner: 16; tintColor: "#7affffff" }
 
     // ══════════════════════════════════════════════════════════
     //  2 · 批量：50 人网格，按人加分

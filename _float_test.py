@@ -115,7 +115,7 @@ def main():
     # ── 窗口遮罩：形状之外**点击穿透**（不挡 PPT）──
     def apply_mask(*_):
         try:
-            mode = int(win.property("mode") or 0)
+            mode = int(win.property("maskMode") or 0)
             bx = BALL_OFF[0] + BALL_SIZE // 2
             by = BALL_OFF[1] + BALL_SIZE // 2
             if mode == 0:
@@ -134,6 +134,7 @@ def main():
     apply_mask()
     try:
         win.maskVersionChanged.connect(apply_mask)
+        win.maskModeChanged.connect(apply_mask)
         win.widthChanged.connect(apply_mask)
         win.heightChanged.connect(apply_mask)
     except Exception:
