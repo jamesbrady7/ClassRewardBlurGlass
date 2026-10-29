@@ -768,10 +768,8 @@ Window {
                     c.arc(12, 7.8, 3, Math.PI, 0, false)
                     c.lineTo(15, 11.2)
                 } else {
-                    // 解锁：锁梁绕左腿向外甩开 —— 圆心左移，弧从左侧绕过顶部，
-                    // 右端悬空（开口朝内），像 emoji 的解锁
-                    c.moveTo(9.2, 11.2); c.lineTo(9.2, 7.4)
-                    c.arc(9.2, 7.4, 3.2, Math.PI, Math.PI * 1.78, false)
+                    c.moveTo(9, 11.2); c.lineTo(9, 7.8)
+                    c.arc(12, 7.8, 3, Math.PI, Math.PI * 1.62, false)
                 }
                 c.stroke()
             }
