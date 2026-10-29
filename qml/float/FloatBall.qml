@@ -390,7 +390,7 @@ Window {
                     anchors.fill: parent
                     hoverEnabled: true
                     onClicked: {
-                        if (modelData.m < 0) { win.flashMsg = "完整界面：合并后接上"; flashTimer.restart() }
+                        if (modelData.m < 0) floatBridge.showMain()   // ① 软件主界面
                         else win.mode = modelData.m
                     }
                 }
@@ -661,7 +661,7 @@ Window {
                 CuteButton {
                     tone: "danger"; text: "退出"
                     implicitWidth: 124; implicitHeight: 54; fontSize: 19
-                    onClicked: Qt.quit()
+                    onClicked: floatBridge.closeBall()      // 只关悬浮球，主程序继续运行
                 }
             }
         }

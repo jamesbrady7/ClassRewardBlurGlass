@@ -418,6 +418,18 @@ def main():
             # pythonw 无控制台，print 到 stderr 等于把失败扔进虚空
             _log('[glass] Acrylic 应用失败：%r' % (e,))
 
+    # ── 课堂快捷悬浮球：在主窗口之外再挂一个窗口（同进程 → 共用数据，调主界面秒开）──
+    #    设置里的「退出悬浮球」只关它自己，主程序继续运行。
+    try:
+        from float_window import FloatWindow
+        float_win = FloatWindow(engine, base, roots[0])
+        if not float_win.start():
+            _log('[float] 悬浮球 QML 加载失败')
+        else:
+            _log('[float] 悬浮球已启动')
+    except Exception as e:
+        _log('[float] 悬浮球启动失败：%r' % (e,))
+
     sys.exit(app.exec())
 
 
