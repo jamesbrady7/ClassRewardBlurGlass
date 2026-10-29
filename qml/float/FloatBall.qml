@@ -109,13 +109,42 @@ Window {
         id: gs
         property real corner: width / 2
         property color tintColor: "#59ffffff"
+        property bool soft: false        // true = 圆形 + 边缘向外渐隐（同悬浮球）
+        property real fade: 0.26
 
         anchors.fill: parent
 
+        // 硬边版（卡片用）
         Rectangle {
             anchors.fill: parent
             radius: gs.corner
             color: gs.tintColor
+            visible: !gs.soft
+        }
+        // 渐隐版（气泡用）：径向渐变，中心保持原色、到圆周透明度归零
+        Canvas {
+            anchors.fill: parent
+            visible: gs.soft
+            property color face: gs.tintColor
+            property real fd: gs.fade
+            onFaceChanged: requestPaint()
+            onFdChanged: requestPaint()
+            onWidthChanged: requestPaint()
+            onHeightChanged: requestPaint()
+            onPaint: {
+                var c = getContext("2d")
+                c.reset()
+                if (width < 4) return
+                var r = Math.min(width, height) / 2
+                var f = Math.round(face.r * 255) + "," + Math.round(face.g * 255) + ","
+                        + Math.round(face.b * 255)
+                var g = c.createRadialGradient(width / 2, height / 2, r * (1 - fd),
+                                               width / 2, height / 2, r)
+                g.addColorStop(0, "rgba(" + f + "," + face.a + ")")
+                g.addColorStop(1, "rgba(" + f + ",0)")
+                c.fillStyle = g
+                c.fillRect(0, 0, width, height)
+            }
         }
     }
 
@@ -332,7 +361,7 @@ Window {
                 opacity: Math.min(1, p * 1.6)
 
                 // 白色别太厚：70% 白会把下面那层模糊盖得看不见（只剩"白色半透明"）
-                Glass { tintColor: bma.pressed ? "#8c000000" : "#52000000" }
+                Glass { soft: true; tintColor: bma.pressed ? "#8c000000" : "#52000000" }
                 FloatIcon {
                     kind: modelData.k
                     width: 26; height: 26
