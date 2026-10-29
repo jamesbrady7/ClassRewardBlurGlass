@@ -216,14 +216,14 @@ Window {
         // 底色 = 应用 logo 那套「蓝色混色」（marine），半透明；中间白色四芒星
         IridescentFill {
             anchors.fill: parent
-            rad: width / 2
+            circle: true            // 真圆 + 抗锯齿边缘
             scheme: "marine"
-            opacity: 0.86
+            opacity: 0.70           // 半透明
         }
         CanvasIcon {
             anchors.centerIn: parent
             name: "sparkle"
-            width: 46; height: 46
+            width: 54; height: 54
             color: "#ffffff"
             scale: ballMa.pressed ? 0.94 : 1.0
             Behavior on scale { NumberAnimation { duration: 90; easing.type: Easing.OutQuad } }

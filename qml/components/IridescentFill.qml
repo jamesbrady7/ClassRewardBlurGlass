@@ -12,6 +12,9 @@ Canvas {
     property real rad: height / 2
     property bool hovered: false
     property bool pressed: false
+    // true = 裁成**真圆**且边缘抗锯齿。
+    // 默认 rad=w/2 只是"二次曲线近似圆角"→ 超椭圆，且 ctx.clip() 不抗锯齿（边缘发锐）。
+    property bool circle: false
     // 浅色面上白字对比不足 → 用深字
     readonly property bool lightFace: scheme === "mint" || scheme === "soda"
                                       || scheme === "azure" || scheme === "mist"
@@ -271,8 +274,13 @@ Canvas {
         if (w < 4 || h < 4) return
         var p = pal()
 
-        roundRectPath(ctx, 0, 0, w, h, rad)
-        ctx.clip()
+        if (root.circle) {
+            // 先铺满画布（圆外稍后擦掉），避免用不抗锯齿的 clip 裁形状
+            ctx.beginPath(); ctx.rect(0, 0, w, h); ctx.clip()
+        } else {
+            roundRectPath(ctx, 0, 0, w, h, rad)
+            ctx.clip()
+        }
 
         var g = ctx.createLinearGradient(0, 0, w, h)
         for (var i = 0; i < p.stops.length; i++)
@@ -292,5 +300,15 @@ Canvas {
         else
             ctx.fillStyle = "rgba(255, 255, 255, 0)"
         ctx.fillRect(0, 0, w, h)
+
+        if (root.circle) {
+            // even-odd：外框 + 反向圆 → 把圆外擦掉（fill 自带抗锯齿，边缘干净）
+            ctx.globalCompositeOperation = "destination-out"
+            ctx.beginPath()
+            ctx.rect(-1, -1, w + 2, h + 2)
+            ctx.arc(w / 2, h / 2, Math.min(w, h) / 2, 0, Math.PI * 2, true)
+            ctx.fill("evenodd")
+            ctx.globalCompositeOperation = "source-over"
+        }
     }
 }
