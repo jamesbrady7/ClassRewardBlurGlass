@@ -79,7 +79,6 @@ Window {
     // 形态变了 → 让 Python 重算窗口遮罩（Acrylic 只糊遮罩范围内）
     Timer { id: maskTimer; interval: 0; onTriggered: win.maskVersion++ }
     property int maskVersion: 0
-    property int backdropVersion: 0
     // ⚠️ 由 Python 在 load **之前**用 context property 传入：窗口创建后再改 flags 会让 Qt 重建窗口，
     //    之前设好的窗口遮罩就丢了（表现为 Acrylic 又糊满整个矩形）。
     property bool floatNoActivateCtx: true
@@ -95,26 +94,20 @@ Window {
     //   但落地到这个窗口就不糊，原因未定位；抓屏又在 UI 线程外，所以走烘焙。）
     component Glass: Item {
         id: gs
-        property real sx: 0
-        property real sy: 0
         property real corner: width / 2
-        property int tintA: 120
+        property color tintColor: "#59ffffff"
+        property color shadowTint: "#3a1a2230"
         anchors.fill: parent
 
         SoftShadow {
             anchors.fill: parent
             anchors.margins: -12
-            softColor: "#3a1a2230"
+            softColor: gs.shadowTint
         }
-        Image {
+        Rectangle {
             anchors.fill: parent
-            cache: false
-            smooth: true
-            source: "image://floatglass/"
-                    + Math.round(gs.sx) + "_" + Math.round(gs.sy) + "_"
-                    + Math.round(width) + "_" + Math.round(height) + "_"
-                    + Math.round(gs.corner) + "_" + gs.tintA
-                    + "?v" + win.backdropVersion
+            radius: gs.corner
+            color: gs.tintColor
         }
     }
 
@@ -129,7 +122,7 @@ Window {
         visible: win.isBall
 
         // 白色压到 62%：再厚就把下面的模糊盖没了，看着只是"白色半透明"
-        Glass { sx: win.ballOffX; sy: win.ballOffY; tintA: 72 }
+        Glass { tintColor: "#4dffffff" }
 
         Text {
             anchors.centerIn: parent
@@ -241,7 +234,7 @@ Window {
                 opacity: Math.min(1, p * 1.6)
 
                 // 白色别太厚：70% 白会把下面那层模糊盖得看不见（只剩"白色半透明"）
-                Glass { sx: bub.x; sy: bub.y; tintA: bma.pressed ? 170 : 64 }
+                Glass { tintColor: bma.pressed ? "#8cffffff" : "#59ffffff" }
                 Text {
                     anchors.centerIn: parent
                     text: modelData.g
@@ -267,7 +260,7 @@ Window {
     // ══════════════════════════════════════════════════════════
     //  卡片共用玻璃底
     // ══════════════════════════════════════════════════════════
-    Glass { visible: win.isCard; sx: 0; sy: 0; corner: 16; tintA: 150 }
+    Glass { visible: win.isCard; corner: 16; tintColor: "#8cffffff" }
 
     // ══════════════════════════════════════════════════════════
     //  2 · 批量：50 人网格，按人加分
