@@ -167,15 +167,27 @@ Window {
                 for (var i = 0; i < pips.length; i++) {
                     c.beginPath(); c.arc(pips[i][0], pips[i][1], 1.5, 0, Math.PI * 2); c.fill()
                 }
-            } else {   // gear
-                c.beginPath(); c.arc(12, 12, 3.3, 0, Math.PI * 2); c.stroke()
+            } else {   // gear：实心齿轮盘（8 颗梯形齿，有厚度）+ 中心挖孔，不是几根线
+                var teeth = 8, rOut = 10.2, rRoot = 7.4, rHole = 3.2
+                var tw = 0.105 * Math.PI                 // 齿的半角
                 c.beginPath()
-                for (var a = 0; a < 8; a++) {
-                    var ang = a * Math.PI / 4
-                    c.moveTo(12 + 6.3 * Math.cos(ang), 12 + 6.3 * Math.sin(ang))
-                    c.lineTo(12 + 9.1 * Math.cos(ang), 12 + 9.1 * Math.sin(ang))
+                for (var i = 0; i < teeth; i++) {
+                    var base = i * (Math.PI * 2 / teeth)
+                    var pts = [[base - tw, rRoot], [base - tw * 0.58, rOut],
+                               [base + tw * 0.58, rOut], [base + tw, rRoot]]
+                    for (var k = 0; k < 4; k++) {
+                        var a2 = pts[k][0], rr = pts[k][1]
+                        var px = 12 + rr * Math.cos(a2), py = 12 + rr * Math.sin(a2)
+                        if (i === 0 && k === 0) c.moveTo(px, py)
+                        else c.lineTo(px, py)
+                    }
                 }
-                c.stroke()
+                c.closePath()
+                c.fill()
+                // 中心孔：destination-out 把中间的圆挖掉
+                c.globalCompositeOperation = "destination-out"
+                c.beginPath(); c.arc(12, 12, rHole, 0, Math.PI * 2); c.fill()
+                c.globalCompositeOperation = "source-over"
             }
         }
 
