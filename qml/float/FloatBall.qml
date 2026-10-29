@@ -213,13 +213,18 @@ Window {
         visible: win.isBall
 
         // 白色压到 62%：再厚就把下面的模糊盖没了，看着只是"白色半透明"
-        Glass { tintColor: "#59000000" }
-
-        FloatIcon {
-            kind: "bolt"
-            width: 40; height: 40
-            weight: 3.0
+        // 底色 = 应用 logo 那套「蓝色混色」（marine），半透明；中间白色四芒星
+        IridescentFill {
+            anchors.fill: parent
+            rad: width / 2
+            scheme: "marine"
+            opacity: 0.86
+        }
+        CanvasIcon {
             anchors.centerIn: parent
+            name: "sparkle"
+            width: 46; height: 46
+            color: "#ffffff"
             scale: ballMa.pressed ? 0.94 : 1.0
             Behavior on scale { NumberAnimation { duration: 90; easing.type: Easing.OutQuad } }
         }
