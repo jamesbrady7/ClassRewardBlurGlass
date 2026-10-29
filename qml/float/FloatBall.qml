@@ -212,7 +212,7 @@ Window {
         visible: win.isBall
 
         // 白色压到 62%：再厚就把下面的模糊盖没了，看着只是"白色半透明"
-        Glass { tintColor: "#4dffffff" }
+        Glass { tintColor: "#59000000" }
 
         FloatIcon {
             kind: "bolt"
@@ -325,7 +325,7 @@ Window {
                 opacity: Math.min(1, p * 1.6)
 
                 // 白色别太厚：70% 白会把下面那层模糊盖得看不见（只剩"白色半透明"）
-                Glass { tintColor: bma.pressed ? "#8cffffff" : "#59ffffff" }
+                Glass { tintColor: bma.pressed ? "#8c000000" : "#52000000" }
                 FloatIcon {
                     kind: modelData.k
                     width: 26; height: 26
