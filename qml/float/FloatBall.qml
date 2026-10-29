@@ -61,7 +61,7 @@ Window {
     y: Math.round(Math.max(0, Math.min(ballY - ballOffY, Screen.height - height)))
 
     // ── 状态 ──
-    property bool cardLocked: true        // 卡片默认锁定（防止误拖），点 🔒 解锁后可按标题栏拖动
+    property bool cardLocked: false       // 默认**不锁定**：点开小界面就能直接拖；点锁图标才钉住位置
     property int pickKind: 0              // 抽取对象：0=学生 1=小组
     property string cat: ""               // 操作分类（批量/抽取加分都要）
     property var selStudents: []          // 批量：勾选的学生 id
@@ -80,6 +80,7 @@ Window {
             closeHold.restart()
         } else {
             win.maskMode = mode
+            if (mode >= 2) win.cardLocked = false     // 每次打开小界面都从不锁定开始
             maskTimer.restart()
         }
     }
@@ -713,8 +714,7 @@ Window {
         }
 
         BackBtn { anchors.left: parent.left; anchors.verticalCenter: parent.verticalCenter }
-        LockBtn { anchors.right: parent.right; anchors.rightMargin: 52; anchors.verticalCenter: parent.verticalCenter }
-        CloseBtn { anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter }
+        LockBtn { anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter }
         Text {
             anchors.centerIn: parent
             text: parent.title
@@ -731,23 +731,48 @@ Window {
         MouseArea { id: bma; anchors.fill: parent; onClicked: win.mode = 1 }
     }
 
-    component CloseBtn: Rectangle {
-        id: cb
-        width: 44; height: 44; radius: 22
-        color: cma.pressed ? "#40ffffff" : "#20ffffff"
-        Text { anchors.centerIn: parent; text: "×"; font.pixelSize: 22; color: "#ffffff" }
-        MouseArea { id: cma; anchors.fill: parent; onClicked: win.mode = 0 }
-    }
-
     // 锁定开关：锁着=卡片固定在原地（防止误拖）；解锁=可按标题栏拖动
     component LockBtn: Rectangle {
         id: lb
         width: 44; height: 44; radius: 22
         color: lma.pressed ? "#40ffffff" : (win.cardLocked ? "#20ffffff" : "#4d0fa88f")
-        Text {
+        // 绘制锁形：锁定 = 完整锁梁；解锁 = 锁梁开口
+        Canvas {
             anchors.centerIn: parent
-            text: win.cardLocked ? "🔒" : "🔓"
-            font.pixelSize: 18
+            width: 20; height: 20
+            antialiasing: true
+            property bool locked: win.cardLocked
+            onLockedChanged: requestPaint()
+            onWidthChanged: requestPaint()
+            onPaint: {
+                var c = getContext("2d")
+                c.reset()
+                var k = width / 24
+                c.scale(k, k)
+                c.strokeStyle = "#ffffff"
+                c.fillStyle = "#ffffff"
+                c.lineWidth = 2.2
+                c.lineCap = "round"
+                c.lineJoin = "round"
+                // 锁体
+                c.globalAlpha = 0.95
+                c.beginPath()
+                c.moveTo(6.6, 11.2); c.lineTo(17.4, 11.2)
+                c.lineTo(17.4, 20.2); c.lineTo(6.6, 20.2)
+                c.closePath(); c.fill()
+                c.globalAlpha = 1
+                // 锁梁
+                c.beginPath()
+                if (locked) {
+                    c.moveTo(9, 11.2); c.lineTo(9, 7.8)
+                    c.arc(12, 7.8, 3, Math.PI, 0, false)
+                    c.lineTo(15, 11.2)
+                } else {
+                    c.moveTo(9, 11.2); c.lineTo(9, 7.8)
+                    c.arc(12, 7.8, 3, Math.PI, Math.PI * 1.62, false)
+                }
+                c.stroke()
+            }
         }
         MouseArea {
             id: lma
