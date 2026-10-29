@@ -15,6 +15,8 @@ Canvas {
     // true = 裁成**真圆**且边缘抗锯齿。
     // 默认 rad=w/2 只是"二次曲线近似圆角"→ 超椭圆，且 ctx.clip() 不抗锯齿（边缘发锐）。
     property bool circle: false
+    // circle 模式下的"向外渐隐"宽度（占半径的比例，0=硬边）
+    property real fade: 0.0
     // 浅色面上白字对比不足 → 用深字
     readonly property bool lightFace: scheme === "mint" || scheme === "soda"
                                       || scheme === "azure" || scheme === "mist"
@@ -302,12 +304,22 @@ Canvas {
         ctx.fillRect(0, 0, w, h)
 
         if (root.circle) {
-            // even-odd：外框 + 反向圆 → 把圆外擦掉（fill 自带抗锯齿，边缘干净）
             ctx.globalCompositeOperation = "destination-out"
-            ctx.beginPath()
-            ctx.rect(-1, -1, w + 2, h + 2)
-            ctx.arc(w / 2, h / 2, Math.min(w, h) / 2, 0, Math.PI * 2, true)
-            ctx.fill("evenodd")
+            if (root.fade > 0.001) {
+                // 向外渐隐：从 (1-fade) 半径开始，越靠边擦得越多，到圆周完全擦掉
+                var rr = Math.min(w, h) / 2
+                var gg = ctx.createRadialGradient(w / 2, h / 2, rr * (1 - root.fade),
+                                                  w / 2, h / 2, rr)
+                gg.addColorStop(0, "rgba(0,0,0,0)")
+                gg.addColorStop(1, "rgba(0,0,0,1)")
+                ctx.fillStyle = gg
+                ctx.fillRect(0, 0, w, h)
+            } else {
+                ctx.beginPath()
+                ctx.rect(-1, -1, w + 2, h + 2)
+                ctx.arc(w / 2, h / 2, Math.min(w, h) / 2, 0, Math.PI * 2, true)
+                ctx.fill("evenodd")
+            }
             ctx.globalCompositeOperation = "source-over"
         }
     }

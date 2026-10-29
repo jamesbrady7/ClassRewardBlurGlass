@@ -216,9 +216,10 @@ Window {
         // 底色 = 应用 logo 那套「蓝色混色」（marine），半透明；中间白色四芒星
         IridescentFill {
             anchors.fill: parent
-            circle: true            // 真圆 + 抗锯齿边缘
+            circle: true            // 真圆
+            fade: 0.26              // 边缘向外渐隐（占半径 26%）
             scheme: "marine"
-            opacity: 0.70           // 半透明
+            opacity: 0.55           // 更透明
         }
         CanvasIcon {
             anchors.centerIn: parent
