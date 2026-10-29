@@ -219,7 +219,7 @@ Window {
             circle: true            // 真圆
             fade: 0.26              // 边缘向外渐隐（占半径 26%）
             scheme: "marine"
-            opacity: 0.55           // 更透明
+            opacity: 0.62           // 半透明（0.55 再收一点回来）
         }
         CanvasIcon {
             anchors.centerIn: parent
