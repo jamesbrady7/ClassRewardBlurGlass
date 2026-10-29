@@ -352,7 +352,7 @@ Window {
     // ══════════════════════════════════════════════════════════
     //  卡片共用玻璃底
     // ══════════════════════════════════════════════════════════
-    Glass { visible: win.isCard; corner: 16; tintColor: "#8cffffff" }
+    Glass { visible: win.isCard; corner: 16; tintColor: "#6b000000" }
 
     // ══════════════════════════════════════════════════════════
     //  2 · 批量：50 人网格，按人加分
@@ -375,12 +375,12 @@ Window {
                     id: sc
                     readonly property bool on: win.selStudents.indexOf(modelData.id) >= 0
                     width: 38; height: 38; radius: 12
-                    color: sc.on ? "#d90fa88f" : (scma.pressed ? "#4dffffff" : "#3dffffff")
+                    color: sc.on ? "#d90fa88f" : (scma.pressed ? "#33ffffff" : "#1affffff")
                     Behavior on color { ColorAnimation { duration: 90 } }
                     Text {
                         anchors.centerIn: parent
                         text: modelData.name.length > 3 ? modelData.name.slice(0, 3) : modelData.name
-                        color: sc.on ? "#ffffff" : Theme.textPrimary
+                        color: "#ffffff"
                         font.pixelSize: 11
                         font.bold: sc.on
                         font.family: Theme.fontFamily
@@ -411,12 +411,12 @@ Window {
                     height: 40
                     width: lbl2.implicitWidth + 24
                     radius: height / 2
-                    color: on ? "#d90fa88f" : (cm.pressed ? "#4dffffff" : "#3dffffff")
+                    color: on ? "#d90fa88f" : (cm.pressed ? "#33ffffff" : "#1affffff")
                     Text {
                         id: lbl2
                         anchors.centerIn: parent
                         text: modelData
-                        color: on ? "#ffffff" : Theme.textPrimary
+                        color: "#ffffff"
                         font.pixelSize: 14
                         font.bold: on
                         font.family: Theme.fontFamily
@@ -437,7 +437,7 @@ Window {
             Text {
                 text: "分值"
                 anchors.verticalCenter: parent.verticalCenter
-                color: Theme.textSecondary; font.pixelSize: 17; font.family: Theme.fontFamily
+                color: "#d9ffffff"; font.pixelSize: 17; font.family: Theme.fontFamily
             }
             PointsPill { id: pts; from: 1; to: 20; value: 2; anchors.verticalCenter: parent.verticalCenter }
             CuteButton {
@@ -479,11 +479,11 @@ Window {
                 delegate: Rectangle {
                     readonly property bool on: win.pickKind === index
                     width: 96; height: 44; radius: 22
-                    color: on ? "#d90fa88f" : (km.pressed ? "#4dffffff" : "#3dffffff")
+                    color: on ? "#d90fa88f" : (km.pressed ? "#33ffffff" : "#1affffff")
                     Text {
                         anchors.centerIn: parent
                         text: modelData
-                        color: on ? "#ffffff" : Theme.textPrimary
+                        color: "#ffffff"
                         font.pixelSize: 16; font.bold: on; font.family: Theme.fontFamily
                     }
                     MouseArea {
@@ -502,13 +502,13 @@ Window {
             Text {
                 text: "抽"
                 anchors.verticalCenter: parent.verticalCenter
-                color: Theme.textSecondary; font.pixelSize: 16; font.family: Theme.fontFamily
+                color: "#d9ffffff"; font.pixelSize: 16; font.family: Theme.fontFamily
             }
             PointsPill { id: pickCount; from: 1; to: 5; value: 1; anchors.verticalCenter: parent.verticalCenter }
             Text {
                 text: win.pickKind === 0 ? "名学生" : "个小组"
                 anchors.verticalCenter: parent.verticalCenter
-                color: Theme.textSecondary; font.pixelSize: 16; font.family: Theme.fontFamily
+                color: "#d9ffffff"; font.pixelSize: 16; font.family: Theme.fontFamily
             }
             CuteButton {
                 tone: "primary"; text: "开始抽"
@@ -527,7 +527,7 @@ Window {
                 delegate: Text {
                     text: modelData.name
                     anchors.horizontalCenter: parent.horizontalCenter
-                    color: Theme.textPrimary
+                    color: "#ffffff"
                     font.pixelSize: win.picked.length > 1 ? 24 : 32
                     font.bold: true
                     font.family: Theme.fontFamily
@@ -536,7 +536,7 @@ Window {
             Text {
                 text: win.picked.length ? "" : "点「开始抽」"
                 anchors.horizontalCenter: parent.horizontalCenter
-                color: Theme.textMuted; font.pixelSize: 15; font.family: Theme.fontFamily
+                color: "#a6ffffff"; font.pixelSize: 15; font.family: Theme.fontFamily
             }
         }
 
@@ -594,7 +594,7 @@ Window {
             Text {
                 text: "提示：长按球 1.2 秒也可以退出"
                 anchors.horizontalCenter: parent.horizontalCenter
-                color: Theme.textMuted; font.pixelSize: 15; font.family: Theme.fontFamily
+                color: "#a6ffffff"; font.pixelSize: 15; font.family: Theme.fontFamily
             }
         }
     }
@@ -612,7 +612,7 @@ Window {
             Text {
                 text: "退出悬浮球？"
                 anchors.horizontalCenter: parent.horizontalCenter
-                color: Theme.textPrimary
+                color: "#ffffff"
                 font.pixelSize: 20; font.bold: true; font.family: Theme.fontFamily
             }
             Row {
@@ -718,7 +718,7 @@ Window {
         Text {
             anchors.centerIn: parent
             text: parent.title
-            color: Theme.textPrimary
+            color: "#ffffff"
             font.pixelSize: 19; font.bold: true; font.family: Theme.fontFamily
         }
     }
@@ -727,7 +727,7 @@ Window {
         id: bb
         width: 44; height: 44; radius: 22
         color: bma.pressed ? "#40ffffff" : "#20ffffff"
-        Text { anchors.centerIn: parent; text: "‹"; font.pixelSize: 26; color: Theme.textPrimary }
+        Text { anchors.centerIn: parent; text: "‹"; font.pixelSize: 26; color: "#ffffff" }
         MouseArea { id: bma; anchors.fill: parent; onClicked: win.mode = 1 }
     }
 
@@ -735,7 +735,7 @@ Window {
         id: cb
         width: 44; height: 44; radius: 22
         color: cma.pressed ? "#40ffffff" : "#20ffffff"
-        Text { anchors.centerIn: parent; text: "×"; font.pixelSize: 22; color: Theme.textPrimary }
+        Text { anchors.centerIn: parent; text: "×"; font.pixelSize: 22; color: "#ffffff" }
         MouseArea { id: cma; anchors.fill: parent; onClicked: win.mode = 0 }
     }
 
@@ -762,7 +762,7 @@ Window {
     component FlashLine: Text {
         text: win.flashMsg
         visible: text !== ""
-        color: Theme.accentDark
+        color: "#6ee7d0"
         font.pixelSize: 15
         font.family: Theme.fontFamily
     }
