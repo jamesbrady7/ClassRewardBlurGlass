@@ -435,11 +435,39 @@ Window {
             }
         }
 
+        // 维度选择：放在网格下方并**居中**；最左是「全选」（逻辑同主界面：全选 ⇄ 取消全选）
         Row {
-            anchors.top: stuGrid.bottom; anchors.topMargin: 10
-            anchors.left: parent.left; anchors.leftMargin: 20
-            anchors.right: parent.right; anchors.rightMargin: 20
+            id: catRow
+            anchors.top: stuGrid.bottom; anchors.topMargin: 12
+            anchors.horizontalCenter: parent.horizontalCenter
             spacing: 8
+
+            Rectangle {
+                readonly property bool allOn: reward.students.length > 0
+                                             && win.selStudents.length === reward.students.length
+                height: 40
+                width: allLbl.implicitWidth + 24
+                radius: height / 2
+                color: allOn ? "#59ffffff" : (allMa.pressed ? "#33ffffff" : "#1affffff")
+                Text {
+                    id: allLbl
+                    anchors.centerIn: parent
+                    text: "全选"
+                    color: "#ffffff"
+                    font.pixelSize: 14
+                    font.bold: allOn
+                    font.family: Theme.fontFamily
+                }
+                MouseArea {
+                    id: allMa
+                    anchors.fill: parent
+                    onClicked: {
+                        var all = reward.students.map(function(st) { return st.id })
+                        win.selStudents = (all.length > 0 && win.selStudents.length === all.length) ? [] : all
+                    }
+                }
+            }
+            Item { width: 6; height: 1 }
             Repeater {
                 model: reward.categories
                 delegate: Rectangle {
@@ -505,53 +533,14 @@ Window {
 
         CardHead { title: "随机抽取" }
 
-        // 抽谁：学生 / 小组
-        Row {
-            anchors.top: parent.top; anchors.topMargin: 68
+        // 抽谁：学生 / 小组 —— 用主界面的分段 Tab 组件（主题色，不再自己画翠绿胶囊）
+        SegmentedTabs {
+            id: kindTabs
+            anchors.top: parent.top; anchors.topMargin: 66
             anchors.horizontalCenter: parent.horizontalCenter
-            spacing: 8
-            Repeater {
-                model: ["学生", "小组"]
-                delegate: Rectangle {
-                    readonly property bool on: win.pickKind === index
-                    width: 96; height: 44; radius: 22
-                    color: on ? "#d90fa88f" : (km.pressed ? "#33ffffff" : "#1affffff")
-                    Text {
-                        anchors.centerIn: parent
-                        text: modelData
-                        color: "#ffffff"
-                        font.pixelSize: 16; font.bold: on; font.family: Theme.fontFamily
-                    }
-                    MouseArea {
-                        id: km
-                        anchors.fill: parent
-                        onClicked: { win.pickKind = index; win.picked = [] }
-                    }
-                }
-            }
-        }
-
-        Row {
-            anchors.top: parent.top; anchors.topMargin: 122
-            anchors.horizontalCenter: parent.horizontalCenter
-            spacing: 10
-            Text {
-                text: "抽"
-                anchors.verticalCenter: parent.verticalCenter
-                color: "#d9ffffff"; font.pixelSize: 16; font.family: Theme.fontFamily
-            }
-            PointsPill { id: pickCount; from: 1; to: 5; value: 1; anchors.verticalCenter: parent.verticalCenter }
-            Text {
-                text: win.pickKind === 0 ? "名学生" : "个小组"
-                anchors.verticalCenter: parent.verticalCenter
-                color: "#d9ffffff"; font.pixelSize: 16; font.family: Theme.fontFamily
-            }
-            CuteButton {
-                tone: "primary"; text: "开始抽"
-                implicitWidth: 112; implicitHeight: 50; fontSize: 18
-                anchors.verticalCenter: parent.verticalCenter
-                onClicked: win.doPick()
-            }
+            labels: ["学生", "小组"]
+            currentIndex: win.pickKind
+            onActivated: function(i) { win.pickKind = i; win.picked = [] }
         }
 
         Column {
@@ -570,35 +559,52 @@ Window {
                 }
             }
             Text {
-                text: win.picked.length ? "" : "点「开始抽」"
+                text: win.picked.length ? "" : "点「抽取」"
                 anchors.horizontalCenter: parent.horizontalCenter
                 color: "#a6ffffff"; font.pixelSize: 15; font.family: Theme.fontFamily
             }
         }
 
+        // 底部（上）：抽 [N] 名/个 + 「抽取」
+        Row {
+            anchors.bottom: parent.bottom; anchors.bottomMargin: 82
+            anchors.horizontalCenter: parent.horizontalCenter
+            spacing: 10
+            Text {
+                text: "抽"
+                anchors.verticalCenter: parent.verticalCenter
+                color: "#d9ffffff"; font.pixelSize: 16; font.family: Theme.fontFamily
+            }
+            PointsPill { id: pickCount; from: 1; to: 5; value: 1; anchors.verticalCenter: parent.verticalCenter }
+            Text {
+                text: win.pickKind === 0 ? "名学生" : "个小组"
+                anchors.verticalCenter: parent.verticalCenter
+                color: "#d9ffffff"; font.pixelSize: 16; font.family: Theme.fontFamily
+            }
+            CuteButton {
+                tone: "primary"; text: "抽取"
+                implicitWidth: 104; implicitHeight: 50; fontSize: 18
+                anchors.verticalCenter: parent.verticalCenter
+                onClicked: win.doPick()
+            }
+        }
+
+        // 底部（下）：加分 / 扣分（「再抽」已去掉）
         Row {
             anchors.bottom: parent.bottom; anchors.bottomMargin: 18
             anchors.horizontalCenter: parent.horizontalCenter
-            spacing: 12
+            spacing: 14
             CuteButton {
                 tone: "primary"; text: "加分"
-                implicitWidth: 104; implicitHeight: 52; fontSize: 19
+                implicitWidth: 128; implicitHeight: 52; fontSize: 19
                 usable: win.picked.length > 0
-                anchors.verticalCenter: parent.verticalCenter
                 onClicked: win.applyPicked(true)
             }
             CuteButton {
                 tone: "danger"; text: "扣分"
-                implicitWidth: 104; implicitHeight: 52; fontSize: 19
+                implicitWidth: 128; implicitHeight: 52; fontSize: 19
                 usable: win.picked.length > 0
-                anchors.verticalCenter: parent.verticalCenter
                 onClicked: win.applyPicked(false)
-            }
-            CuteButton {
-                tone: "secondary"; text: "再抽"
-                implicitWidth: 104; implicitHeight: 52; fontSize: 19
-                anchors.verticalCenter: parent.verticalCenter
-                onClicked: win.doPick()
             }
         }
 
@@ -749,7 +755,10 @@ Window {
         }
 
         BackBtn { anchors.left: parent.left; anchors.verticalCenter: parent.verticalCenter }
-        LockBtn { anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter }
+        LockBtn {
+            anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter
+            visible: win.mode !== 4          // 设置页不需要锁定
+        }
         Text {
             anchors.centerIn: parent
             text: parent.title
@@ -770,7 +779,8 @@ Window {
     component LockBtn: Rectangle {
         id: lb
         width: 44; height: 44; radius: 22
-        color: lma.pressed ? "#40ffffff" : (win.cardLocked ? "#20ffffff" : "#4d0fa88f")
+        // 只有「锁定时」才高亮，高亮 = 半透明白
+        color: lma.pressed ? "#8cffffff" : (win.cardLocked ? "#59ffffff" : "transparent")
         // 绘制锁形：锁定 = 完整锁梁；解锁 = 锁梁开口
         Canvas {
             anchors.centerIn: parent
