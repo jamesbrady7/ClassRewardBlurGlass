@@ -108,19 +108,13 @@ Window {
         id: gs
         property real corner: width / 2
         property color tintColor: "#59ffffff"
-        // 上下都足够白：DWM 的模糊会带出背景明暗并掺灰，太透就会在深色背景上发黑
-        property color tintTop: Qt.rgba(1, 1, 1, 0.96)
-        property color tintBottom: Qt.rgba(1, 1, 1, 0.74)
+
         anchors.fill: parent
 
-        // 上亮下暗的渐变白：浅背景下清爽、深背景下也不发黑（纯平涂就只能二选一）
         Rectangle {
             anchors.fill: parent
             radius: gs.corner
-            gradient: Gradient {
-                GradientStop { position: 0.0; color: gs.tintTop }
-                GradientStop { position: 1.0; color: gs.tintBottom }
-            }
+            color: gs.tintColor
         }
     }
 
@@ -135,7 +129,7 @@ Window {
         visible: win.isBall
 
         // 白色压到 62%：再厚就把下面的模糊盖没了，看着只是"白色半透明"
-        Glass { tintColor: "#99ffffff" }
+        Glass { tintColor: "#4dffffff" }
 
         Text {
             anchors.centerIn: parent
@@ -247,7 +241,7 @@ Window {
                 opacity: Math.min(1, p * 1.6)
 
                 // 白色别太厚：70% 白会把下面那层模糊盖得看不见（只剩"白色半透明"）
-                Glass { tintColor: bma.pressed ? "#d9ffffff" : "#8cffffff" }
+                Glass { tintColor: bma.pressed ? "#8cffffff" : "#59ffffff" }
                 Text {
                     anchors.centerIn: parent
                     text: modelData.g
@@ -273,7 +267,7 @@ Window {
     // ══════════════════════════════════════════════════════════
     //  卡片共用玻璃底
     // ══════════════════════════════════════════════════════════
-    Glass { visible: win.isCard; corner: 16; tintColor: "#7affffff" }
+    Glass { visible: win.isCard; corner: 16; tintColor: "#8cffffff" }
 
     // ══════════════════════════════════════════════════════════
     //  2 · 批量：50 人网格，按人加分
