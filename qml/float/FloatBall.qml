@@ -118,6 +118,77 @@ Window {
         }
     }
 
+    // 单色矢量图标：emoji 是彩色位图、没法改色，所以按同样的图形语义画成线稿。
+    // kind: bolt(闪电) / screen(显示器) / people(两人) / dice(骰子) / gear(齿轮)
+    component FloatIcon: Canvas {
+        id: fi
+        property string kind: "bolt"
+        property color ink: "#ffffff"
+        property real weight: 2.0
+        width: 24; height: 24
+        antialiasing: true
+        onInkChanged: requestPaint()
+        onKindChanged: requestPaint()
+        onWidthChanged: requestPaint()
+        onHeightChanged: requestPaint()
+
+        onPaint: {
+            var c = getContext("2d")
+            c.reset()
+            if (width < 4) return
+            var k = width / 24
+            c.scale(k, k)
+            c.strokeStyle = String(Qt.rgba(fi.ink.r, fi.ink.g, fi.ink.b, fi.ink.a))
+            c.fillStyle = c.strokeStyle
+            c.lineWidth = fi.weight
+            c.lineCap = "round"
+            c.lineJoin = "round"
+
+            if (fi.kind === "bolt") {
+                c.beginPath()
+                c.moveTo(13.5, 2.5); c.lineTo(6.5, 13.5); c.lineTo(11, 13.5)
+                c.lineTo(10, 21.5); c.lineTo(17.5, 10.5); c.lineTo(12.6, 10.5)
+                c.closePath(); c.stroke()
+            } else if (fi.kind === "screen") {
+                c.beginPath(); fi.rrect(c, 2.8, 4, 18.4, 12.4, 2); c.stroke()
+                c.beginPath(); c.moveTo(12, 16.4); c.lineTo(12, 19.4); c.stroke()
+                c.beginPath(); c.moveTo(8.2, 19.6); c.lineTo(15.8, 19.6); c.stroke()
+            } else if (fi.kind === "people") {
+                c.beginPath(); c.arc(8.6, 8.6, 3.1, 0, Math.PI * 2); c.stroke()
+                c.beginPath(); c.moveTo(3.4, 19.4)
+                c.quadraticCurveTo(4.6, 13.6, 8.6, 13.6)
+                c.quadraticCurveTo(12.6, 13.6, 13.8, 19.4); c.stroke()
+                c.beginPath(); c.arc(16.4, 10.2, 2.5, 0, Math.PI * 2); c.stroke()
+                c.beginPath(); c.moveTo(15.4, 14.4)
+                c.quadraticCurveTo(20.2, 14.6, 20.8, 19.4); c.stroke()
+            } else if (fi.kind === "dice") {
+                c.beginPath(); fi.rrect(c, 3.2, 3.2, 17.6, 17.6, 4.2); c.stroke()
+                var pips = [[8.2, 8.2], [15.8, 8.2], [12, 12], [8.2, 15.8], [15.8, 15.8]]
+                for (var i = 0; i < pips.length; i++) {
+                    c.beginPath(); c.arc(pips[i][0], pips[i][1], 1.5, 0, Math.PI * 2); c.fill()
+                }
+            } else {   // gear
+                c.beginPath(); c.arc(12, 12, 3.3, 0, Math.PI * 2); c.stroke()
+                c.beginPath()
+                for (var a = 0; a < 8; a++) {
+                    var ang = a * Math.PI / 4
+                    c.moveTo(12 + 6.3 * Math.cos(ang), 12 + 6.3 * Math.sin(ang))
+                    c.lineTo(12 + 9.1 * Math.cos(ang), 12 + 9.1 * Math.sin(ang))
+                }
+                c.stroke()
+            }
+        }
+
+        function rrect(c, x, y, w, h, r) {
+            c.moveTo(x + r, y)
+            c.lineTo(x + w - r, y); c.quadraticCurveTo(x + w, y, x + w, y + r)
+            c.lineTo(x + w, y + h - r); c.quadraticCurveTo(x + w, y + h, x + w - r, y + h)
+            c.lineTo(x + r, y + h); c.quadraticCurveTo(x, y + h, x, y + h - r)
+            c.lineTo(x, y + r); c.quadraticCurveTo(x, y, x + r, y)
+            c.closePath()
+        }
+    }
+
     // ══════════════════════════════════════════════════════════
     //  球
     // ══════════════════════════════════════════════════════════
@@ -131,10 +202,11 @@ Window {
         // 白色压到 62%：再厚就把下面的模糊盖没了，看着只是"白色半透明"
         Glass { tintColor: "#4dffffff" }
 
-        Text {
+        FloatIcon {
+            kind: "bolt"
+            width: 40; height: 40
+            weight: 3.0
             anchors.centerIn: parent
-            text: "⚡"
-            font.pixelSize: 40
             scale: ballMa.pressed ? 0.94 : 1.0
             Behavior on scale { NumberAnimation { duration: 90; easing.type: Easing.OutQuad } }
         }
@@ -218,10 +290,10 @@ Window {
             // 弹出顺序 = 数组顺序：软件主界面 → 批量选择 → 随机抽取 → 设置
             // 位置沿球边从"上"顺时针扫到"左下"，读起来是一条自然的弧
             model: [
-                { g: "🖥", m: -1, ox:    0, oy: -105 },   // ① 上：软件主界面
-                { g: "👥", m: 2,  ox:  -74, oy:  -74 },   // ② 左上：批量选择
-                { g: "🎲", m: 3,  ox: -105, oy:    0 },   // ③ 左：随机抽取
-                { g: "⚙", m: 4,  ox:  -74, oy:   74 }     // ④ 左下：设置
+                { k: "screen", m: -1, ox:    0, oy: -105 },   // ① 上：软件主界面
+                { k: "people", m: 2,  ox:  -74, oy:  -74 },   // ② 左上：批量选择
+                { k: "dice",   m: 3,  ox: -105, oy:    0 },   // ③ 左：随机抽取
+                { k: "gear",   m: 4,  ox:  -74, oy:   74 }     // ④ 左下：设置
             ]
             delegate: Item {
                 id: bub
@@ -242,10 +314,11 @@ Window {
 
                 // 白色别太厚：70% 白会把下面那层模糊盖得看不见（只剩"白色半透明"）
                 Glass { tintColor: bma.pressed ? "#8cffffff" : "#59ffffff" }
-                Text {
+                FloatIcon {
+                    kind: modelData.k
+                    width: 26; height: 26
+                    weight: 2.2
                     anchors.centerIn: parent
-                    text: modelData.g
-                    font.pixelSize: 26
                 }
                 MouseArea {
                     id: bma
