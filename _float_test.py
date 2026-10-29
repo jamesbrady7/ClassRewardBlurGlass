@@ -40,30 +40,6 @@ BALL_SIZE = 100
 BUBBLE_OFFS = [(-74, 74), (-105, 0), (-74, -74), (0, -105)]
 BUBBLE_SIZE = 68
 
-def _dwm_blur(hwnd, reg):
-    """DwmEnableBlurBehindWindow + 区域，并用 SWP_FRAMECHANGED 强制刷新（否则有时不生效）"""
-    try:
-        g = ctypes.windll.gdi32
-        g.CreateRectRgn.restype = wintypes.HRGN
-        g.CreateRectRgn.argtypes = [ctypes.c_int] * 4
-        g.SetRectRgn.argtypes = [wintypes.HRGN] + [ctypes.c_int] * 4
-        g.CombineRgn.argtypes = [wintypes.HRGN, wintypes.HRGN, wintypes.HRGN, ctypes.c_int]
-        hrgn = g.CreateRectRgn(0, 0, 0, 0)
-        tmp = g.CreateRectRgn(0, 0, 0, 0)
-        for r in reg:
-            g.SetRectRgn(tmp, r.left(), r.top(), r.right() + 1, r.bottom() + 1)
-            g.CombineRgn(hrgn, hrgn, tmp, 2)
-
-        class BB(ctypes.Structure):
-            _fields_ = [('dwFlags', wintypes.DWORD), ('fEnable', wintypes.BOOL),
-                        ('hRgnBlur', wintypes.HRGN), ('fTransitionOnMaximized', wintypes.BOOL)]
-        bb = BB(3, True, hrgn, False)
-        ctypes.windll.dwmapi.DwmEnableBlurBehindWindow(hwnd, ctypes.byref(bb))
-        # ⚠️ 不要在这里发 SetWindowPos(SWP_FRAMECHANGED)：实测会把刚启用的模糊清掉
-    except Exception as e:
-        print("[dwm] 失败 %r" % (e,), flush=True)
-
-
 def _circle(cx, cy, r):
     return QRegion(int(cx - r), int(cy - r), int(2 * r), int(2 * r), QRegion.Ellipse)
 
@@ -127,7 +103,6 @@ def main():
             else:
                 reg = QRegion(0, 0, int(win.width()), int(win.height()))
             win.setMask(reg)
-            _dwm_blur(int(win.winId()), reg)
         except Exception as e:
             print("[float] mask 失败：%r" % (e,))
 
