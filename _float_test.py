@@ -19,7 +19,7 @@ sys.path.insert(0, os.getcwd())
 
 from PySide6.QtCore import QTimer, QUrl
 from PySide6.QtGui import QGuiApplication, QFont, QRegion, QSurfaceFormat
-from PySide6.QtQml import QQmlApplicationEngine
+from PySide6.QtQml import QQmlApplicationEngine, QQmlComponent
 from PySide6.QtQuick import QQuickWindow
 
 QQuickWindow.setDefaultAlphaBuffer(True)
@@ -71,6 +71,12 @@ def main():
     from float_window import _FloatBridge
     _fb = _FloatBridge(None)
     engine.rootContext().setContextProperty("floatBridge", _fb)
+    # 共享计时器：独立测试没有主窗口，自己建一个同款实例
+    _hub = QQmlComponent(
+        engine, QUrl.fromLocalFile(os.path.join(BASE, 'qml', 'components', 'TimerHub.qml'))
+    ).create()
+    if _hub is not None:
+        engine.rootContext().setContextProperty("timerHub", _hub)
     engine.load(QUrl.fromLocalFile(os.path.join(BASE, 'qml', 'float', 'FloatBall.qml')))
 
     roots = engine.rootObjects()
@@ -78,6 +84,7 @@ def main():
         print("[float] QML 加载失败")
         sys.exit(1)
     win = roots[0]
+    win.show()             # QML 默认 visible:false（避免主程序启动时闪一个空白窗）
     _fb.win = win          # closeBall() 能关掉测试窗口
 
     # 任务栏/ALT+TAB 隐藏（默认关；需要时 FLOAT_TOOLWINDOW=1）

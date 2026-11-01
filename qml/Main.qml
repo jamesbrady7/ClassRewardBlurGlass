@@ -44,7 +44,10 @@ Window {
     // 测试脚手架（_snap.py 等）不注入 → 用 typeof 兜底成 false，不会抛异常。
     readonly property bool throttleResize: (typeof glassThrottle !== 'undefined') && glassThrottle
 
-    visible: true
+    // 启动时先由 qml/Splash.qml 的悬浮球动画遮住，主窗在动画期间于背后渲染，
+    // 动画淡出后再露出来（避免先看到一个"只有模糊底、还没画内容"的空窗）。
+    // 测试/截图脚本加载后需要自己 show()。
+    visible: false
     title: "班级激励助手"
     color: "transparent"
     // 无边框，标题栏自绘以统一风格。
@@ -55,6 +58,18 @@ Window {
     //    很容易误判成"最小化没问题"）。这两个 hint 不会加回边框，窗口仍然无边框。
     flags: Qt.Window | Qt.FramelessWindowHint
            | Qt.WindowMinimizeButtonHint | Qt.WindowMaximizeButtonHint
+
+    // 关闭主窗口（标题栏 × / Alt+F4）先确认；确认后把 forceClose 置 true 再真正关。
+    // 悬浮球里的「退出」走 QGuiApplication.quit()，不经过这里（那边已经确认过了）。
+    property bool forceClose: false
+    onClosing: function(close) {
+        if (forceClose) return
+        close.accepted = false
+        dlgConfirmBox.openConfirm("退出软件", "确定要退出吗？", function() {
+            forceClose = true
+            mainWin.close()
+        }, "退出")
+    }
 
     // 背景层暴露给子页面的毛玻璃面板（FrostedPanel.source）
     property alias frostedSource: backgroundLayer
@@ -71,6 +86,17 @@ Window {
     property alias dlgBackpack: dlgBackpackBox
     property alias dlgHistory: dlgHistoryBox
     property alias dlgGradeClass: dlgGradeClassBox
+
+    // ============================================================
+    // 共享计时器（主界面「工具箱」↔ 悬浮球）
+    // ------------------------------------------------------------
+    // 全进程只有一个实例：工具箱直接读写它；悬浮球是同一进程里的**另一个 QML
+    // 根对象**，看不到这里的 id，所以 main.py 在加载悬浮球之前把本对象注册成
+    // context property "timerHub" 交过去。两边因此始终是同一份状态——
+    // 在主界面开始倒计时、切进悬浮球照样在走，反过来也一样。
+    // ============================================================
+    property QtObject timerHub: timerHubObj
+    TimerHub { id: timerHubObj }
 
     // ============================================================
     // 背景层：圆角 + 渐变 + 装饰色块（毛玻璃标题栏的模糊源）
@@ -191,15 +217,7 @@ Window {
                     font.family: Theme.fontFamily
                 }
             }
-            // 昼夜切换：照原型的做法，同一个位置显示太阳 / 月亮
-            CircleButton {
-                size: 30
-                raised: true
-                shadow: false
-                icon: Theme.night ? "sun" : "moon"
-                anchors.verticalCenter: parent.verticalCenter
-                onClicked: Theme.toggleNight()
-            }
+            // 昼夜切换已移到界面左下角（与「进入悬浮球模式」并排）
             // 窗口按钮：照搬原型的做法 —— CircleButton + raised（圆外双球立体）
             //   最小化 / 放大·还原 / 关闭 同一套逻辑，只有图标不同
             CircleButton {
@@ -309,7 +327,7 @@ Window {
             width: 180
             height: contentRow.height
             blurSource: backgroundLayer      // 玻璃外壳的模糊源
-            titles: ["花名册", "小组榜", "随机抽取", "批量操作", "积分商店", "每日历史", "数据分析"]
+            titles: ["花名册", "小组榜", "随机抽取", "批量操作", "积分商店", "每日历史", "数据分析", "工具箱"]
             currentIndex: 0
             onActivated: function(idx) { appTabs.currentIndex = idx }
         }
@@ -360,7 +378,7 @@ Window {
                 }
             }
 
-            // ===== 页面宿主（7 页，交叉淡化切换）=====
+            // ===== 页面宿主（8 页，交叉淡化切换）=====
             Item {
                 id: pageHost
                 width: parent.width
@@ -374,7 +392,87 @@ Window {
                 ShopTab { id: page4; anchors.fill: parent; visible: false; opacity: 1; z: 0 }
                 HistoryTab { id: page5; anchors.fill: parent; visible: false; opacity: 1; z: 0 }
                 AnalysisTab { id: page6; anchors.fill: parent; visible: false; opacity: 1; z: 0 }
+                ToolboxTab {
+                    id: page7
+                    anchors.fill: parent
+                    visible: false; opacity: 1; z: 0
+                    hub: mainWin.timerHub
+                }
             }
+        }
+    }
+
+    // ============================================================
+    // 左下角：模式切换（昼夜 / 悬浮球）
+    // ------------------------------------------------------------
+    // 两个都是"整个界面换一种用法"的开关，放在常规导航之外的最左下角，
+    // 不和页面内容混在一起。昼夜沿用原来标题栏那颗 CircleButton（太阳/月亮同位置切换）；
+    // 悬浮球是"滑动进入"——按住小球从左往右拖到头才生效（见 components/SlideToFloat）。
+    // 同一排的总宽被导航条锁死（180）：30 + 6 + 128 = 164，所以滑动条里的标签用 5 字
+    // 「进入悬浮球」，才放得下右侧三个引导箭头。
+    // ============================================================
+    Row {
+        id: modeSwitches
+        // ⚠️ anchors 不能跨父级锚到 appTabs（QML 会静默忽略，元素跑到 (0,0)）。
+        //    contentRow 距窗口左/下各 24（见上面 width: parent.width - 48 / bottomMargin: 24），
+        //    这里加上它自己的 8 / 14，就落在左侧导航玻璃条内部的最左下角。
+        anchors.left: parent.left
+        anchors.bottom: parent.bottom
+        anchors.leftMargin: 24 + 8
+        anchors.bottomMargin: 24 + 14
+        spacing: 6
+        z: 5
+
+        CircleButton {
+            size: 30
+            raised: true
+            shadow: false
+            icon: Theme.night ? "sun" : "moon"
+            anchors.verticalCenter: parent.verticalCenter
+            onClicked: Theme.toggleNight()
+        }
+
+        SlideToFloat {
+            id: slideToFloat
+            width: 128
+            anchors.verticalCenter: parent.verticalCenter
+            // 悬浮球模块没加载成功时（异常/裁剪过的构建）不动作——
+            // 否则主界面一藏就再也回不来
+            onActivated: {
+                if (typeof floatBridge === 'undefined' || !floatBridge) return
+                if (mainWin.enteringFloat) return
+                // 先播"收向左下角"的退场动画，播完再由动画回调真正隐藏窗口
+                mainWin.enteringFloat = true
+            }
+        }
+    }
+
+    // ============================================================
+    // 进入悬浮球模式：主界面淡出再隐藏（不做收拢）
+    // ------------------------------------------------------------
+    // 直接 hide 是"啪"地消失；这里让 contentItem 淡出，播完才调
+    // floatBridge.enterFloatMode()（主窗 hide + 球 show）。
+    // 不做 scale 收拢：桌面穿透模式下 Acrylic 是窗口级的、不跟内容缩放，
+    // 收拢时会在磨砂矩形里缩一下，观感反而怪。
+    // 回来时复用下面的 restoreAnim（show() → visibilityChanged → 反向淡入）。
+    // ============================================================
+    property bool enteringFloat: false
+    onEnteringFloatChanged: if (enteringFloat) collapseAnim.start()
+
+    NumberAnimation {
+        id: collapseAnim
+        target: mainWin.contentItem
+        property: "opacity"
+        to: 0
+        duration: 200
+        // 退场用 ease-in：先平稳、末尾加速消失（和进场的 ease-out 成对）
+        easing.type: Easing.InCubic
+        onFinished: {
+            if (typeof floatBridge !== 'undefined' && floatBridge)
+                floatBridge.enterFloatMode()
+            // 窗口已经藏起来了，这里复位看不到跳变；下次 show() 由 restoreAnim 反向播
+            mainWin.contentItem.opacity = 1
+            mainWin.enteringFloat = false
         }
     }
 
@@ -427,8 +525,10 @@ Window {
         // 写成绑定后拉右边/下边改 width 会让绑定重算，窗口一边变宽一边被重新居中，整窗跟着漂。
         x = Math.round((Screen.desktopAvailableWidth - width) / 2)
         y = Math.round((Screen.desktopAvailableHeight - height) / 2)
-        _pages = [page0, page1, page2, page3, page4, page5, page6]
+        _pages = [page0, page1, page2, page3, page4, page5, page6, page7]
         showPage(0)
+        // 首次 show() 时由 restoreAnim 从 0 淡入；先置 0，避免 show 的第一帧整窗闪一下
+        mainWin.contentItem.opacity = 0
     }
     NumberAnimation { id: animIn
         property Item node: null
@@ -444,14 +544,14 @@ Window {
         }
     }
     function showPage(i) {
-        if (i < 0 || i >= 7 || i === _curPage) return
+        if (i < 0 || i >= 8 || i === _curPage) return
         var prev = _curPage
         _curPage = i
         appTabs.currentIndex = i
         // 旧页立即收起（不淡出复现），避免"上一个 tab 闪一下"
         if (prev >= 0) { _pages[prev].visible = false; _pages[prev].z = 0; _pages[prev].opacity = 1 }
         // 新页快速淡入
-        for (var k = 0; k < 7; k++) {
+        for (var k = 0; k < 8; k++) {
             if (k !== i) { _pages[k].visible = false; _pages[k].z = 0 }
         }
         var np = _pages[i]

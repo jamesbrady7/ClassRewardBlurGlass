@@ -3,11 +3,11 @@ import "../components"
 
 // 课堂快捷悬浮球（测试版 · 独立窗口，不改主程序）
 // ─────────────────────────────────────────────────────────────
-// 球 →(点) **4 个气泡围着球转半圈弹出** →(点) 批量 / 抽取 / 设置
+// 球 →(点) **4 个气泡围着球转半圈弹出** →(点) 倒计时 / 批量 / 抽取 / 退出软件
 // 卡片：左上 ‹ 返回气泡层、右上角是「锁定位置」开关（绘制图标；默认不锁定=可直接拖动标题栏）
 //
 // 触摸优先：全程单指点击/拖动，不依赖 hover / 右键
-//   · 点球=弹气泡；拖球=挪位置（>14px 才算拖）；长按 1.2 秒=退出确认
+//   · 点球=弹气泡；拖球=挪位置（>14px 才算拖）；长按 1.2 秒=直接回主界面
 //   · 所有可点区域 ≥ 56px
 //
 // 毛玻璃：不用系统 Acrylic（会糊满整个矩形窗口，圆形会露方角）；
@@ -15,7 +15,11 @@ import "../components"
 Window {
     id: win
 
-    visible: true
+    // ⚠️ 启动时必须不可见：这个窗口是在主窗口之后加载的，加载后再由 Python
+    //    调 hide() 会留下一次"已映射、还没画"的空白窗口（340×340 黑块一闪）。
+    //    进入悬浮球模式时由 FloatWindow._show_ball() 调 show() 显式打开；
+    //    独立测试脚本加载后也要自己 show()。
+    visible: false
     color: "transparent"
     // ⚠️ 不能用 Qt.Tool：那会让窗口变成 WS_POPUP，**系统 Acrylic 就不生效了**（实测渲染成纯白）。
     //    必须跟主程序一样带 Min/Max hint（OVERLAPPED 样式）。任务栏/ALT+TAB 里隐藏，
@@ -28,7 +32,7 @@ Window {
     property bool floatNoActivate: true
 
     // ── 形态 ──
-    property int mode: 0          // 0=球 1=气泡 2=批量 3=抽取 4=设置 5=退出确认
+    property int mode: 0          // 0=球 1=气泡 2=批量 3=抽取 5=退出确认 6=倒计时/秒表
     readonly property bool isBall: mode === 0 || mode === 1
     readonly property bool isCard: mode >= 2
 
@@ -36,29 +40,83 @@ Window {
     // ⚠️ 球态和气泡态**用同一个窗口尺寸**：点球时窗口几何不变，
     //    否则系统窗口先动、QML 布局慢一帧 → 会看到一个"错位的球"闪一下。
     //    球态只显示中间那一块，其余靠窗口遮罩（Python 端 setMask）做成点击穿透。
-    width: mode === 0 ? 240
-         : mode === 1 ? 240
-         : mode === 2 ? 470
-         : mode === 3 ? 412
-         : mode === 4 ? 412 : 320
-    height: mode === 0 ? 310
-          : mode === 1 ? 310
-          : mode === 2 ? 430
-          : mode === 3 ? 360
-          : mode === 4 ? 208 : 156
+    // 卡片基准尺寸；显示尺寸 = 基准 × cardScale（用户拖右下角缩放）
+    readonly property real cardBaseW: mode === 2 ? 470
+                                    : mode === 3 ? 412
+                                    : mode === 6 ? 412 : 260
+    readonly property real cardBaseH: mode === 2 ? 430
+                                    : mode === 3 ? 430
+                                    : mode === 6 ? 400 : 132
+    property real cardScale: 1.0
+    Component.onCompleted: {
+        if (typeof floatPrefs !== 'undefined' && floatPrefs)
+            win.cardScale = floatPrefs.cardScale
+    }
+    // 拖拽过程中不停写盘会卡；停手 300ms 后存一次
+    onCardScaleChanged: scaleSaveTimer.restart()
+    Timer {
+        id: scaleSaveTimer
+        interval: 300
+        onTriggered: {
+            if (typeof floatPrefs !== 'undefined' && floatPrefs)
+                floatPrefs.saveCardScale(win.cardScale)
+        }
+    }
+    // 球/气泡态用 340×340 的方窗，球居中 → 气泡可以按球的屏幕位置往四个方向翻
+    width: mode <= 1 ? 340 : cardBaseW * cardScale
+    height: mode <= 1 ? 340 : cardBaseH * cardScale
 
     // ── 球在屏幕上的位置（唯一真源；窗口位置由它 + 形态偏移推出）──
-    property real ballX: Math.max(140, Screen.width - 240)
-    property real ballY: Math.max(150, Screen.height - 320)
+    // 默认：屏幕右边、任务栏上沿（desktopAvailableHeight 已排除任务栏）
+    property real ballX: Math.max(0, Screen.width - 100)
+    property real ballY: Math.max(0, Screen.desktopAvailableHeight - 100)
 
-    // 球在窗口内的偏移：球态=0；气泡态=(140,150)（球的左/上要留出气泡的位置）；卡片态=窗口右下
-    readonly property real ballOffX: mode <= 1 ? 140 : width - 100
-    readonly property real ballOffY: mode <= 1 ? 150 : height - 100
+    // 球在窗口内的偏移：球态/气泡态=(120,120)（340 方窗正中，气泡可向四边镜像）；
+    // 卡片态=让卡片**中心落在球心上** → 小窗口就出现在球的位置，而不是从球往左上展开
+    readonly property real ballOffX: mode <= 1 ? 120 : width / 2 - 50
+    readonly property real ballOffY: mode <= 1 ? 120 : height / 2 - 50
 
-    // 窗口位置 = 球的位置 − 球在窗口内的偏移；再夹一次屏幕边界
-    // （卡片比球大得多，靠近屏幕左/上边时靠这一步把整张卡拖回屏内）
-    x: Math.round(Math.max(0, Math.min(ballX - ballOffX, Screen.width - width)))
-    y: Math.round(Math.max(0, Math.min(ballY - ballOffY, Screen.height - height)))
+    // 气泡弹出方向：只在球贴左/上边时镜像到右边/下边。
+    // ⚠️ 右/下边不要再镜像——镜像会把整组推向更没空间的一侧（之前往下拖时
+    //    气泡反而继续往下跑、越拖越看不见的根因）。
+    readonly property int bubbleSignX: (ballX + 50 < 140) ? -1 : 1
+    readonly property int bubbleSignY: (ballY + 50 < 140) ? -1 : 1
+    onBubbleSignXChanged: win.maskVersion++
+    onBubbleSignYChanged: win.maskVersion++
+
+    // 四个气泡的图标固定顺序（从上到下）：计时器 → 批量 → 随机 → 关闭
+    readonly property var bubbleIcons: [
+        { k: "clock",  m: 6 },   // ① 计时器
+        { k: "people", m: 2 },   // ② 批量选择
+        { k: "dice",   m: 3 },   // ③ 随机抽选
+        { k: "power",  m: 5 }    // ④ 关闭
+    ]
+    // 槽位几何保持现在这套围绕球的弧（相对球心）
+    readonly property var bubbleSlots: [
+        { ox:    0, oy: -105 },   // 槽 0：上
+        { ox:  -74, oy:  -74 },   // 槽 1：左上
+        { ox: -105, oy:    0 },   // 槽 2：左
+        { ox:  -74, oy:   74 }    // 槽 3：左下
+    ]
+    // 按屏幕上的 y 从上到下排序槽位；图标固定按顺序装进排序后的槽
+    // → 无论怎么镜像，屏幕上从上到下永远是 计时/批量/随机/关闭
+    readonly property var bubbleSlotOrder: {
+        var arr = []
+        for (var i = 0; i < bubbleSlots.length; i++) arr.push(i)
+        var sy = bubbleSignY
+        arr.sort(function(a, b) {
+            return bubbleSlots[a].oy * sy - bubbleSlots[b].oy * sy
+        })
+        return arr
+    }
+
+    // 窗口位置 = 球的位置 − 球在窗口内的偏移。
+    // 球/气泡态**不夹屏幕边界**：球要能拖到任意边缘，窗口超出屏幕的部分由遮罩/透明区域处理；
+    // 卡片态才夹回屏内（卡片内容必须完整可见）。
+    x: mode <= 1 ? Math.round(ballX - ballOffX)
+                 : Math.round(Math.max(0, Math.min(ballX - ballOffX, Screen.width - width)))
+    y: mode <= 1 ? Math.round(ballY - ballOffY)
+                 : Math.round(Math.max(0, Math.min(ballY - ballOffY, Screen.height - height)))
 
     // ── 状态 ──
     property bool cardLocked: false       // 默认**不锁定**：点开小界面就能直接拖；点锁图标才钉住位置
@@ -67,7 +125,14 @@ Window {
     property var selStudents: []          // 批量：勾选的学生 id
     property var picked: []               // 抽取结果
     property string flashMsg: ""
+    property bool flashIsError: false      // true → 提示用红色半透明胶囊
     property real holdP: 0
+
+    // ── 倒计时 / 秒表 ──
+    // 状态与逻辑都在共享的 TimerHub 里（主界面「工具箱」与悬浮球是**同一个实例**，
+    // 由 main.py 注册成 context property "timerHub"）。这里只负责显示：
+    // 关掉卡片后计时照走，球面上的进度环直接读 timerHub。
+    // 计时按"结束时间戳"算，界面卡顿/后台都不会累积漂移。
 
     readonly property bool dragging: ballMa.pressed && ballMa.moved
 
@@ -95,6 +160,55 @@ Window {
     // ⚠️ 由 Python 在 load **之前**用 context property 传入：窗口创建后再改 flags 会让 Qt 重建窗口，
     //    之前设好的窗口遮罩就丢了（表现为 Acrylic 又糊满整个矩形）。
     property bool floatNoActivateCtx: true
+
+    // 卡片 → 球/气泡：先把内容淡出，再改窗口尺寸。
+    // 直接改 mode 时系统窗口先缩放、QML 慢一帧 → 会在新尺寸里看到旧卡片的残影。
+    property bool leavingCard: false
+    property int leaveTarget: 1
+    function leaveCard(toMode) {
+        if (win.mode <= 1 || win.leavingCard) return
+        win.leaveTarget = toMode
+        win.leavingCard = true
+        cardLeave.start()
+    }
+    SequentialAnimation {
+        id: cardLeave
+        NumberAnimation { target: win.contentItem; property: "opacity"
+                          to: 0; duration: 90; easing.type: Easing.InQuad }
+        PauseAnimation { duration: 70 }        // 同理：透明帧先上屏，再缩窗口
+        ScriptAction { script: win.mode = win.leaveTarget }
+        PauseAnimation { duration: 50 }
+        ScriptAction { script: win.contentItem.opacity = 1 }
+        onFinished: win.leavingCard = false
+    }
+
+    // 气泡 → 卡片：先提前把遮罩切成"整窗"、把内容淡出，让窗口在不可见时完成
+    // 缩放/移动，再淡入卡片。否则放大/移动的那一帧会被旧的小遮罩裁一下，
+    // 闪出一块花屏状的残影。
+    property bool enteringCard: false
+    property int enterTarget: 2
+    function enterCard(m) {
+        if (win.enteringCard || win.leavingCard) return
+        win.enterTarget = m
+        win.enteringCard = true
+        win.maskMode = m          // 提前切整窗遮罩（Python 会立即重算）
+        win.maskVersion++
+        cardEnter.start()
+    }
+    SequentialAnimation {
+        id: cardEnter
+        NumberAnimation { target: win.contentItem; property: "opacity"
+                          to: 0; duration: 60; easing.type: Easing.InQuad }
+        // ⚠️ 关键：等"全透明"那一帧真正上屏后再改窗口几何。
+        //    否则窗口先移动/放大，合成器会把上一帧（球+气泡）连同旧位置一起带过去，
+        //    在左上角闪一下残影。
+        PauseAnimation { duration: 80 }
+        ScriptAction { script: win.mode = win.enterTarget }
+        PauseAnimation { duration: 50 }        // 等窗口尺寸/遮罩落定
+        NumberAnimation { target: win.contentItem; property: "opacity"
+                          to: 1; duration: 110; easing.type: Easing.OutQuad }
+        onFinished: win.enteringCard = false
+    }
 
     // ══════════════════════════════════════════════════════════
     //  毛玻璃面（每个气泡自己一块）
@@ -149,7 +263,7 @@ Window {
     }
 
     // 单色矢量图标：emoji 是彩色位图、没法改色，所以按同样的图形语义画成线稿。
-    // kind: bolt(闪电) / screen(显示器) / people(两人) / dice(骰子) / gear(齿轮)
+    // kind: bolt(闪电) / screen(显示器) / people(两人) / dice(骰子) / clock(表) / power(电源)
     component FloatIcon: Canvas {
         id: fi
         property string kind: "bolt"
@@ -197,27 +311,21 @@ Window {
                 for (var i = 0; i < pips.length; i++) {
                     c.beginPath(); c.arc(pips[i][0], pips[i][1], 1.5, 0, Math.PI * 2); c.fill()
                 }
-            } else {   // gear：实心齿轮盘（8 颗梯形齿，有厚度）+ 中心挖孔，不是几根线
-                var teeth = 8, rOut = 10.2, rRoot = 7.4, rHole = 3.2
-                var tw = 0.105 * Math.PI                 // 齿的半角
+            } else if (fi.kind === "clock") {
+                // 表盘 + 表冠 + 两根指针（与其余图标同一套线稿笔触）
+                c.beginPath(); c.arc(12, 13.0, 7.6, 0, Math.PI * 2); c.stroke()
+                c.beginPath(); c.moveTo(12, 3.2); c.lineTo(12, 5.4); c.stroke()
+                c.beginPath(); c.moveTo(9.9, 3.2); c.lineTo(14.1, 3.2); c.stroke()
+                c.beginPath(); c.moveTo(12, 13.0); c.lineTo(12, 8.6); c.stroke()
+                c.beginPath(); c.moveTo(12, 13.0); c.lineTo(15.3, 14.4); c.stroke()
+                c.beginPath(); c.arc(12, 13.0, 0.9, 0, Math.PI * 2); c.fill()
+            } else {   // power：电源符号（上端开口的圆环 + 中间竖线）
                 c.beginPath()
-                for (var i = 0; i < teeth; i++) {
-                    var base = i * (Math.PI * 2 / teeth)
-                    var pts = [[base - tw, rRoot], [base - tw * 0.58, rOut],
-                               [base + tw * 0.58, rOut], [base + tw, rRoot]]
-                    for (var k = 0; k < 4; k++) {
-                        var a2 = pts[k][0], rr = pts[k][1]
-                        var px = 12 + rr * Math.cos(a2), py = 12 + rr * Math.sin(a2)
-                        if (i === 0 && k === 0) c.moveTo(px, py)
-                        else c.lineTo(px, py)
-                    }
-                }
-                c.closePath()
-                c.fill()
-                // 中心孔：destination-out 把中间的圆挖掉
-                c.globalCompositeOperation = "destination-out"
-                c.beginPath(); c.arc(12, 12, rHole, 0, Math.PI * 2); c.fill()
-                c.globalCompositeOperation = "source-over"
+                c.arc(12, 12.6, 7.6,
+                      -Math.PI / 2 + 0.55,
+                      -Math.PI / 2 - 0.55 + Math.PI * 2, false)
+                c.stroke()
+                c.beginPath(); c.moveTo(12, 2.8); c.lineTo(12, 11.8); c.stroke()
             }
         }
 
@@ -250,19 +358,191 @@ Window {
             scheme: "marine"
             opacity: 0.62           // 半透明（0.55 再收一点回来）
         }
-        CanvasIcon {
+        // 倒计时进度环：画在球面内侧（半径 43 < 遮罩半径 52，不会被裁）
+        // 走完 → 琥珀色 + 闪三下
+        Canvas {
+            id: cdRing
             anchors.centerIn: parent
-            name: "sparkle"
+            width: 96; height: 96
+            visible: timerHub.timerRunning || timerHub.timerDone
+                     || (timerHub.timerLeft > 0 && timerHub.timerLeft < timerHub.timerTotal)
+            property real prog: timerHub.timerTotal > 0
+                                ? timerHub.timerLeft / timerHub.timerTotal : 0
+            property bool done: timerHub.timerDone
+            onProgChanged: requestPaint()
+            onDoneChanged: requestPaint()
+            onVisibleChanged: requestPaint()
+            onWidthChanged: requestPaint()
+            onHeightChanged: requestPaint()
+            onPaint: {
+                var c = getContext("2d")
+                c.reset()
+                var cx = width / 2, cy = height / 2, r = cx - 5
+                c.lineWidth = 4
+                c.lineCap = "round"
+                c.strokeStyle = "rgba(255,255,255,0.18)"
+                c.beginPath(); c.arc(cx, cy, r, 0, Math.PI * 2); c.stroke()
+                var p = cdRing.done ? 1 : Math.max(0, Math.min(1, cdRing.prog))
+                c.strokeStyle = cdRing.done
+                        ? "rgba(255,170,110,0.95)" : "rgba(120,232,210,0.95)"
+                c.beginPath()
+                c.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * p, false)
+                c.stroke()
+            }
+        }
+        SequentialAnimation {
+            id: ringBlink
+            loops: 3
+            NumberAnimation { target: cdRing; property: "opacity"; to: 0.2; duration: 180 }
+            NumberAnimation { target: cdRing; property: "opacity"; to: 1.0; duration: 220 }
+        }
+        // 点击涟漪：三圈白色细环从星芒开始依次扩散、淡出（水面涟漪）
+        Canvas {
+            id: sparkRipple
+            anchors.centerIn: parent
+            // 画布 240：星形几何一直画到 100px；屏幕显示由 82 的圆形遮罩裁掉尖尖
+            width: 240; height: 240
+            property real progress: 0
+            onProgressChanged: requestPaint()
+            onPaint: {
+                var c = getContext("2d")
+                c.reset()
+                if (progress <= 0.001 || progress >= 0.999) return
+                c.lineJoin = "round"
+                c.lineCap = "round"
+                var cx = width / 2, cy = height / 2
+                // 用四芒星原路径当模板（24×24 坐标系里中心到顶点 = 8.4），按半径 s 缩放描边
+                function starPath(cc, x, y, s) {
+                    var u = s / 8.4
+                    cc.beginPath()
+                    cc.moveTo(x, y - 8.4 * u)
+                    cc.quadraticCurveTo(x + 1 * u, y - 1 * u, x + 8.4 * u, y)
+                    cc.quadraticCurveTo(x + 1 * u, y + 1 * u, x, y + 8.4 * u)
+                    cc.quadraticCurveTo(x - 1 * u, y + 1 * u, x - 8.4 * u, y)
+                    cc.quadraticCurveTo(x - 1 * u, y - 1 * u, x, y - 8.4 * u)
+                    cc.closePath()
+                }
+                // [延迟, 单圈时长, 亮度系数, 最远半径, 扩散曲线指数, 淡出指数]
+                // 前两圈冲得很远（100/96），由圆形遮罩把尖尖切掉；
+                // 后两圈只到中途（62/48），在各自最远处淡出消失。
+                var rings = [
+                    [0.00, 0.78, 0.90, 100, 0.65, 0.40],
+                    [0.24, 0.66, 0.72, 96, 0.58, 0.40],
+                    [0.44, 0.54, 0.56, 62, 0.62, 1.50],
+                    [0.60, 0.36, 0.33, 48, 0.60, 1.50]
+                ]
+                for (var i = 0; i < rings.length; i++) {
+                    var d = rings[i][0], dur = rings[i][1], k = rings[i][2]
+                    var rMax = rings[i][3], expo = rings[i][4], fade = rings[i][5]
+                    var t = Math.max(0, Math.min(1, (progress - d) / dur))
+                    if (t <= 0 || t >= 1) continue
+                    // 各自的扩散曲线 → 有的头快尾慢、有的先慢后冲
+                    var r = 2 + (rMax - 2) * Math.pow(t, expo)
+                    // 远圈亮度一直保持到遮罩边（由 82 圆形遮罩切掉尖尖）；
+                    // 中途圈淡出指数更大，会在半路自然消失
+                    var a = 0.65 * Math.pow(1 - t, fade) * k
+                    if (a <= 0.002) continue
+                    starPath(c, cx, cy, r)
+                    // 中间实、边缘虚：窄芯最亮，外面逐层变宽变淡
+                    var layers = [[1.8, 0.95], [3.4, 0.55], [5.6, 0.30], [8.4, 0.14], [11.5, 0.05]]
+                    // 极淡暗边：浅色桌面上也能看出星形轮廓
+                    c.strokeStyle = "rgba(18,24,40," + (a * 0.12).toFixed(3) + ")"
+                    c.lineWidth = 3.6
+                    c.stroke()
+                    for (var j = 0; j < layers.length; j++) {
+                        c.strokeStyle = "rgba(255,255,255," + (a * layers[j][1]).toFixed(3) + ")"
+                        c.lineWidth = layers[j][0]
+                        c.stroke()
+                    }
+                }
+                // 视觉遮罩（QML 内裁）：以球心为圆心的同心圆，半径 43——
+                // 约 42px 以内是实的，42→43 极短渐隐，43 以外完全擦掉。
+                // ⚠️ 窗口 setMask 只负责点击穿透/窗口区域，不能依赖它做视觉裁切。
+                c.globalCompositeOperation = "destination-in"
+                var mg = c.createRadialGradient(cx, cy, 0, cx, cy, 43)
+                mg.addColorStop(0, "rgba(0,0,0,1)")
+                mg.addColorStop(0.98, "rgba(0,0,0,1)")
+                mg.addColorStop(1, "rgba(0,0,0,0)")
+                c.fillStyle = mg
+                c.fillRect(0, 0, width, height)
+                c.globalCompositeOperation = "source-over"
+            }
+        }
+        NumberAnimation {
+            id: sparkRippleAnim
+            target: sparkRipple
+            property: "progress"
+            from: 0; to: 1
+            duration: 1400
+            // 用线性进度，快慢差异交给每条涟漪自己的时长/指数
+            easing.type: Easing.Linear
+        }
+
+        // 四芒星：外层负责"悬停呼吸"（上下 3px + 3% 缩放，3s 循环），
+        // 内层负责"点击余波"（按下 120%，松手抖两下）。
+        Item {
+            id: sparkleWrap
+            anchors.centerIn: parent
             width: 54; height: 54
-            color: "#ffffff"
-            // 点击时四芒星 q 弹放大再回落（OutBack 过冲，动效明显）
-            scale: ballMa.pressed ? 1.24 : 1.0
-            Behavior on scale {
-                NumberAnimation { duration: 260; easing.type: Easing.OutBack; easing.overshoot: 2.4 }
+
+            // 悬浮球的 MouseArea 盖在星芒上面，HoverHandler 收不到 hover；
+            // 所以用球上的鼠标坐标判断"是否在星芒的 54×54 区域里"（球的中心 50,50）。
+            property bool hovered: ballMa.sparkleHover
+            property real breath: hovered ? 1 : 0
+            property real phase: 0
+            readonly property real wave: 0.5 - 0.5 * Math.cos(phase * Math.PI * 2)
+            Behavior on breath { NumberAnimation { duration: 250; easing.type: Easing.InOutSine } }
+            // ⚠️ 不能直接写 y：anchors.centerIn 会覆盖 y，位移必须用 Translate
+            // 2026-10-31 用户要求：悬停时幅度再加大一点（3.6px / 3.5%），周期仍 3s
+            scale: 1 + 0.035 * breath * wave
+            transform: Translate { y: -3.6 * sparkleWrap.breath * sparkleWrap.wave }
+            NumberAnimation on phase {
+                running: sparkleWrap.hovered
+                loops: Animation.Infinite
+                from: 0; to: 1
+                duration: 3000
+            }
+
+            Item {
+                id: sparkClick
+                anchors.fill: parent
+                CanvasIcon {
+                    anchors.centerIn: parent
+                    name: "sparkle"
+                    width: 54; height: 54
+                    color: "#ffffff"
+                }
             }
         }
 
-        // 长按进度环
+        // 按下：120%（110ms）；松手：两次更明显的放大缩小（共 ~440ms）+ 涟漪扩散
+        NumberAnimation {
+            id: sparklePress
+            target: sparkClick
+            property: "scale"
+            to: 1.20
+            duration: 110
+            easing.type: Easing.OutCubic
+        }
+        SequentialAnimation {
+            id: sparkleWobble
+            // 三段递减的弹动（比原来多一段，更灵动）
+            NumberAnimation { target: sparkClick; property: "scale"; to: 1.13; duration: 105; easing.type: Easing.InOutSine }
+            NumberAnimation { target: sparkClick; property: "scale"; to: 0.92; duration: 115; easing.type: Easing.InOutSine }
+            NumberAnimation { target: sparkClick; property: "scale"; to: 1.06; duration: 105; easing.type: Easing.InOutSine }
+            NumberAnimation { target: sparkClick; property: "scale"; to: 0.97; duration: 95; easing.type: Easing.InOutSine }
+            NumberAnimation { target: sparkClick; property: "scale"; to: 1.02; duration: 85; easing.type: Easing.InOutSine }
+            NumberAnimation { target: sparkClick; property: "scale"; to: 1.00; duration: 75; easing.type: Easing.InOutSine }
+        }
+        NumberAnimation {
+            id: sparkleSettle
+            target: sparkClick
+            property: "scale"
+            to: 1.0
+            duration: 160
+            easing.type: Easing.OutCubic
+        }
+        // 长按进度环：更细的弧线 + 更大的柔光（1.0→12px）
         Canvas {
             anchors.fill: parent
             property real p: win.holdP
@@ -275,24 +555,88 @@ Window {
                 var cx = width / 2, cy = height / 2, r = width / 2 - 8
                 var a0 = -Math.PI / 2, a1 = -Math.PI / 2 + p * Math.PI * 2
                 c.lineCap = "round"
-                // 由内到外叠 4 层：芯亮、外圈淡 → 边缘自然渐隐（Canvas 没有模糊）
-                var layers = [[3.0, 0.95], [7.0, 0.42], [12.0, 0.20], [18.0, 0.09]]
-                for (var i = 0; i < layers.length; i++) {
-                    c.strokeStyle = "rgba(255,255,255," + layers[i][1] + ")"
-                    c.lineWidth = layers[i][0]
+                // 更细的线 + 更大的柔光（1.0 → 12px）
+                var N = 12
+                for (var i = 0; i < N; i++) {
+                    var u = i / (N - 1)
+                    var w = 1.0 + 11.0 * u
+                    var al = 0.95 * Math.pow(1 - u, 3.2)
+                    c.strokeStyle = "rgba(255,255,255," + al.toFixed(3) + ")"
+                    c.lineWidth = w
                     c.beginPath()
                     c.arc(cx, cy, r, a0, a1)
                     c.stroke()
                 }
             }
         }
+        // 进度前端的小四芒星：跟着弧线走，持续放大缩小 + 光晕闪烁
+        Item {
+            id: holdHead
+            width: 24; height: 24
+            visible: win.holdP > 0.01
+            readonly property real ang: -Math.PI / 2 + win.holdP * Math.PI * 2
+            x: 50 + Math.cos(ang) * 42 - width / 2
+            y: 50 + Math.sin(ang) * 42 - height / 2
+            property real pulse: 0
+            scale: 0.85 + 0.3 * pulse
+            SequentialAnimation on pulse {
+                running: holdHead.visible
+                loops: Animation.Infinite
+                NumberAnimation { from: 0; to: 1; duration: 420; easing.type: Easing.InOutSine }
+                NumberAnimation { from: 1; to: 0; duration: 420; easing.type: Easing.InOutSine }
+            }
+            Canvas {
+                anchors.centerIn: parent
+                width: 30; height: 30
+                // 光晕强度约为原来的 2.5 倍（面积 + 透明度都加大）
+                opacity: 0.50 + 0.50 * holdHead.pulse
+                onPaint: {
+                    var c = getContext("2d"); c.reset()
+                    var cx = width / 2, cy = height / 2, r = width / 2
+                    var g = c.createRadialGradient(cx, cy, 0, cx, cy, r)
+                    g.addColorStop(0, "rgba(255,255,255,0.9)")
+                    g.addColorStop(0.45, "rgba(255,255,255,0.35)")
+                    g.addColorStop(1, "rgba(255,255,255,0)")
+                    c.fillStyle = g
+                    c.fillRect(0, 0, width, height)
+                }
+            }
+            CanvasIcon {
+                anchors.centerIn: parent
+                name: "sparkle"
+                width: 14; height: 14
+                color: "#ffffff"
+            }
+        }
 
-        Timer { id: holdTimer; interval: 1200; onTriggered: { win.holdP = 0; ballMa.held = true; win.mode = 5 } }
+        // 长按满 1.2 秒 = **直接回主界面**（进度环本身就是确认，不再弹确认卡）
+        Timer {
+            id: holdTimer
+            interval: 1200
+            onTriggered: {
+                holdRing.stop()        // 先停进度动画，否则它会把 holdP 又推回 1
+                win.holdP = 0
+                ballMa.held = true
+                // 留一帧把"干净的球"画出来再隐藏；否则下次出现会闪一下
+                // 上次进度环读满时的旧画面
+                holdReturn.start()
+            }
+        }
+        Timer {
+            id: holdReturn
+            interval: 60
+            onTriggered: floatBridge.closeBall()
+        }
         NumberAnimation { id: holdRing; target: win; property: "holdP"; from: 0; to: 1; duration: 1200 }
 
         MouseArea {
             id: ballMa
             anchors.fill: parent
+            hoverEnabled: true
+            // 星芒的 54×54 区域（球 100×100 的正中）：用来做"悬停呼吸"
+            readonly property bool sparkleHover: containsMouse
+                    && mouseX >= 23 && mouseX <= 77
+                    && mouseY >= 23 && mouseY <= 77
             property point grab: Qt.point(0, 0)
             property real bx0: 0
             property real by0: 0
@@ -305,23 +649,37 @@ Window {
                 moved = false
                 held = false
                 holdRing.restart(); holdTimer.restart()
+                sparkleWobble.stop(); sparkleSettle.stop()
+                sparklePress.restart()
+                sparkRippleAnim.restart()          // 一按下就开始涟漪（不等松手）
             }
             onPositionChanged: function(m) {
+                if (!pressed) return       // 悬停移动只更新 sparkleHover，不拖动球
                 var gx = win.x + m.x, gy = win.y + m.y
                 // 阈值 14px：手指点按会抖几像素，8px 会把点击误判成拖动
                 if (!moved && Math.abs(gx - grab.x) + Math.abs(gy - grab.y) <= 14) return
                 if (!moved) { holdRing.stop(); holdTimer.stop(); win.holdP = 0 }
                 moved = true
-                // 夹在安全区里：保证四种形态的窗口都能完整落在屏幕内
-                win.ballX = Math.max(140, Math.min(bx0 + (gx - grab.x), Screen.width - 100))
-                win.ballY = Math.max(150, Math.min(by0 + (gy - grab.y), Screen.height - 160))
+                // 球可以贴到屏幕任意一边（窗口超出屏幕的部分由遮罩处理）；
+                // 气泡会根据球的屏幕位置自动镜像到有空间的一侧
+                win.ballX = Math.max(0, Math.min(bx0 + (gx - grab.x), Screen.width - 100))
+                win.ballY = Math.max(0, Math.min(by0 + (gy - grab.y), Screen.height - 100))
             }
             onReleased: {
                 holdRing.stop(); holdTimer.stop(); win.holdP = 0
-                if (moved || held) return          // 拖动 / 长按都不当作"点一下"
+                sparklePress.stop()
+                if (moved || held) {               // 拖动 / 长按都不当作"点一下"
+                    sparkleSettle.restart()
+                    return
+                }
                 win.mode = (win.mode === 1) ? 0 : 1
+                sparkleWobble.restart()            // 松手余波（涟漪已在按下时开始）
             }
-            onCanceled: { holdRing.stop(); holdTimer.stop(); win.holdP = 0 }
+            onCanceled: {
+                holdRing.stop(); holdTimer.stop(); win.holdP = 0
+                sparklePress.stop()
+                sparkleSettle.restart()
+            }
         }
     }
 
@@ -340,19 +698,13 @@ Window {
         }
 
         Repeater {
-            // 相对**球心**的偏移。R=105、气泡 68px：
-            //   离球边 21px（贴着）、相邻中心距 80px（间隔 12px）
-            // 84px 的旧气泡在半个圆内排不下四个，所以缩到 68px。
-            // 弹出顺序 = 数组顺序：软件主界面 → 批量选择 → 随机抽取 → 设置
-            // 位置沿球边从"上"顺时针扫到"左下"，读起来是一条自然的弧
-            model: [
-                { k: "screen", m: -1, ox:    0, oy: -105 },   // ① 上：软件主界面
-                { k: "people", m: 2,  ox:  -74, oy:  -74 },   // ② 左上：批量选择
-                { k: "dice",   m: 3,  ox: -105, oy:    0 },   // ③ 左：随机抽取
-                { k: "gear",   m: 4,  ox:  -74, oy:   74 }     // ④ 左下：设置
-            ]
+            // 图标按固定顺序（从上到下）；具体放到哪个槽由 bubbleSlotOrder 决定。
+            // 槽位几何仍是现在这套围绕球的弧（R=105、气泡 68、贴球边 21px）。
+            model: win.bubbleIcons
             delegate: Item {
                 id: bub
+                // 这个图标被分到哪个槽（按屏幕 y 从上到下排）
+                readonly property var slot: win.bubbleSlots[win.bubbleSlotOrder[index]]
                 // 打开：按 index 依次；收回：反过来（后出来的先消失）
                 readonly property int seq: (win.mode === 1) ? index : (3 - index)
                 readonly property real p: Math.max(0, Math.min(1, (menuLayer.t - seq * 0.12) / 0.64))
@@ -362,37 +714,90 @@ Window {
                 width: 68; height: 68
                 // 位置**固定**（窗口遮罩按这些圆心算，Acyrlic 只糊这些圆）。
                 // 弹出全靠 0.55→1 的缩放 + 淡入：不超出自家的遮罩圆，也就不会被裁。
-                x: cx + modelData.ox - width / 2
-                y: cy + modelData.oy - height / 2
+                x: cx + slot.ox * win.bubbleSignX - width / 2
+                y: cy + slot.oy * win.bubbleSignY - height / 2
                 // 从很小放大到原尺寸（不是从半透明淡入）
                 scale: 0.06 + 0.94 * p
                 opacity: Math.min(1, p * 1.6)
 
-                // 悬停时「气泡 + 图标」整组等比放大（OutBack = q 弹），移开自动复原。
-                // ⚠️ 缩放放在内层 Item 上：MouseArea 仍按原尺寸接收事件，不会因放大缩小而反复进出。
+                // 悬停（方案 C）：气泡放大到 105% 并上浮 2px，图标稍晚放大到 110%；
+                // 悬停期间整组再慢速呼吸（5% 缩放），柔光也更亮。
+                // ⚠️ 缩放/位移放在内层 Item 上：MouseArea 仍按原尺寸接收事件，不会反复进出。
                 Item {
+                    id: bubBody
                     anchors.fill: parent
-                    scale: bma.containsMouse ? 1.12 : 1.0
+                    scale: bma.containsMouse ? 1.05 : 1.0
                     Behavior on scale {
-                        NumberAnimation { duration: 240; easing.type: Easing.OutBack; easing.overshoot: 1.9 }
+                        NumberAnimation { duration: 300; easing.type: Easing.InOutSine }
                     }
-                    // 白色别太厚：70% 白会把下面那层模糊盖得看不见（只剩"白色半透明"）
-                    Glass { soft: true; tintColor: bma.pressed ? "#8c000000" : "#52000000" }
-                    FloatIcon {
-                        kind: modelData.k
-                        width: 26; height: 26
-                        weight: 2.2
-                        anchors.centerIn: parent
+                    transform: Translate {
+                        y: bma.containsMouse ? -2 : 0
+                        Behavior on y {
+                            NumberAnimation { duration: 300; easing.type: Easing.InOutSine }
+                        }
+                    }
+
+                    // 悬停呼吸（和四芒星同一套做法：phase 循环 + breath 渐入）
+                    property bool hovered: bma.containsMouse
+                    property real breath: hovered ? 1 : 0
+                    property real phase: 0
+                    readonly property real wave: 0.5 - 0.5 * Math.cos(phase * Math.PI * 2)
+                    Behavior on breath { NumberAnimation { duration: 250; easing.type: Easing.InOutSine } }
+                    NumberAnimation on phase {
+                        running: bubBody.hovered
+                        loops: Animation.Infinite
+                        from: 0; to: 1
+                        duration: 2600
+                    }
+
+                    Item {
+                        id: bubBreath
+                        anchors.fill: parent
+                        // 悬停呼吸：5%（原来 2.5% 太不明显）
+                        scale: 1 + 0.05 * bubBody.breath * bubBody.wave
+
+                        // 白色别太厚：70% 白会把下面那层模糊盖得看不见（只剩"白色半透明"）
+                        Glass { soft: true; tintColor: bma.pressed ? "#8c000000" : "#52000000" }
+
+                        // 柔光：只在悬停时淡入，半径收在气泡遮罩内
+                        Canvas {
+                            anchors.centerIn: parent
+                            width: 68; height: 68
+                            opacity: bma.containsMouse ? 0.30 : 0
+                            Behavior on opacity { NumberAnimation { duration: 200; easing.type: Easing.OutQuad } }
+                            onPaint: {
+                                var c = getContext("2d"); c.reset()
+                                var r = width / 2
+                                var g = c.createRadialGradient(r, r, 0, r, r, r)
+                                g.addColorStop(0, "rgba(255,255,255,0.9)")
+                                g.addColorStop(0.5, "rgba(255,255,255,0.35)")
+                                g.addColorStop(1, "rgba(255,255,255,0)")
+                                c.fillStyle = g
+                                c.fillRect(0, 0, width, height)
+                            }
+                        }
+
+                        FloatIcon {
+                            kind: modelData.k
+                            width: 26; height: 26
+                            weight: 2.2
+                            anchors.centerIn: parent
+                            // 图标比气泡多放一点，并晚 40ms 起步
+                            scale: bma.containsMouse ? 1.10 : 1.0
+                            Behavior on scale {
+                                SequentialAnimation {
+                                    PauseAnimation { duration: 40 }
+                                    NumberAnimation { duration: 260; easing.type: Easing.InOutSine }
+                                }
+                            }
+                        }
                     }
                 }
                 MouseArea {
                     id: bma
                     anchors.fill: parent
                     hoverEnabled: true
-                    onClicked: {
-                        if (modelData.m < 0) floatBridge.showMain()   // ① 软件主界面
-                        else win.mode = modelData.m
-                    }
+                    onClicked: win.enterCard(modelData.m)
                 }
             }
         }
@@ -402,6 +807,18 @@ Window {
             anchors.top: parent.top; anchors.topMargin: 10
         }
     }
+
+    // ══════════════════════════════════════════════════════════
+    //  卡片层：整层缩放（基准布局不动，窗口尺寸 = 基准 × cardScale）
+    //  文字用全局曲线渲染，缩放后仍然清晰；右下角可拖拽缩放
+    // ══════════════════════════════════════════════════════════
+    Item {
+        id: cardLayer
+        width: win.cardBaseW
+        height: win.cardBaseH
+        scale: win.cardScale
+        transformOrigin: Item.TopLeft
+        visible: win.isCard
 
     // ══════════════════════════════════════════════════════════
     //  卡片共用玻璃底
@@ -439,6 +856,23 @@ Window {
                         font.bold: sc.on
                         font.family: Theme.fontFamily
                     }
+                    // 选中勾：右上角一个白色小圆圈 + 勾，微微外扩
+                    Rectangle {
+                        width: 14; height: 14; radius: 7
+                        visible: sc.on
+                        color: Theme.accent
+                        anchors.right: parent.right
+                        anchors.top: parent.top
+                        anchors.rightMargin: -2
+                        anchors.topMargin: -2
+                        CanvasIcon {
+                            anchors.centerIn: parent
+                            name: "check"
+                            width: 10; height: 10
+                            strokeW: 4.8          // 24 网格坐标里的线宽；实际约 2px
+                            color: "#ffffff"
+                        }
+                    }
                     MouseArea {
                         id: scma
                         anchors.fill: parent
@@ -463,10 +897,15 @@ Window {
                 model: reward.categories
                 delegate: Rectangle {
                     readonly property bool on: win.cat === modelData
+                    readonly property bool hov: cm.containsMouse
                     height: 40
                     width: lbl2.implicitWidth + 24
                     radius: height / 2
-                    color: on ? "#b3ffffff" : (cm.pressed ? "#33ffffff" : "#1affffff")
+                    color: on ? (hov ? "#d9ffffff" : "#b3ffffff")
+                              : (cm.pressed ? "#40ffffff" : (hov ? "#33ffffff" : "#1affffff"))
+                    Behavior on color {
+                        ColorAnimation { duration: 160; easing.type: Easing.OutQuad }
+                    }
                     Text {
                         id: lbl2
                         anchors.centerIn: parent
@@ -479,6 +918,8 @@ Window {
                     MouseArea {
                         id: cm
                         anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
                         onClicked: win.cat = (win.cat === modelData ? "" : modelData)
                     }
                 }
@@ -497,20 +938,21 @@ Window {
             PointsPill { id: pts; from: 1; to: 20; value: 2; anchors.verticalCenter: parent.verticalCenter }
             CuteButton {
                 tone: "primary"; text: "加分"
-                implicitWidth: 112; implicitHeight: 52; fontSize: 19
+                implicitWidth: 88; implicitHeight: 42; fontSize: 16
                 anchors.verticalCenter: parent.verticalCenter
                 onClicked: win.applyStudents(true)
             }
             CuteButton {
                 tone: "danger"; text: "扣分"
-                implicitWidth: 112; implicitHeight: 52; fontSize: 19
+                implicitWidth: 88; implicitHeight: 42; fontSize: 16
                 anchors.verticalCenter: parent.verticalCenter
                 onClicked: win.applyStudents(false)
             }
         }
 
         FlashLine {
-            anchors.bottom: parent.bottom; anchors.bottomMargin: 78
+            // 放到分类按钮上方（78 会压住分类胶囊；出错时最需要点的就是分类）
+            anchors.bottom: parent.bottom; anchors.bottomMargin: 132
             anchors.horizontalCenter: parent.horizontalCenter
         }
     }
@@ -536,15 +978,15 @@ Window {
 
         Column {
             anchors.centerIn: parent
-            anchors.verticalCenterOffset: 26
-            spacing: 2
+            anchors.verticalCenterOffset: -50
+            spacing: 0
             Repeater {
                 model: win.picked
                 delegate: Text {
                     text: modelData.name
                     anchors.horizontalCenter: parent.horizontalCenter
                     color: "#ffffff"
-                    font.pixelSize: win.picked.length > 1 ? 24 : 32
+                    font.pixelSize: win.picked.length > 1 ? 20 : 32
                     font.bold: true
                     font.family: Theme.fontFamily
                 }
@@ -554,7 +996,7 @@ Window {
 
         // 底部（上）：抽 [N] 名/个 + 「抽取」
         Row {
-            anchors.bottom: parent.bottom; anchors.bottomMargin: 82
+            anchors.bottom: parent.bottom; anchors.bottomMargin: 152
             anchors.horizontalCenter: parent.horizontalCenter
             spacing: 10
             Text {
@@ -576,6 +1018,44 @@ Window {
             }
         }
 
+        // 加分维度：与批量页同一套胶囊，选中后本页的加分/扣分直接使用
+        Row {
+            anchors.bottom: parent.bottom; anchors.bottomMargin: 94
+            anchors.horizontalCenter: parent.horizontalCenter
+            spacing: 8
+            Repeater {
+                model: reward.categories
+                delegate: Rectangle {
+                    readonly property bool on: win.cat === modelData
+                    readonly property bool hov: catMa.containsMouse
+                    height: 40
+                    width: catLbl.implicitWidth + 24
+                    radius: height / 2
+                    color: on ? (hov ? "#d9ffffff" : "#b3ffffff")
+                              : (catMa.pressed ? "#40ffffff" : (hov ? "#33ffffff" : "#1affffff"))
+                    Behavior on color {
+                        ColorAnimation { duration: 160; easing.type: Easing.OutQuad }
+                    }
+                    Text {
+                        id: catLbl
+                        anchors.centerIn: parent
+                        text: modelData
+                        color: on ? "#1f2937" : "#ffffff"
+                        font.pixelSize: 14
+                        font.bold: on
+                        font.family: Theme.fontFamily
+                    }
+                    MouseArea {
+                        id: catMa
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: win.cat = (win.cat === modelData ? "" : modelData)
+                    }
+                }
+            }
+        }
+
         // 底部（下）：分值 + 加分 / 扣分（「再抽」已去掉）
         Row {
             anchors.bottom: parent.bottom; anchors.bottomMargin: 18
@@ -589,53 +1069,223 @@ Window {
             PointsPill { id: pickPts; from: 1; to: 20; value: 1; anchors.verticalCenter: parent.verticalCenter }
             CuteButton {
                 tone: "primary"; text: "加分"
-                implicitWidth: 104; implicitHeight: 52; fontSize: 19
+                implicitWidth: 88; implicitHeight: 42; fontSize: 16
                 usable: win.picked.length > 0
                 onClicked: win.applyPicked(true)
             }
             CuteButton {
                 tone: "danger"; text: "扣分"
-                implicitWidth: 104; implicitHeight: 52; fontSize: 19
+                implicitWidth: 88; implicitHeight: 42; fontSize: 16
                 usable: win.picked.length > 0
                 onClicked: win.applyPicked(false)
             }
         }
 
         FlashLine {
-            anchors.bottom: parent.bottom; anchors.bottomMargin: 74
+            anchors.bottom: parent.bottom; anchors.bottomMargin: 208
             anchors.horizontalCenter: parent.horizontalCenter
         }
     }
 
     // ══════════════════════════════════════════════════════════
-    //  4 · 设置
+    //  6 · 倒计时
+    //  卡片只负责"设置与显示"；计时器挂在根对象上，关掉卡片后继续走，
+    //  球面上那圈进度环就是它在后台的指示。
     // ══════════════════════════════════════════════════════════
     Item {
         anchors.fill: parent
-        visible: win.mode === 4
+        visible: win.mode === 6
 
-        CardHead { title: "设置" }
+        CardHead { title: timerHub.timerTab === 0 ? "倒计时" : "秒表" }
 
-        Column {
-            anchors.centerIn: parent
-            anchors.verticalCenterOffset: 12
+        // 倒计时 / 秒表：主界面同款分段 Tab（与抽取页的 学生/小组 一致）
+        // 选中的子页也存在 TimerHub 里：在悬浮球选了「秒表」，回主界面工具箱也是「秒表」。
+        SegmentedTabs {
+            anchors.top: parent.top; anchors.topMargin: 60
+            anchors.horizontalCenter: parent.horizontalCenter
+            labels: ["倒计时", "秒表"]
+            currentIndex: timerHub.timerTab
+            onActivated: function(i) { timerHub.timerTab = i }
+        }
+
+        // ── 时 / 分 / 秒：每一位数字单独调（十位 0-6、个位 0-9 的轮盘）──
+        Row {
+            id: timePick
+            visible: timerHub.timerTab === 0
+            anchors.top: parent.top; anchors.topMargin: 100
+            anchors.horizontalCenter: parent.horizontalCenter
             spacing: 14
-            CuteButton {
-                tone: "danger"; text: "退出悬浮球"
-                implicitWidth: 220; implicitHeight: 52; fontSize: 19
-                anchors.horizontalCenter: parent.horizontalCenter
-                onClicked: win.mode = 5
+            Repeater {
+                model: [{ u: 0, label: "时" }, { u: 1, label: "分" }, { u: 2, label: "秒" }]
+                delegate: Item {
+                    id: unitCol
+                    readonly property int unit: modelData.u
+                    width: 80; height: 116
+
+                    Row {
+                        anchors.top: parent.top
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        spacing: 2
+                        DigitSpin {
+                            digit: unitCol.unit === 0 ? timerHub.hT
+                                   : unitCol.unit === 1 ? timerHub.mT : timerHub.sT
+                            live: timerHub.timerIdle
+                            onStepped: function(d) { timerHub.adjustDigit(unitCol.unit, 0, d) }
+                        }
+                        DigitSpin {
+                            digit: unitCol.unit === 0 ? timerHub.hO
+                                   : unitCol.unit === 1 ? timerHub.mO : timerHub.sO
+                            live: timerHub.timerIdle
+                            onStepped: function(d) { timerHub.adjustDigit(unitCol.unit, 1, d) }
+                        }
+                    }
+                    Text {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        y: 100
+                        text: modelData.label
+                        color: "#a6ffffff"
+                        font.pixelSize: 12
+                        font.family: Theme.fontFamily
+                    }
+                }
             }
-            Text {
-                text: "提示：长按球 1.2 秒也可以退出"
-                anchors.horizontalCenter: parent.horizontalCenter
-                color: "#a6ffffff"; font.pixelSize: 15; font.family: Theme.fontFamily
+        }
+
+        Text {
+            // 只在"暂停 / 时间到"时出现，平时不占视觉
+            visible: timerHub.timerTab === 0
+                     && (timerHub.timerDone
+                         || (!timerHub.timerRunning && !timerHub.timerIdle))
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.top: timePick.bottom; anchors.topMargin: 8
+            text: timerHub.timerDone ? "时间到" : "已暂停"
+            color: timerHub.timerDone ? "#ffc27a" : "#a6ffffff"
+            font.pixelSize: 14
+            font.family: Theme.fontFamily
+        }
+
+        Row {
+            visible: timerHub.timerTab === 0
+            anchors.bottom: parent.bottom; anchors.bottomMargin: 22
+            anchors.horizontalCenter: parent.horizontalCenter
+            spacing: 12
+            CuteButton {
+                tone: "primary"
+                text: timerHub.timerRunning ? "暂停"
+                      : timerHub.timerDone ? "再来一次"
+                      : (timerHub.timerLeft > 0 && timerHub.timerLeft < timerHub.timerTotal
+                         ? "继续" : "开始")
+                implicitWidth: 128; implicitHeight: 50; fontSize: 18
+                usable: timerHub.timerTotal > 0      // 00:00:00 时不能开始
+                onClicked: {
+                    if (timerHub.timerRunning) timerHub.pauseTimer()
+                    else timerHub.startTimer()
+                }
+            }
+            CuteButton {
+                tone: "secondary"; text: "重置"
+                implicitWidth: 96; implicitHeight: 50; fontSize: 18
+                onClicked: timerHub.resetTimer()
+            }
+        }
+
+        // ── 秒表页 ──
+        // 每按一次「计次」记录"距上一次"的用时（= 一组/一轮的时间），右边小字是累计。
+        // 不同小组轮流比赛时：开始 → 每组完成按一下 → 列表里就是每组的成绩。
+        Text {
+            visible: timerHub.timerTab === 1
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.top: parent.top; anchors.topMargin: 104
+            text: timerHub.fmtSw(timerHub.swElapsed)
+            color: "#ffffff"
+            font.pixelSize: 50
+            font.bold: true
+            font.family: Theme.fontFamily
+        }
+        Row {
+            visible: timerHub.timerTab === 1
+            anchors.top: parent.top; anchors.topMargin: 168
+            anchors.horizontalCenter: parent.horizontalCenter
+            spacing: 10
+            CuteButton {
+                tone: "primary"
+                text: timerHub.swRunning ? "暂停"
+                      : (timerHub.swElapsed > 0 ? "继续" : "开始")
+                implicitWidth: 118; implicitHeight: 50; fontSize: 18
+                onClicked: timerHub.swToggle()
+            }
+            CuteButton {
+                tone: "secondary"; text: "计次"
+                implicitWidth: 96; implicitHeight: 50; fontSize: 18
+                usable: timerHub.swRunning || timerHub.swElapsed > 0
+                onClicked: timerHub.swLap()
+            }
+            CuteButton {
+                tone: "secondary"; text: "重置"
+                implicitWidth: 82; implicitHeight: 50; fontSize: 18
+                onClicked: timerHub.swReset()
+            }
+        }
+
+        Flickable {
+            id: splitView
+            visible: timerHub.timerTab === 1
+            anchors.top: parent.top; anchors.topMargin: 232
+            anchors.bottom: parent.bottom; anchors.bottomMargin: 16
+            width: parent.width - 40
+            anchors.horizontalCenter: parent.horizontalCenter
+            clip: true
+            contentWidth: width
+            contentHeight: splitCol.height
+            boundsBehavior: Flickable.StopAtBounds
+            interactive: contentHeight > height
+            Column {
+                id: splitCol
+                width: splitView.width
+                spacing: 4
+                Repeater {
+                    model: timerHub.swSplits
+                    delegate: Rectangle {
+                        width: splitCol.width; height: 30; radius: 9
+                        color: "#14ffffff"
+                        Rectangle {
+                            id: swBadge
+                            width: 20; height: 20; radius: 10
+                            anchors.left: parent.left; anchors.leftMargin: 8
+                            anchors.verticalCenter: parent.verticalCenter
+                            color: "#33ffffff"
+                            Text {
+                                anchors.centerIn: parent
+                                text: index + 1
+                                color: "#ffffff"
+                                font.pixelSize: 11; font.bold: true
+                                font.family: Theme.fontFamily
+                            }
+                        }
+                        Text {
+                            anchors.left: swBadge.right; anchors.leftMargin: 10
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: timerHub.fmtSw(modelData.seg)
+                            color: "#ffffff"
+                            font.pixelSize: 15; font.bold: true
+                            font.family: Theme.fontFamily
+                        }
+                        Text {
+                            anchors.right: parent.right; anchors.rightMargin: 10
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: "累计 " + timerHub.fmtSw(modelData.total)
+                            color: "#80ffffff"
+                            font.pixelSize: 11
+                            font.family: Theme.fontFamily
+                        }
+                    }
+                }
             }
         }
     }
 
     // ══════════════════════════════════════════════════════════
-    //  5 · 退出确认
+    //  5 · 退出软件确认
     // ══════════════════════════════════════════════════════════
     Item {
         anchors.fill: parent
@@ -643,27 +1293,83 @@ Window {
 
         Column {
             anchors.centerIn: parent
-            spacing: 20
+            spacing: 14
             Text {
-                text: "退出悬浮球？"
+                text: "退出软件？"
                 anchors.horizontalCenter: parent.horizontalCenter
                 color: "#ffffff"
-                font.pixelSize: 20; font.bold: true; font.family: Theme.fontFamily
+                font.pixelSize: 17; font.bold: true; font.family: Theme.fontFamily
             }
             Row {
                 anchors.horizontalCenter: parent.horizontalCenter
-                spacing: 18
+                spacing: 12
                 CuteButton {
                     tone: "secondary"; text: "取消"
-                    implicitWidth: 124; implicitHeight: 54; fontSize: 19
-                    onClicked: win.mode = 0
+                    implicitWidth: 80; implicitHeight: 38; fontSize: 15
+                    onClicked: win.leaveCard(0)
                 }
                 CuteButton {
                     tone: "danger"; text: "退出"
-                    implicitWidth: 124; implicitHeight: 54; fontSize: 19
-                    onClicked: floatBridge.closeBall()      // 只关悬浮球，主程序继续运行
+                    implicitWidth: 80; implicitHeight: 38; fontSize: 15
+                    onClicked: floatBridge.quitApp()      // 确认后退出整个软件
                 }
             }
+        }
+    }
+    }   // cardLayer
+
+    // 右下角缩放手柄：只在卡片态出现；拖动改 cardScale，双击复位
+    Item {
+        id: resizeGrip
+        objectName: "resizeGrip"
+        visible: win.isCard
+        width: 24; height: 24
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        anchors.rightMargin: 14
+        anchors.bottomMargin: 14
+        property real startScale: 1
+        property real startGX: 0
+        property real startGY: 0
+
+        Canvas {
+            anchors.fill: parent
+            property bool hov: gma.containsMouse
+            onHovChanged: requestPaint()
+            onPaint: {
+                var c = getContext("2d"); c.reset()
+                c.strokeStyle = "rgba(255,255,255," + (hov ? 0.85 : 0.45) + ")"
+                c.lineWidth = 1.6
+                c.lineCap = "round"
+                for (var i = 0; i < 3; i++) {
+                    var o = 6 + i * 5
+                    c.beginPath()
+                    c.moveTo(width - o, height - 2)
+                    c.lineTo(width - 2, height - o)
+                    c.stroke()
+                }
+            }
+        }
+        MouseArea {
+            id: gma
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.SizeFDiagCursor
+            onPressed: function(m) {
+                resizeGrip.startScale = win.cardScale
+                resizeGrip.startGX = win.x + resizeGrip.x + m.x
+                resizeGrip.startGY = win.y + resizeGrip.y + m.y
+            }
+            onPositionChanged: function(m) {
+                if (!pressed) return
+                var gx = win.x + resizeGrip.x + m.x
+                var gy = win.y + resizeGrip.y + m.y
+                var ns = resizeGrip.startScale
+                       + (gx - resizeGrip.startGX) / win.cardBaseW
+                       + (gy - resizeGrip.startGY) / win.cardBaseH
+                win.cardScale = Math.max(0.8, Math.min(1.3, ns))
+            }
+            onDoubleClicked: win.cardScale = 1.0
         }
     }
 
@@ -673,11 +1379,18 @@ Window {
     // ══════════════════════════════════════════════════════════
     //  业务
     // ══════════════════════════════════════════════════════════
-    function flash(t) { win.flashMsg = t; flashTimer.restart() }
+    function flash(t) { win.flashIsError = false; win.flashMsg = t; flashTimer.restart() }
+    function flashError(t) { win.flashIsError = true; win.flashMsg = t; flashTimer.restart() }
+
+    // 倒计时归零：球面进度环闪三下（计时状态本身在共享的 timerHub 里）
+    Connections {
+        target: timerHub
+        function onCountdownFinished() { ringBlink.restart() }
+    }
 
     function applyStudents(isAdd) {
-        if (!win.selStudents.length) { flash("请先点选学生"); return }
-        if (!win.cat) { flash("请先选操作分类"); return }
+        if (!win.selStudents.length) { flashError("请先点选学生"); return }
+        if (!win.cat) { flashError("请先选操作分类"); return }
         var n = pts.value
         var msg = reward.batchPointChange(win.selStudents.join(','), n, isAdd, win.cat)
         flash(msg ? msg : ((isAdd ? "＋" : "－") + n + " 分 · " + win.selStudents.length + " 人"))
@@ -702,7 +1415,7 @@ Window {
         var n = pickPts.value
         var names = []
         if (win.pickKind === 0) {
-            if (!win.cat) { flash("请先在「批量」里选一次分类"); return }
+            if (!win.cat) { flashError("请先选操作分类"); return }
             for (var i = 0; i < win.picked.length; i++) {
                 reward.pointChange(win.picked[i].id, n, isAdd, win.cat)
                 names.push(win.picked[i].name)
@@ -720,6 +1433,64 @@ Window {
     // ══════════════════════════════════════════════════════════
     //  小部件
     // ══════════════════════════════════════════════════════════
+    // 单个数字轮：▲ / 数字 / ▼。时/分/秒各两个（十位、个位），每位独立调整。
+    component DigitSpin: Item {
+        id: ds
+        property int digit: 0
+        property bool live: true
+        signal stepped(int delta)
+        width: 30; height: 96
+
+        Text {
+            anchors.horizontalCenter: parent.horizontalCenter
+            y: 0
+            text: "▲"
+            color: upHit.containsMouse && ds.live ? "#ffffff"
+                   : ds.live ? "#b8ffffff" : "#40ffffff"
+            font.pixelSize: 11
+            font.family: Theme.fontFamily
+            Behavior on color { ColorAnimation { duration: 120 } }
+        }
+        MouseArea {
+            id: upHit
+            anchors.horizontalCenter: parent.horizontalCenter
+            y: -5; width: 30; height: 30
+            hoverEnabled: true
+            enabled: ds.live
+            cursorShape: Qt.PointingHandCursor
+            onClicked: ds.stepped(1)
+        }
+        Text {
+            anchors.horizontalCenter: parent.horizontalCenter
+            y: 22
+            text: String(ds.digit)
+            color: timerHub.timerDone ? "#ffc27a" : (ds.live ? "#ffffff" : "#e6ffffff")
+            font.pixelSize: 42
+            font.bold: true
+            font.family: Theme.fontFamily
+            Behavior on color { ColorAnimation { duration: 160 } }
+        }
+        Text {
+            anchors.horizontalCenter: parent.horizontalCenter
+            y: 76
+            text: "▼"
+            color: downHit.containsMouse && ds.live ? "#ffffff"
+                   : ds.live ? "#b8ffffff" : "#40ffffff"
+            font.pixelSize: 11
+            font.family: Theme.fontFamily
+            Behavior on color { ColorAnimation { duration: 120 } }
+        }
+        MouseArea {
+            id: downHit
+            anchors.horizontalCenter: parent.horizontalCenter
+            y: 71; width: 30; height: 28
+            hoverEnabled: true
+            enabled: ds.live
+            cursorShape: Qt.PointingHandCursor
+            onClicked: ds.stepped(-1)
+        }
+    }
+
     component CardHead: Item {
         property string title: ""
         anchors.top: parent.top; anchors.topMargin: 12
@@ -737,11 +1508,13 @@ Window {
             property real bx0: 0
             property real by0: 0
             onPressed: function(m) {
-                grab = Qt.point(win.x + m.x, win.y + m.y)
+                // 卡片层被缩放过，局部坐标要乘 cardScale 才是屏幕位移
+                grab = Qt.point(win.x + m.x * win.cardScale, win.y + m.y * win.cardScale)
                 bx0 = win.ballX; by0 = win.ballY
             }
             onPositionChanged: function(m) {
-                var gx = win.x + m.x, gy = win.y + m.y
+                var gx = win.x + m.x * win.cardScale
+                var gy = win.y + m.y * win.cardScale
                 win.ballX = Math.max(0, Math.min(bx0 + (gx - grab.x), Screen.width - win.width + win.ballOffX))
                 win.ballY = Math.max(0, Math.min(by0 + (gy - grab.y), Screen.height - win.height + win.ballOffY))
             }
@@ -792,9 +1565,35 @@ Window {
     component BackBtn: Rectangle {
         id: bb
         width: 44; height: 44; radius: 22
-        color: bma.pressed ? "#40ffffff" : "#20ffffff"
-        Text { anchors.centerIn: parent; text: "‹"; font.pixelSize: 26; color: "#ffffff" }
-        MouseArea { id: bma; anchors.fill: parent; onClicked: win.mode = 1 }
+        color: bma.pressed ? "#59ffffff" : (bma.containsMouse ? "#3dffffff" : "#20ffffff")
+        Behavior on color { ColorAnimation { duration: 160; easing.type: Easing.OutQuad } }
+        // 用 Canvas 画折线箭头：字体里的"‹"有侧边距，视觉上会偏一点；
+        // 画出来的折线可以做到严格以圆心为中心
+        Canvas {
+            anchors.centerIn: parent
+            width: 20; height: 20
+            property color ink: bma.containsMouse ? "#ffffff" : "#f2ffffff"
+            onInkChanged: requestPaint()
+            onPaint: {
+                var c = getContext("2d"); c.reset()
+                c.strokeStyle = String(Qt.rgba(ink.r, ink.g, ink.b, ink.a))
+                c.lineWidth = 2.2
+                c.lineCap = "round"
+                c.lineJoin = "round"
+                c.beginPath()
+                c.moveTo(12.85, 4.4)
+                c.lineTo(7.15, 10)
+                c.lineTo(12.85, 15.6)
+                c.stroke()
+            }
+        }
+        MouseArea {
+            id: bma
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: win.leaveCard(1)
+        }
     }
 
     // 锁定开关：锁着=卡片固定在原地（防止误拖）；解锁=可按标题栏拖动
@@ -844,18 +1643,26 @@ Window {
         MouseArea {
             id: lma
             anchors.fill: parent
-            onClicked: {
-                win.cardLocked = !win.cardLocked
-                win.flash(win.cardLocked ? "已锁定位置" : "已解锁，可按标题栏拖动")
-            }
+            onClicked: win.cardLocked = !win.cardLocked
         }
     }
 
-    component FlashLine: Text {
-        text: win.flashMsg
-        visible: text !== ""
-        color: "#6ee7d0"
-        font.pixelSize: 15
-        font.family: Theme.fontFamily
+    // 提示条：错误 = 红色半透明胶囊 + 白字；普通提示 = 半透明黑胶囊 + 薄荷字。
+    // （批量没选分类时的提示就是红色胶囊，不再是孤零零一行字）
+    component FlashLine: Rectangle {
+        visible: win.flashMsg !== ""
+        width: flashLabel.implicitWidth + 30
+        height: 34
+        radius: height / 2
+        color: win.flashIsError ? "#66e06050" : "#66000000"
+
+        Text {
+            id: flashLabel
+            anchors.centerIn: parent
+            text: win.flashMsg
+            color: win.flashIsError ? "#ffffff" : "#6ee7d0"
+            font.pixelSize: 14
+            font.family: Theme.fontFamily
+        }
     }
 }

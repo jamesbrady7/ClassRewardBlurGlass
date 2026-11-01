@@ -23,6 +23,7 @@ exe = EXE(
     a.datas,
     [],
     name='ClassRewardHelperV316',
+    icon='assets/app_icon.ico',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

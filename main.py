@@ -94,17 +94,18 @@ if SYSTEM_GLASS_OK:
     if _backend:
         os.environ['QT_QUICK_BACKEND'] = _backend
 
-from PySide6.QtCore import (QAbstractNativeEventFilter, QObject, QTimer, QUrl, Slot,
-                            qInstallMessageHandler)
-from PySide6.QtGui import QGuiApplication, QSurfaceFormat, QFont, QFontDatabase
-from PySide6.QtQml import QQmlApplicationEngine
+from PySide6.QtCore import (QAbstractNativeEventFilter, QEasingCurve, QEventLoop, QObject,
+                            QPropertyAnimation, QTimer, QUrl, Slot, qInstallMessageHandler)
+from PySide6.QtGui import QGuiApplication, QIcon, QSurfaceFormat, QFont, QFontDatabase
+from PySide6.QtQml import QQmlApplicationEngine, QQmlComponent
+from PySide6.QtQuick import QQuickWindow
 
-if SYSTEM_GLASS_OK:
-    from PySide6.QtQuick import QQuickWindow
-    QQuickWindow.setDefaultAlphaBuffer(True)     # 必须在窗口创建前
-    _fmt = QSurfaceFormat()
-    _fmt.setAlphaBufferSize(8)
-    QSurfaceFormat.setDefaultFormat(_fmt)
+# 启动动画/悬浮球都需要半透明窗口；主窗口本身也是透明圆角。
+# 统一在创建任何窗口前打开 alpha（不再只限桌面穿透模式）。
+QQuickWindow.setDefaultAlphaBuffer(True)
+_fmt = QSurfaceFormat()
+_fmt.setAlphaBufferSize(8)
+QSurfaceFormat.setDefaultFormat(_fmt)
 
 from controller.app_controller import AppController
 from model.storage import StorageManager
@@ -362,6 +363,26 @@ def main():
     app = QGuiApplication(sys.argv)
     app.setApplicationName("班级激励助手")
     app.setOrganizationName("ClassReward")
+    # 让任务栏把本进程当成独立应用（否则源码运行时容易显示 Python 的图标/分组）
+    try:
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
+            "ClassRewardHelper.V316")
+    except Exception:
+        pass
+    # 应用图标（窗口 / 任务栏 / 快捷方式）：与标题栏左上角同一套 marine + 白四芒星
+    try:
+        _icon = os.path.join(_app_base(), 'assets', 'app_icon.ico')
+        if os.path.exists(_icon):
+            app.setWindowIcon(QIcon(_icon))
+    except Exception as e:
+        _log('[icon] 应用图标加载失败：%r' % (e,))
+
+    # 悬浮卡片可以整体缩放 → 文字改用曲线渲染，按矢量重绘，放大也不糊。
+    # 必须在创建任何 QQuickWindow 之前设置。
+    try:
+        QQuickWindow.setTextRenderType(QQuickWindow.CurveTextRendering)
+    except Exception as e:
+        _log('[text] 曲线文字渲染不可用：%r' % (e,))
 
     base = _app_base()
 
@@ -391,6 +412,41 @@ def main():
     engine.rootContext().setContextProperty(
         "glassThrottle",
         SYSTEM_GLASS_OK and _needs_throttle() and os.environ.get("GLASS_DRAG") != "system")
+    # 悬浮球持久化配置（卡片缩放等）：QML 在 onCompleted 里读取
+    try:
+        from float_window import FloatPrefs
+        float_prefs = FloatPrefs()
+        engine.rootContext().setContextProperty("floatPrefs", float_prefs)
+    except Exception as e:
+        _log('[float] 配置初始化失败：%r' % (e,))
+
+    # ── 启动动画窗口：先建、先上屏 ──
+    #    主界面 QML 加载要几百毫秒；这段时间让用户看到"静止的悬浮球"，
+    #    而不是空桌面/半成品窗口。主界面在它背后加载，就绪后再播点击涟漪。
+    splash = None
+    splash_comp = None
+    try:
+        splash_comp = QQmlComponent(
+            engine, QUrl.fromLocalFile(os.path.join(base, 'qml', 'Splash.qml')))
+        splash = splash_comp.create()
+        if splash is None:
+            _log('[splash] 创建失败：' + splash_comp.errorString())
+        else:
+            splash.show()
+            # 强制把第一帧（含 Canvas 画的球）渲染出来，再开始加载主界面；
+            # 否则主界面加载期间会看到一块纯黑幕布。
+            try:
+                splash.grabWindow()
+            except Exception:
+                pass
+            # ⚠️ processEvents 不驱动 QQuickWindow 的首帧；这里跑一个很短的真事件循环，
+            # 让启动幕布真正上屏后再加载主界面（加载会阻塞 UI 线程）。
+            _loop = QEventLoop()
+            QTimer.singleShot(180, _loop.quit)
+            _loop.exec()
+    except Exception as e:
+        _log('[splash] 初始化失败：%r' % (e,))
+
     engine.load(QUrl.fromLocalFile(os.path.join(base, 'qml', 'Main.qml')))
     roots = engine.rootObjects()
     if not roots:
@@ -418,6 +474,18 @@ def main():
             # pythonw 无控制台，print 到 stderr 等于把失败扔进虚空
             _log('[glass] Acrylic 应用失败：%r' % (e,))
 
+    # ── 共享计时器：主界面「工具箱」和悬浮球必须是同一个对象 ──
+    #    实例在 Main.qml 里（property timerHub），这里把它交给悬浮球窗口的
+    #    QML 作用域；必须在 FloatWindow.start()（加载悬浮球 QML）之前注册。
+    try:
+        timer_hub = roots[0].property("timerHub")
+        if timer_hub is None:
+            _log('[timer] Main.qml 未暴露 timerHub，悬浮球计时将不可用')
+        else:
+            engine.rootContext().setContextProperty('timerHub', timer_hub)
+    except Exception as e:
+        _log('[timer] 共享计时器注册失败：%r' % (e,))
+
     # ── 课堂快捷悬浮球：在主窗口之外再挂一个窗口（同进程 → 共用数据，调主界面秒开）──
     #    设置里的「退出悬浮球」只关它自己，主程序继续运行。
     try:
@@ -434,6 +502,82 @@ def main():
             _log('[float] 悬浮球已启动')
     except Exception as e:
         _log('[float] 悬浮球启动失败：%r' % (e,))
+
+    # ── 启动动画收尾：透明底悬浮球 + 点击涟漪 ──
+    #    启动页只显示球本身（透明窗口），主界面保持隐藏；
+    #    动画结束后再 show 主界面（主界面已在后台完成 QML 加载）。
+    main_win = roots[0]
+    _anim_refs = []          # QPropertyAnimation 必须持引用
+    _presented = [False]
+
+    def _fade_in_main():
+        try:
+            anim = QPropertyAnimation(main_win, b"opacity")
+            anim.setDuration(260)
+            anim.setStartValue(0.0)
+            anim.setEndValue(1.0)
+            anim.setEasingCurve(QEasingCurve.OutCubic)
+            anim.finished.connect(lambda: main_win.setOpacity(1.0))
+            _anim_refs.append(anim)
+            anim.start()
+        except Exception as e:
+            _log('[splash] 主窗口淡入失败：%r' % (e,))
+            try:
+                main_win.setOpacity(1.0)
+            except Exception:
+                pass
+
+    def _present_main():
+        if _presented[0]:
+            return
+        _presented[0] = True
+        try:
+            # 先完全透明地显示并渲染，再整体淡入：
+            # Acrylic 是窗口级效果，只把 contentItem 淡入挡不住"模糊底先出现"。
+            main_win.setOpacity(0.0)
+        except Exception as e:
+            _log('[splash] 主窗口透明起步失败：%r' % (e,))
+        try:
+            main_win.show()
+            if SYSTEM_GLASS_OK:
+                try:
+                    _apply_accent(int(main_win.winId()))
+                except Exception as e:
+                    _log('[splash] Acrylic 重应用失败：%r' % (e,))
+            main_win.raise_()
+            main_win.requestActivate()
+        except Exception as e:
+            _log('[splash] 主窗口显示失败：%r' % (e,))
+        QTimer.singleShot(140, _fade_in_main)
+
+    def _on_splash_finished():
+        _present_main()
+        # 球还在做 180ms 的淡出；主窗已在背后用 opacity=0 渲染 → 交叉过渡
+        if splash is not None:
+            QTimer.singleShot(240, lambda: splash.hide())
+
+    def _splash_fallback():
+        # 动画异常没发 finished 时兜底；正常完成后 splash 已隐藏 → 不做任何事
+        try:
+            if splash is not None and splash.isVisible():
+                _on_splash_finished()
+        except Exception:
+            pass
+
+    if splash is not None:
+        try:
+            splash.finished.connect(_on_splash_finished)
+            splash.setProperty('startRipple', True)
+            QTimer.singleShot(5000, _splash_fallback)
+        except Exception as e:
+            _log('[splash] 启动动画启动失败：%r' % (e,))
+            try:
+                splash.hide()
+            except Exception:
+                pass
+            _present_main()
+    else:
+        _present_main()
 
     sys.exit(app.exec())
 

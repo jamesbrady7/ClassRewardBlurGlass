@@ -24,12 +24,17 @@ Item {
     implicitWidth: 48
     implicitHeight: 34
 
+    // 整颗胶囊的悬停高亮（鼠标扫过胶囊任意位置都亮，160ms 渐变）
+    readonly property bool hovered: pillHover.hovered
+    HoverHandler { id: pillHover }
+
     Rectangle {
         id: pill
         anchors.fill: parent
         radius: height / 2
         // 与「操作分类」未选中按钮同款（CuteButton 次级态的 fillGlass #80ffffff）
-        color: "#80ffffff"
+        color: root.hovered ? "#a8ffffff" : "#80ffffff"
+        Behavior on color { ColorAnimation { duration: 160; easing.type: Easing.OutQuad } }
 
         // 左：数值，撑到加减区左边并居中
         Text {

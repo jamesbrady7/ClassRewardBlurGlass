@@ -10,11 +10,11 @@
 import ctypes
 import os
 
-from PySide6.QtCore import QObject, QUrl, Slot
-from PySide6.QtGui import QRegion
+from PySide6.QtCore import Property, QObject, QSettings, QUrl, Slot
+from PySide6.QtGui import QGuiApplication, QRegion
 
-# 与 FloatBall.qml 里保持一致的两组几何
-BALL_OFF = (140, 150)
+# 与 FloatBall.qml 里保持一致的两组几何（球/气泡态是 340 方窗、球居中）
+BALL_OFF = (120, 120)
 BALL_SIZE = 100
 BUBBLE_OFFS = [(-74, 74), (-105, 0), (-74, -74), (0, -105)]
 BUBBLE_SIZE = 68
@@ -24,29 +24,84 @@ def _circle(cx, cy, r):
     return QRegion(int(cx - r), int(cy - r), int(2 * r), int(2 * r), QRegion.Ellipse)
 
 
-class _FloatBridge(QObject):
-    """给悬浮球 QML 用的"回主程序"接口。"""
+class FloatPrefs(QObject):
+    """悬浮球的持久化小配置（目前只有卡片缩放），走 QSettings，重启后恢复。"""
 
-    def __init__(self, main_win, parent=None):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._s = QSettings()
+
+    @Property(float, constant=True)
+    def cardScale(self):
+        try:
+            return max(0.8, min(1.3, float(self._s.value("float/cardScale", 1.0))))
+        except Exception:
+            return 1.0
+
+    @Slot(float)
+    def saveCardScale(self, v):
+        try:
+            self._s.setValue("float/cardScale", max(0.8, min(1.3, float(v))))
+            self._s.sync()
+        except Exception:
+            pass
+
+
+class _FloatBridge(QObject):
+    """给悬浮球 QML / 主界面 QML 用的模式切换接口。
+
+    真正的窗口操作在 FloatWindow 上（遮罩、窗口可见性都归它管），这里只做转发；
+    owner 为空时（_float_test.py 独立跑）退化成"只管这一个窗口"的简单行为。
+    """
+
+    def __init__(self, main_win, owner=None, parent=None):
         super().__init__(parent)
         self._main = main_win
+        self._owner = owner
         self.win = None
 
     @Slot()
-    def showMain(self):
-        """气泡①「软件主界面」：把主窗口调出来（同进程，秒开）"""
-        w = self._main
-        if w is None:
+    def enterFloatMode(self):
+        """主界面左下角「进入悬浮球模式」：收起主窗口，只把球浮在桌面最上层。"""
+        if self._owner is not None:
+            self._owner.enter_float_mode()
             return
-        w.show()
-        w.raise_()
-        w.requestActivate()
+        w = self.win
+        if w is not None:
+            w.show()
+            w.raise_()
+
+    @Slot()
+    def showMain(self):
+        """气泡①「软件主界面」：回到主窗口（同进程，秒开），并把球收起来。"""
+        if self._owner is not None:
+            self._owner.return_to_main()
+            return
+        if self.win is not None:
+            self.win.hide()
 
     @Slot()
     def closeBall(self):
-        """设置/长按确认里的「退出」：只关悬浮球，主程序继续跑"""
+        """设置/长按确认里的「退出」：退出悬浮球模式，回到主程序。
+
+        主程序场景 = 收起球并把主窗口放回来（主窗口可能正被悬浮球模式藏着）；
+        独立测试场景没有主窗口 → 直接关掉，避免留下一个没有入口的空进程。
+        """
+        if self._owner is not None:
+            self._owner.return_to_main()
+            return
         if self.win is not None:
             self.win.close()
+
+    @Slot()
+    def quitApp(self):
+        """关闭气泡里的「退出」：确认后退出整个软件（主程序 + 悬浮球）。
+
+        直接 quit，不再走主窗口的关闭确认——用户在悬浮球里已经确认过一次了。
+        """
+        app = QGuiApplication.instance()
+        if app is not None:
+            app.quit()
 
 
 class FloatWindow:
@@ -55,8 +110,62 @@ class FloatWindow:
     def __init__(self, engine, base_dir, main_win):
         self._engine = engine
         self._base = base_dir
-        self._bridge = _FloatBridge(main_win)
+        self._main = main_win
+        self._bridge = _FloatBridge(main_win, owner=self)
         self.win = None
+        # 同一使用期间记住球的位置：回主界面时存，再次进入时恢复（不跨进程持久化）
+        self._ball_pos = None
+
+    # ── 模式切换（主界面左下角按钮 / 球上的气泡）──
+    def enter_float_mode(self):
+        """收起主窗口，只留球。"""
+        self._show_ball()
+        if self._main is not None:
+            self._main.hide()
+
+    def return_to_main(self):
+        """回到主窗口，并把球收起来。"""
+        w = self._main
+        if w is None:
+            return
+        w.show()
+        w.raise_()
+        w.requestActivate()
+        self._hide_ball()
+
+    def _show_ball(self):
+        w = self.win
+        if w is None:
+            return
+        # 清掉上次长按残留的进度环状态，否则重新出现时会闪一下"进度条读完"的球
+        try:
+            w.setProperty("holdP", 0)
+        except Exception:
+            pass
+        # 恢复到回主界面之前的位置（同一使用期间一致；不跨进程持久化）
+        if self._ball_pos is not None:
+            try:
+                w.setProperty("ballX", self._ball_pos[0])
+                w.setProperty("ballY", self._ball_pos[1])
+            except Exception:
+                pass
+        # 上次退出时停在卡片页的话，下次进来要从"球"开始（否则一进来就是设置页）
+        w.setProperty("mode", 0)
+        w.show()
+        w.raise_()
+        self._apply_mask()
+
+    def _hide_ball(self):
+        w = self.win
+        if w is None:
+            return
+        # 记住球当前的位置；下次 _show_ball 原样恢复
+        try:
+            self._ball_pos = (float(w.property("ballX")), float(w.property("ballY")))
+        except Exception:
+            pass
+        w.setProperty("mode", 0)      # 下次进来从球态开始
+        w.hide()
 
     def start(self, no_activate=True, hide_taskbar=True):
         # ⚠️ 必须在 load **之前**设好：窗口创建后再改 flags 会让 Qt 重建窗口（遮罩会丢）
@@ -90,6 +199,12 @@ class FloatWindow:
             win.heightChanged.connect(self._apply_mask)
         except Exception:
             pass
+        # 悬浮球现在是"进入悬浮球模式"才出现的形态：启动时先收起，
+        # 不跟主界面抢屏（主窗口左下角的按钮负责把它叫出来）。
+        try:
+            win.hide()
+        except Exception:
+            pass
         return True
 
     def _apply_mask(self):
@@ -101,12 +216,21 @@ class FloatWindow:
             mode = int(win.property("maskMode") or 0)
             bx = BALL_OFF[0] + BALL_SIZE // 2
             by = BALL_OFF[1] + BALL_SIZE // 2
+            # 窗口遮罩始终按球的边缘（52）；涟漪的同心圆裁切只在 QML Canvas 里做，
+            # 绝不能把窗口遮罩缩到球以内，否则连悬浮球本身都会被切。
             if mode == 0:
                 reg = _circle(bx, by, BALL_SIZE // 2 + 2)
             elif mode == 1:
                 reg = _circle(bx, by, BALL_SIZE // 2 + 2)
+                # 气泡可能镜像到另一侧（球靠近屏幕边时），遮罩要跟着同一组符号走
+                try:
+                    sx = 1 if int(win.property("bubbleSignX") or 1) >= 0 else -1
+                    sy = 1 if int(win.property("bubbleSignY") or 1) >= 0 else -1
+                except Exception:
+                    sx, sy = 1, 1
                 for ox, oy in BUBBLE_OFFS:
-                    reg = reg.united(_circle(bx + ox, by + oy, BUBBLE_SIZE // 2 + 2))
+                    reg = reg.united(_circle(bx + ox * sx, by + oy * sy,
+                                             BUBBLE_SIZE // 2 + 2))
             else:
                 reg = QRegion(0, 0, int(win.width()), int(win.height()))
             win.setMask(reg)

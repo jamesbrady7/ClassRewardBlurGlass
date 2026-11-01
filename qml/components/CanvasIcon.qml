@@ -151,6 +151,40 @@ Canvas {
             ctx.beginPath(); ctx.arc(12, 12, 1.4, 0, Math.PI * 2); ctx.fill()
             ctx.beginPath(); ctx.arc(18, 12, 1.4, 0, Math.PI * 2); ctx.fill()
             break
+        // ── 工具箱 / 计时 ──
+        case "toolbox":
+            // 工具箱：箱体 + 提手 + 中间锁扣
+            rrect(ctx, 4.2, 9.8, 15.6, 10.0, 2.2); ctx.stroke()
+            ctx.beginPath()
+            ctx.moveTo(9.2, 9.8); ctx.lineTo(9.2, 7.8)
+            ctx.quadraticCurveTo(9.2, 6.5, 10.5, 6.5)
+            ctx.lineTo(13.5, 6.5)
+            ctx.quadraticCurveTo(14.8, 6.5, 14.8, 7.8)
+            ctx.lineTo(14.8, 9.8)
+            ctx.stroke()
+            ctx.beginPath(); ctx.moveTo(12, 12.2); ctx.lineTo(12, 15.0); ctx.stroke()
+            break
+        case "clock":
+            // 表盘 + 表冠 + 两根指针（与悬浮球里的线稿表同笔触）
+            ctx.beginPath(); ctx.arc(12, 12.8, 7.4, 0, Math.PI * 2); ctx.stroke()
+            ctx.beginPath(); ctx.moveTo(10.6, 5.4); ctx.lineTo(13.4, 5.4); ctx.stroke()
+            ctx.beginPath()
+            ctx.moveTo(12, 12.8); ctx.lineTo(12, 8.8)
+            ctx.moveTo(12, 12.8); ctx.lineTo(15.0, 14.2)
+            ctx.stroke()
+            break
+        case "stopwatch":
+            // 秒表：表盘 + 顶部按钮 + 指针
+            ctx.beginPath(); ctx.arc(12, 13.4, 7.2, 0, Math.PI * 2); ctx.stroke()
+            ctx.beginPath()
+            ctx.moveTo(12, 6.2); ctx.lineTo(12, 4.2)
+            ctx.moveTo(10.2, 4.2); ctx.lineTo(13.8, 4.2)
+            ctx.stroke()
+            ctx.beginPath()
+            ctx.moveTo(12, 13.2); ctx.lineTo(12, 9.6)
+            ctx.moveTo(12, 13.2); ctx.lineTo(14.6, 14.6)
+            ctx.stroke()
+            break
         case "trophy":
             ctx.beginPath()
             ctx.moveTo(8.2, 5); ctx.lineTo(15.8, 5); ctx.lineTo(15.8, 9.8)

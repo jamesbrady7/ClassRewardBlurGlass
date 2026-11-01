@@ -24,7 +24,8 @@ Item {
         { icon: "sliders", soft: "#e5effc", deep: "#4a7fd6" },   // 批量操作
         { icon: "gift",    soft: "#fde9f2", deep: "#c85f96" },   // 积分商店
         { icon: "check",   soft: "#fdf3e0", deep: "#c08a2e" },   // 每日历史
-        { icon: "chart",   soft: "#e9f3f6", deep: "#3f7f96" }    // 数据分析
+        { icon: "chart",   soft: "#e9f3f6", deep: "#3f7f96" },   // 数据分析
+        { icon: "toolbox", soft: "#eceef3", deep: "#5f6b85" }    // 工具箱
     ]
 
     // ── 毛玻璃外壳（本应用的内容区没有外层玻璃面板，导航自带一块）──
