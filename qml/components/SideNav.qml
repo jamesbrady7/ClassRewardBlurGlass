@@ -14,7 +14,7 @@ Item {
     // 点亮/熄灭时长：700ms InOutQuad = 能看清"由暗到明"的过程，像拧调光旋钮
     property int rampMs: 700
     property real hoverLit: 0.48        // 悬停档位（点击=1，静止=0）
-    property int hoverRampMs: 500       // 悬停"点亮"单独用更短时长（滑过时亮得快一点）
+    property int hoverRampMs: 110       // 悬停点亮：要"扫过就亮"，所以很短（点击填满仍走 rampMs=700）
 
     // 每个 tab 的图标与配色（icon 取自 CanvasIcon 的矢量图标集）
     readonly property var metas: [
@@ -58,6 +58,11 @@ Item {
 
                 width: parent.width
                 height: 44
+                // 悬停：整项放大一点（scale 不影响 Column 布局，只做视觉）
+                scale: navItem.hovered ? 1.045 : 1.0
+                Behavior on scale {
+                    NumberAnimation { duration: 170; easing.type: Easing.OutBack; easing.overshoot: 1.6 }
+                }
 
                 // 灯从玻璃后亮起：用**两条各自固定时长的动画**取大（不是一个会变的 duration）
                 property real hoverP: 0
