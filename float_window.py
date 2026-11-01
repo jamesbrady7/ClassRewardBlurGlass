@@ -118,10 +118,20 @@ class FloatWindow:
 
     # ── 模式切换（主界面左下角按钮 / 球上的气泡）──
     def enter_float_mode(self):
-        """收起主窗口，只留球。"""
+        """收起主窗口，只留球。
+
+        ⚠️ 只有**确认球已经真的显示出来**才收起主窗口：
+        否则一旦悬浮球窗口出问题（QML 加载失败 → win 为空、或被系统拒绝显示），
+        主窗口一隐藏，"最后一个窗口关闭" → 整个应用直接退出，用户看到的就是"进了悬浮球模式就没了"。
+        """
         self._show_ball()
-        if self._main is not None:
+        shown = self.win is not None and self.win.isVisible()
+        print('[float] 进入悬浮球模式：球可见=%s' % shown, flush=True)
+        if self._main is not None and shown:
             self._main.hide()
+        elif self._main is not None:
+            # 球没起来 → 主窗口保持在前，至少还能用；并把问题写进日志
+            print('[float] 悬浮球未能显示，保持主窗口（不收起）', flush=True)
 
     def return_to_main(self):
         """回到主窗口，并把球收起来。"""
@@ -131,6 +141,9 @@ class FloatWindow:
         w.show()
         w.raise_()
         w.requestActivate()
+        if not w.isVisible():
+            print('[float] 主窗口未能显示，保留悬浮球', flush=True)
+            return
         self._hide_ball()
 
     def _show_ball(self):
