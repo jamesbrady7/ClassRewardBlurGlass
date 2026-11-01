@@ -58,11 +58,6 @@ Item {
 
                 width: parent.width
                 height: 44
-                // 悬停：整项放大一点（scale 不影响 Column 布局，只做视觉）
-                scale: navItem.hovered ? 1.045 : 1.0
-                Behavior on scale {
-                    NumberAnimation { duration: 170; easing.type: Easing.OutBack; easing.overshoot: 1.6 }
-                }
 
                 // 灯从玻璃后亮起：用**两条各自固定时长的动画**取大（不是一个会变的 duration）
                 property real hoverP: 0
@@ -123,9 +118,18 @@ Item {
                 }
 
                 Row {
-                    anchors.fill: parent
+                    id: navContent
+                    anchors.left: parent.left
                     anchors.leftMargin: 10
+                    anchors.verticalCenter: parent.verticalCenter
                     spacing: 10
+                    // **只放大图标和文字**（发光底/按钮本体保持原尺寸）：
+                    //   悬停 1.05 → 点击选中 1.10（"点完比悬停再大一点"）
+                    scale: navItem.selected ? 1.10
+                         : (navItem.hovered ? 1.05 : 1.0)
+                    Behavior on scale {
+                        NumberAnimation { duration: 160; easing.type: Easing.OutBack; easing.overshoot: 1.7 }
+                    }
 
                     Rectangle {      // 图标方片（与原型同尺寸同圆角）
                         anchors.verticalCenter: parent.verticalCenter
