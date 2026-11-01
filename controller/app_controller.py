@@ -242,11 +242,11 @@ class AppController:
         return msg
 
     # ---- 积分商店 ----
-    def add_reward(self, name, cost, cat='普通', desc=''):
+    def add_reward(self, name, cost, cat='普通'):
         """添加奖品"""
         cls=self.current_class()
         if not cls: return None
-        r=Reward(name=name,cost=cost,category=cat,description=desc)
+        r=Reward(name=name,cost=cost,category=cat)
         cls.rewards.append(r); self.save(); return r
 
     def delete_reward(self, rid):

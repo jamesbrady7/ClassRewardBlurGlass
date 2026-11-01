@@ -287,7 +287,7 @@ class RewardBridge(QObject):
         if not cls:
             return []
         return [{'id': r.id, 'name': r.name, 'cost': r.cost, 'category': r.category,
-                 'desc': r.description, 'blindExcluded': r.blind_box_excluded}
+                 'blindExcluded': r.blind_box_excluded}
                 for r in cls.rewards]
 
     # ============================================================

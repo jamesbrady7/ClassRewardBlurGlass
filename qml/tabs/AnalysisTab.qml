@@ -13,8 +13,10 @@ Column {
 
     property var items: {
         if (root.mode === "all") return reward.analysis
+        // ⚠️ 必须比**内部 id**：onPicked 传进来的是 id（s1788…），
+        //    原来拿它跟学号 a.studentId（"01"）比 → 永远匹配不上 → 选完人一片空白。
         var q = root.query.trim()
-        return reward.analysis.filter(function(a) { return a.studentId === q })
+        return reward.analysis.filter(function(a) { return a.id === q })
     }
 
     // ── 图表刻度的"全班组量级" ─────────────────────────────

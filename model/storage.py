@@ -96,5 +96,4 @@ class StorageManager:
             # 补全奖品字段
             for reward in klass.rewards:
                 if not hasattr(reward, 'category') or not reward.category: reward.category = '普通'
-                if not hasattr(reward, 'description'): reward.description = ''
                 if not hasattr(reward, 'blind_box_excluded'): reward.blind_box_excluded = False

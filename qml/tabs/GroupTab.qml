@@ -206,7 +206,7 @@ Flickable {
                         Text {
                             visible: model.mcount === 0
                             width: parent.width
-                            text: "暂无组员（花名册右键学生 → 移到本组）"
+                            text: "暂无组员"
                             color: Theme.textMuted
                             font.pixelSize: Theme.fontSmall
                             font.family: Theme.fontFamily

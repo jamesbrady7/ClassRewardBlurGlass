@@ -83,7 +83,6 @@ Column {
                                 root.resolveStu()
                             } }
                     }
-                    Text { text: "低分同学更容易被抽到"; color: Theme.textMuted; font.pixelSize: Theme.fontSmall; font.family: Theme.fontFamily }
                 }
             }
 
@@ -103,7 +102,7 @@ Column {
                         width: parent.width
                         spacing: 6
                         Text {
-                            text: root.stuResult.length ? "抽中结果 · 按上方分值给所选学生加/减分" : "点击上方「抽取」开始抽学生"
+                            text: root.stuResult.length ? "抽中结果" : ""
                             width: parent.width - 150
                             elide: Text.ElideRight
                             color: Theme.textMuted
@@ -186,7 +185,6 @@ Column {
                         Item { width: 1; height: 1 }
                         CuteButton { tone: "pink"; text: "抽取"; onClicked: root.grpResult = reward.randomPickGroups(groupCount.value) }
                     }
-                    Text { text: "随机选出表现好的小队"; color: Theme.textMuted; font.pixelSize: Theme.fontSmall; font.family: Theme.fontFamily }
                 }
             }
 
@@ -206,7 +204,7 @@ Column {
                         width: parent.width
                         spacing: 6
                         Text {
-                            text: root.grpResult.length ? "抽中结果" : "点击上方「抽取」开始抽小组"
+                            text: root.grpResult.length ? "抽中结果" : ""
                             width: parent.width - 150
                             elide: Text.ElideRight
                             color: Theme.textMuted

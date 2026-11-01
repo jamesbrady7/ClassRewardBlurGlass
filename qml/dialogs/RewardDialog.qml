@@ -57,7 +57,6 @@ Modal {
                     }
                 }
             }
-            Field { id: descField; label: "奖励描述（可选）" }
             Row {
                 width: parent.width
                 spacing: 10
@@ -65,7 +64,7 @@ Modal {
                 CuteButton { text: "取消"; onClicked: root.hide() }
                 CuteButton { tone: "primary"; text: "保存"; onClicked: {
                     if (nameField.text.trim())
-                        reward.addReward(nameField.text.trim(), costStepper.value, root.cat, descField.text.trim())
+                        reward.addReward(nameField.text.trim(), costStepper.value, root.cat)
                     root.hide()
                 } }
             }

@@ -230,30 +230,27 @@ class Reward:
       name:               奖品名称
       cost:               需要的积分
       category:           稀有度等级（普通/稀有/史诗/传说）
-      description:        奖品说明
       blind_box_excluded: 如果为True，这个奖品不会出现在盲盒抽奖池中
     """
     def __init__(self, name, cost, category='普通',
-                 description='', blind_box_excluded=False, rid=''):
+                 blind_box_excluded=False, rid=''):
         if not rid:
             rid = 'r' + str(int(time.time() * 1000)) + uuid.uuid4().hex[:4]
         self.id = rid
         self.name = name
         self.cost = cost
         self.category = category
-        self.description = description
         self.blind_box_excluded = blind_box_excluded
 
     def to_dict(self):
         return {'id': self.id, 'name': self.name, 'cost': self.cost,
-                'category': self.category, 'description': self.description,
+                'category': self.category,
                 'blindBoxExcluded': self.blind_box_excluded}
 
     @classmethod
     def from_dict(cls, d):
         return cls(name=d.get('name', ''), cost=d.get('cost', 0),
                    category=d.get('category', '普通'),
-                   description=d.get('description', ''),
                    blind_box_excluded=d.get('blindBoxExcluded', False),
                    rid=d.get('id', ''))
 

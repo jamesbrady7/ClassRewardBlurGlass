@@ -368,14 +368,6 @@ Window {
                                           : "无"
                     }
                 }
-                Item { width: 16; height: 1 }
-                Text {
-                    text: "✨ 每周更新"
-                    anchors.verticalCenter: parent.verticalCenter
-                    color: Theme.textMuted
-                    font.pixelSize: Theme.fontSmall
-                    font.family: Theme.fontFamily
-                }
             }
 
             // ===== 页面宿主（8 页，交叉淡化切换）=====
