@@ -40,6 +40,11 @@ Canvas {
     onCategoriesChanged: requestPaint()
     onClassMaxChanged: requestPaint()
     Component.onCompleted: requestPaint()
+    // ⚠️ 必须补这两条：首帧可能发生在布局给出尺寸之前（宽度还是 0），
+    //    那样画布画了个空，而后续只有数据/主题变化才重绘 → 永远空白。
+    //    列表里**第一张卡**最容易踩到（卡片尚未完成布局就创建了），表现为"只有第一个学生的图不见"。
+    onWidthChanged: requestPaint()
+    onHeightChanged: requestPaint()
 
     onPaint: {
         var ctx = getContext("2d")
