@@ -127,8 +127,14 @@ Item {
                     //   悬停 1.05 → 点击选中 1.10（"点完比悬停再大一点"）
                     scale: navItem.selected ? 1.10
                          : (navItem.hovered ? 1.05 : 1.0)
+                    // 丝滑：拉长到 260ms + 只留一点点过冲（1.7→1.15）——
+                    // 原来 160ms 配 1.7 的过冲太冲，读起来是"弹一下"而不是"顺过去"
                     Behavior on scale {
-                        NumberAnimation { duration: 160; easing.type: Easing.OutBack; easing.overshoot: 1.7 }
+                        NumberAnimation {
+                            duration: 260
+                            easing.type: Easing.OutBack
+                            easing.overshoot: 1.15
+                        }
                     }
 
                     Rectangle {      // 图标方片（与原型同尺寸同圆角）
