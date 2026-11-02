@@ -129,12 +129,13 @@ Item {
                         width: 26; height: 26
                         radius: 8
                         color: navItem.meta.soft
-                        // 图标**单独**放大：比文字幅度大、带一点点过冲
-                        scale: navItem.selected ? 1.16 : (navItem.hovered ? 1.10 : 1.0)
+                        // 图标：两段（悬停一档 → 点选再一档），幅度只比文字略大一点，
+                        // 免得图标吃掉全部的"放大感"；360ms + 极小过冲 = 顺而不僵
+                        scale: navItem.selected ? 1.12 : (navItem.hovered ? 1.07 : 1.0)
                         Behavior on scale {
-                            NumberAnimation { duration: 240
+                            NumberAnimation { duration: 360
                                               easing.type: Easing.OutBack
-                                              easing.overshoot: 1.2 }
+                                              easing.overshoot: 1.06 }
                         }
                         CanvasIcon {
                             anchors.centerIn: parent
@@ -145,10 +146,11 @@ Item {
                     }
                     Text {           // 板块名：颜色 + 字重随选中变
                         anchors.verticalCenter: parent.verticalCenter
-                        // 文字**单独**放大：幅度比图标小、而且更平滑（不带过冲）
-                        scale: navItem.selected ? 1.06 : (navItem.hovered ? 1.03 : 1.0)
+                        // 文字：两段，幅度提到几乎和图标同一量级（这样"字放大"才看得出来）；
+                        // 360ms OutCubic 无过冲 —— 和图标只差一点回弹，层次还在但不抢戏
+                        scale: navItem.selected ? 1.10 : (navItem.hovered ? 1.04 : 1.0)
                         Behavior on scale {
-                            NumberAnimation { duration: 210; easing.type: Easing.OutCubic }
+                            NumberAnimation { duration: 360; easing.type: Easing.OutCubic }
                         }
                         text: root.titles[index]
                         font.pixelSize: 15
