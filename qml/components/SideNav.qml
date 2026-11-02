@@ -148,7 +148,7 @@ Item {
                         anchors.verticalCenter: parent.verticalCenter
                         // 文字：两段，幅度提到几乎和图标同一量级（这样"字放大"才看得出来）；
                         // 360ms OutCubic 无过冲 —— 和图标只差一点回弹，层次还在但不抢戏
-                        scale: navItem.selected ? 1.10 : (navItem.hovered ? 1.04 : 1.0)
+                        scale: navItem.selected ? 1.13 : (navItem.hovered ? 1.06 : 1.0)
                         Behavior on scale {
                             NumberAnimation { duration: 460; easing.type: Easing.OutCubic }
                         }
