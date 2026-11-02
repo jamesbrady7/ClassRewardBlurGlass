@@ -150,8 +150,8 @@ Item {
 
                 Row {
                     id: navContent
-                    anchors.left: parent.left
-                    anchors.leftMargin: 10
+                    // 图标 + 标题作为整体在导航条里居中（所有标题列宽相同，所以整组宽一致）
+                    anchors.horizontalCenter: parent.horizontalCenter
                     anchors.verticalCenter: parent.verticalCenter
                     spacing: 10
 
