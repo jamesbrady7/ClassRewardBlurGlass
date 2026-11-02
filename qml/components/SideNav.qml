@@ -126,21 +126,21 @@ Item {
 
                     Rectangle {      // 图标方片（与原型同尺寸同圆角）
                         anchors.verticalCenter: parent.verticalCenter
-                        width: 26; height: 26
-                        radius: 8
+                        width: 24; height: 24          // 静止态略小（原 26）；放大后仍是原来的观感尺寸
+                        radius: 7
                         color: navItem.meta.soft
                         // 图标：两段（悬停一档 → 点选再一档），幅度只比文字略大一点，
                         // 免得图标吃掉全部的"放大感"；360ms + 极小过冲 = 顺而不僵
-                        scale: navItem.selected ? 1.12 : (navItem.hovered ? 1.07 : 1.0)
+                        scale: navItem.selected ? 1.21 : (navItem.hovered ? 1.16 : 1.0)
                         Behavior on scale {
-                            NumberAnimation { duration: 360
+                            NumberAnimation { duration: 460
                                               easing.type: Easing.OutBack
                                               easing.overshoot: 1.06 }
                         }
                         CanvasIcon {
                             anchors.centerIn: parent
                             name: navItem.meta.icon
-                            width: 15; height: 15
+                            width: 14; height: 14
                             color: navItem.meta.deep
                         }
                     }
@@ -150,7 +150,7 @@ Item {
                         // 360ms OutCubic 无过冲 —— 和图标只差一点回弹，层次还在但不抢戏
                         scale: navItem.selected ? 1.10 : (navItem.hovered ? 1.04 : 1.0)
                         Behavior on scale {
-                            NumberAnimation { duration: 360; easing.type: Easing.OutCubic }
+                            NumberAnimation { duration: 460; easing.type: Easing.OutCubic }
                         }
                         text: root.titles[index]
                         font.pixelSize: 15
