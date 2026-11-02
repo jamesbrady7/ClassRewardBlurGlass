@@ -131,7 +131,7 @@ Item {
                         color: navItem.meta.soft
                         // 图标：两段（悬停一档 → 点选再一档），幅度只比文字略大一点，
                         // 免得图标吃掉全部的"放大感"；360ms + 极小过冲 = 顺而不僵
-                        scale: navItem.selected ? 1.21 : (navItem.hovered ? 1.16 : 1.0)
+                        scale: navItem.selected ? 1.21 : (navItem.hovered ? 1.07 : 1.0)
                         Behavior on scale {
                             NumberAnimation { duration: 460
                                               easing.type: Easing.OutBack
