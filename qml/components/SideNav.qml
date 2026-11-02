@@ -41,6 +41,19 @@ Item {
         shadowColor: "#33202830"
     }
 
+    // 隐藏的量尺：取**最长标题**（四个字）在选中字重下的宽度。
+    // 所有 tab 的文字列都按这个宽度排 → 三字/四字标题占同样的宽度，右边缘也对齐。
+    Text {
+        id: titleMeasure
+        visible: false
+        text: root.titles.reduce(function(a, b) {
+            return (b && b.length > (a ? a.length : 0)) ? b : a
+        }, "")
+        font.pixelSize: 15
+        font.family: Theme.fontFamily
+        font.weight: Font.DemiBold        // 选中态最宽，按它量
+    }
+
     Column {
         anchors.fill: parent
         anchors.topMargin: 10
@@ -153,6 +166,8 @@ Item {
                             NumberAnimation { duration: 460; easing.type: Easing.OutCubic }
                         }
                         text: root.titles[index]
+                        width: titleMeasure.implicitWidth      // 统一列宽（按最长标题）
+                        elide: Text.ElideRight
                         font.pixelSize: 15
                         font.family: Theme.fontFamily
                         // 只有**选中**才加粗；未选中用常规字重（原来写 Medium 会显得整体都偏粗）
