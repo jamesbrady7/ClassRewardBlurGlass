@@ -16,6 +16,10 @@ Item {
     property real hoverLit: 0.48        // 悬停档位（点击=1，静止=0）
     property int hoverRampMs: 110       // 悬停点亮：要"扫过就亮"，所以很短（点击填满仍走 rampMs=700）
 
+    // 图标+标题整组相对正中的左偏量（px）：0=完全居中(左缘约42)，10=略偏左(左缘约32)。
+    // 想更靠左就加大（如 16/20），想更居中就减小。
+    property int contentLeftBias: 10
+
     // 每个 tab 的图标与配色（icon 取自 CanvasIcon 的矢量图标集）
     readonly property var metas: [
         { icon: "user",    soft: "#fdeee1", deep: "#d0803f" },   // 花名册
@@ -150,8 +154,9 @@ Item {
 
                 Row {
                     id: navContent
-                    // 图标 + 标题作为整体在导航条里居中（所有标题列宽相同，所以整组宽一致）
+                    // 图标 + 标题作为整体、比正中略偏左（所有标题列宽相同，所以整组宽一致）
                     anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.horizontalCenterOffset: -root.contentLeftBias
                     anchors.verticalCenter: parent.verticalCenter
                     spacing: 10
 
