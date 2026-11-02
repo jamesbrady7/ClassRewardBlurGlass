@@ -42,7 +42,7 @@ Item {
     }
 
     // 隐藏的量尺：取**最长标题**（四个字）在选中字重下的宽度。
-    // 所有 tab 的文字列都按这个宽度排 → 三字/四字标题占同样的宽度，右边缘也对齐。
+    // 它既是文字列的固定宽度，也是三字标题要"撑满"的目标宽度。
     Text {
         id: titleMeasure
         visible: false
@@ -52,6 +52,15 @@ Item {
         font.pixelSize: 15
         font.family: Theme.fontFamily
         font.weight: Font.DemiBold        // 选中态最宽，按它量
+    }
+
+    // 三字标题在四字列宽里做**分散对齐**（字距撑开，左右两端都对齐）。
+    // 只固定列宽、文字仍左对齐时，三字看上去还是窄的 —— 所以必须真的加字距。
+    readonly property real titleColumnWidth: titleMeasure.implicitWidth
+    function fillSpacing(naturalWidth, text) {
+        var n = text ? text.length : 0
+        if (n < 2 || naturalWidth <= 0) return 0
+        return Math.max(0, (root.titleColumnWidth - naturalWidth) / (n - 1))
     }
 
     Column {
@@ -130,6 +139,15 @@ Item {
                     }
                 }
 
+                // 当前标题在常规字重下的自然宽度 → 用来算"撑满四字宽度"的字距
+                TextMetrics {
+                    id: titleMetrics
+                    text: root.titles[index]
+                    font.pixelSize: 15
+                    font.family: Theme.fontFamily
+                    font.weight: Font.Normal
+                }
+
                 Row {
                     id: navContent
                     anchors.left: parent.left
@@ -166,8 +184,10 @@ Item {
                             NumberAnimation { duration: 460; easing.type: Easing.OutCubic }
                         }
                         text: root.titles[index]
-                        width: titleMeasure.implicitWidth      // 统一列宽（按最长标题）
-                        elide: Text.ElideRight
+                        width: root.titleColumnWidth          // 统一列宽（按最长标题）
+                        // 三字标题加字距撑满四字宽度 → 三字/四字左右边缘都对齐
+                        font.letterSpacing: root.fillSpacing(titleMetrics.advanceWidth, text)
+                        elide: Text.ElideNone
                         font.pixelSize: 15
                         font.family: Theme.fontFamily
                         // 只有**选中**才加粗；未选中用常规字重（原来写 Medium 会显得整体都偏粗）
