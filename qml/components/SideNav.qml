@@ -123,25 +123,19 @@ Item {
                     anchors.leftMargin: 10
                     anchors.verticalCenter: parent.verticalCenter
                     spacing: 10
-                    // **只放大图标和文字**（发光底/按钮本体保持原尺寸）：
-                    //   悬停 1.05 → 点击选中 1.10（"点完比悬停再大一点"）
-                    scale: navItem.selected ? 1.10
-                         : (navItem.hovered ? 1.05 : 1.0)
-                    // 丝滑：拉长到 260ms + 只留一点点过冲（1.7→1.15）——
-                    // 原来 160ms 配 1.7 的过冲太冲，读起来是"弹一下"而不是"顺过去"
-                    Behavior on scale {
-                        NumberAnimation {
-                            duration: 260
-                            easing.type: Easing.OutBack
-                            easing.overshoot: 1.15
-                        }
-                    }
 
                     Rectangle {      // 图标方片（与原型同尺寸同圆角）
                         anchors.verticalCenter: parent.verticalCenter
                         width: 26; height: 26
                         radius: 8
                         color: navItem.meta.soft
+                        // 图标**单独**放大：比文字幅度大、带一点点过冲
+                        scale: navItem.selected ? 1.16 : (navItem.hovered ? 1.10 : 1.0)
+                        Behavior on scale {
+                            NumberAnimation { duration: 240
+                                              easing.type: Easing.OutBack
+                                              easing.overshoot: 1.2 }
+                        }
                         CanvasIcon {
                             anchors.centerIn: parent
                             name: navItem.meta.icon
@@ -151,6 +145,11 @@ Item {
                     }
                     Text {           // 板块名：颜色 + 字重随选中变
                         anchors.verticalCenter: parent.verticalCenter
+                        // 文字**单独**放大：幅度比图标小、而且更平滑（不带过冲）
+                        scale: navItem.selected ? 1.06 : (navItem.hovered ? 1.03 : 1.0)
+                        Behavior on scale {
+                            NumberAnimation { duration: 210; easing.type: Easing.OutCubic }
+                        }
                         text: root.titles[index]
                         font.pixelSize: 15
                         font.family: Theme.fontFamily
