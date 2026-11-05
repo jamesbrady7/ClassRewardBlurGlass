@@ -203,6 +203,7 @@ class Group:
       id:            唯一ID
       name:          小组名称，如"探索组"
       direct_points: 直接给小组的加分（不算学生个人分）
+      transactions:  直接给小组加减分的流水（带时间戳，供"每日历史"按日期汇总）
     """
     def __init__(self, name, direct_points=0, gid=''):
         if not gid:
@@ -210,13 +211,20 @@ class Group:
         self.id = gid
         self.name = name
         self.direct_points = direct_points
+        # 小组直接分也记流水，否则历史页无法知道"哪天给哪个组加了多少"。
+        # 旧数据没有这个键 → from_dict 默认空列表，向后兼容。
+        self.transactions = []
 
     def to_dict(self):
-        return {'id': self.id, 'name': self.name, 'directPoints': self.direct_points}
+        return {'id': self.id, 'name': self.name, 'directPoints': self.direct_points,
+                'transactions': [t.to_dict() for t in self.transactions]}
 
     @classmethod
     def from_dict(cls, d):
-        return cls(name=d.get('name', ''), direct_points=d.get('directPoints', 0), gid=d.get('id', ''))
+        g = cls(name=d.get('name', ''), direct_points=d.get('directPoints', 0),
+                gid=d.get('id', ''))
+        g.transactions = [Transaction.from_dict(t) for t in d.get('transactions', [])]
+        return g
 
 
 # ============================================================
@@ -368,24 +376,27 @@ def get_default_rewards():
     生成默认的16个奖品列表。
     这是程序内置的奖品，用户后面可以自己添加或删除。
     """
+    # ⚠️ Reward(name, cost, category, blind_box_excluded, rid) 没有"描述"参数；
+    #    曾把说明文字当第 4 个位置参数传进来 → 被当成 blind_box_excluded，
+    #    且最后一条再加 keyword 直接 TypeError（全新机器首次运行就崩）。
     return [
-        Reward('英语课换座券', 5, '普通', '换同桌体验，一节课的新鲜感。'),
-        Reward('问题转移券', 5, '普通', '巧妙化解提问尴尬。'),
-        Reward('听写预知券', 5, '普通', '提前知道3个词，满分更容易。'),
-        Reward('水火救援券', 5, '普通', '英雄救美（同学）的好机会。'),
-        Reward('夸夸券', 5, '普通', '让爸妈听到老师的表扬，全家开心。'),
-        Reward('免死金牌', 10, '稀有', '一次"免罪"机会，护身符般存在。'),
-        Reward('有福同享券', 10, '稀有', '和朋友分享快乐，友谊加倍。'),
-        Reward('作业减半券', 10, '稀有', '少写一半作业，省时又省力。'),
-        Reward('免背书券', 10, '稀有', '逃过一次背诵，轻松过关。'),
-        Reward('班干部体验券', 10, '稀有', '当一天小干部，过把"官瘾"。'),
-        Reward('谈心沟通券', 10, '稀有', '和老师一对一聊心事。'),
-        Reward('小组加分券', 15, '史诗', '直接给小组加5分。'),
-        Reward('心愿券', 15, '史诗', '打电话给爸妈，实现一个小愿望！'),
-        Reward('作业免除券', 15, '史诗', '这次的英语作业不用做啦！'),
-        Reward('双倍积分卡', 15, '史诗', '使用后一周内所有加分翻倍。'),
-        Reward('提早下课券', 20, '传说', '提前5分钟下课！（需老师同意）'),
-        Reward('盲盒券', 10, '稀有', '随机抽取一张奖励。', blind_box_excluded=True),
+        Reward('英语课换座券', 5, '普通'),
+        Reward('问题转移券', 5, '普通'),
+        Reward('听写预知券', 5, '普通'),
+        Reward('水火救援券', 5, '普通'),
+        Reward('夸夸券', 5, '普通'),
+        Reward('免死金牌', 10, '稀有'),
+        Reward('有福同享券', 10, '稀有'),
+        Reward('作业减半券', 10, '稀有'),
+        Reward('免背书券', 10, '稀有'),
+        Reward('班干部体验券', 10, '稀有'),
+        Reward('谈心沟通券', 10, '稀有'),
+        Reward('小组加分券', 15, '史诗'),
+        Reward('心愿券', 15, '史诗'),
+        Reward('作业免除券', 15, '史诗'),
+        Reward('双倍积分卡', 15, '史诗'),
+        Reward('提早下课券', 20, '传说'),
+        Reward('盲盒券', 10, '稀有', blind_box_excluded=True),
     ]
 
 

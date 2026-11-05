@@ -6,3 +6,9 @@ _s*/
 _base_shots/
 _glasschk*
 __pycache__/
+
+# 打包产物（体积大，不进版本库；exe 单独发布）
+build/
+dist/
+_backup_before_pull/
+_build.log

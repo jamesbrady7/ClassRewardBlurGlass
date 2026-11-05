@@ -75,7 +75,8 @@ Column {
                         PointsPill { id: stuCount; from: 1; to: 50; value: 3 }
                         Text { text: "名学生"; anchors.verticalCenter: parent.verticalCenter; color: Theme.textSecondary; font.family: Theme.fontFamily }
                         Item { width: 1; height: 1 }
-                        CuteButton { tone: "primary"; text: "抽取"; onClicked: {
+                        // 抽取：原型长条按钮 39（薄荷柔光）
+                        CuteButton { tone: "primary"; fillScheme: "mintdrift"; text: "抽取"; onClicked: {
                                 var r = reward.randomPickStudents(stuCount.value)
                                 var ids = []
                                 for (var m = 0; m < r.length; m++) ids.push(r[m].id)
@@ -183,7 +184,8 @@ Column {
                         PointsPill { id: groupCount; from: 1; to: 20; value: 1 }
                         Text { text: "个小组"; anchors.verticalCenter: parent.verticalCenter; color: Theme.textSecondary; font.family: Theme.fontFamily }
                         Item { width: 1; height: 1 }
-                        CuteButton { tone: "pink"; text: "抽取"; onClicked: root.grpResult = reward.randomPickGroups(groupCount.value) }
+                        // 抽取：原型长条按钮 39（薄荷柔光）
+                        CuteButton { tone: "pink"; fillScheme: "mintdrift"; text: "抽取"; onClicked: root.grpResult = reward.randomPickGroups(groupCount.value) }
                     }
                 }
             }
@@ -268,11 +270,10 @@ Column {
         Repeater {
             model: reward.categories
             delegate: CuteButton {
-                // ⚠️ 原来写的是 soft / secondary —— CuteButton 里 filled = tone!=="secondary"
-                //    && tone!=="soft"，**这两档都是未填充的玻璃**，选中与未选中长得一模一样，
-                //    所以点了看着"无法选中"（数据分析的「全班」按钮当初也是这个坑）。
-                //    改成 primary（实色），与批量操作页的分类标签完全一致。
-                tone: root.cat === modelData ? "primary" : "secondary"
+                // 选中 = 白色高亮面（近实白 + 深字），未选 = 半透明白玻璃。
+                // 与批量操作页的分类标签完全一致。
+                tone: "secondary"
+                whiteHighlight: root.cat === modelData
                 text: modelData
                 anchors.verticalCenter: parent.verticalCenter
                 onClicked: root.cat = modelData

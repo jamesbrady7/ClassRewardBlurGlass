@@ -6,6 +6,9 @@ import QtQuick
 //         "azure" 蓝白光心(35) | "mist" 雾面青粉(36) | "dream" 紫蓝幻彩(37)
 //         "scarlet" 正红黑晕 | "peacock" 孔雀粉紫 | "marine" 蓝潮薄荷心 | "kaleido" 紫蓝青湖杂糅
 //         "crimson" 深红黑晕(黑更大胆) | "aurora" 极光杂糅(黑多+浅色过渡)
+//         原型长条按钮色： "butterblush"(20 嫩黄橘粉) | "mintcyan"(21 薄荷青绿)
+//                       "aquarose"(22 水红浅青) | "sunsetcream"(24 橘黄水红)
+//                       "mintdrift"(39 薄荷柔光)
 Canvas {
     id: root
     property string scheme: "mint"
@@ -21,6 +24,9 @@ Canvas {
     readonly property bool lightFace: scheme === "mint" || scheme === "soda"
                                       || scheme === "azure" || scheme === "mist"
                                       || scheme === "marine" || scheme === "mintblue"
+                                      || scheme === "butterblush" || scheme === "mintcyan"
+                                      || scheme === "aquarose" || scheme === "sunsetcream"
+                                      || scheme === "mintdrift"
 
     onSchemeChanged: requestPaint()
     onHoveredChanged: requestPaint()
@@ -255,6 +261,62 @@ Canvas {
                     [0.28, 0.72, 0.24, "#2a0a72", 0.45],   // 左下：给图标垫对比
                     [0.74, 0.82, 0.32, "#2a0a72", 0.60],   // 右下主暗块
                     [0.48, 1.20, 0.40, "#120230", 0.76]    // 底部近黑紫
+                ]
+            }
+        // 20：嫩黄 × 浅橘粉 × 白 × 可爱粉（原型长条按钮）
+        if (scheme === "butterblush")
+            return {
+                stops: [["0", "#ffeda8"], ["0.5", "#ffd3ae"], ["1", "#ffaec8"]],
+                blobs: [
+                    [0.12, 0.14, 0.40, "#ffe27a", 0.66],   // 嫩黄（左）
+                    [0.48, 0.62, 0.44, "#ffb882", 0.60],   // 浅橘粉（中下）
+                    [0.90, 0.45, 0.44, "#ff94be", 0.62],   // 可爱粉（右）
+                    [0.55, 1.00, 0.40, "#ffffff", 0.68]    // 白：底部中和
+                ]
+            }
+        // 21：薄荷蓝 × 青 × 白 × 嫩绿（原型长条按钮）
+        if (scheme === "mintcyan")
+            return {
+                stops: [["0", "#a6dcf0"], ["0.5", "#8ee0e4"], ["1", "#a6e6b6"]],
+                blobs: [
+                    [0.12, 0.14, 0.40, "#7accee", 0.64],   // 薄荷蓝（左）
+                    [0.48, 0.62, 0.44, "#54d8e2", 0.58],   // 青（中下）
+                    [0.90, 0.45, 0.44, "#86df9c", 0.60],   // 嫩绿（右）
+                    [0.55, 1.00, 0.40, "#ffffff", 0.70]    // 白：底部中和
+                ]
+            }
+        // 22：浅水红 × 浅青 × 白 × 浅紫（原型长条按钮）
+        if (scheme === "aquarose")
+            return {
+                stops: [["0", "#ffb6ae"], ["0.5", "#a6e0e6"], ["1", "#b9b0f0"]],
+                blobs: [
+                    [0.12, 0.14, 0.40, "#ff8a7e", 0.62],   // 浅水红（左）
+                    [0.48, 0.62, 0.44, "#6fd8d4", 0.58],   // 浅青（中下）
+                    [0.90, 0.45, 0.44, "#a292ec", 0.62],   // 浅紫（右）
+                    [0.55, 1.00, 0.40, "#ffffff", 0.72]    // 白：底部中和
+                ]
+            }
+        // 24：浅粉橘 × 嫩黄 × 浅水红 × 白（原型长条按钮）
+        if (scheme === "sunsetcream")
+            return {
+                stops: [["0", "#ffcf9a"], ["0.5", "#ffb09a"], ["1", "#ffe28a"]],
+                blobs: [
+                    [0.12, 0.14, 0.40, "#ff8a7e", 0.62],   // 浅水红（左）
+                    [0.48, 0.62, 0.44, "#ffb27a", 0.62],   // 浅粉橘（中下）
+                    [0.90, 0.45, 0.44, "#ffe06e", 0.66],   // 嫩黄（右）
+                    [0.55, 1.00, 0.40, "#ffffff", 0.68]    // 白：底部中和
+                ]
+            }
+        // 39：薄荷蓝 × 青 × 嫩绿，白柔光主导（原型长条按钮中间档）
+        if (scheme === "mintdrift")
+            return {
+                stops: [["0", "#cfeee4"], ["0.5", "#c3e9ee"], ["1", "#c9efcf"]],
+                blobs: [
+                    [0.10, 0.42, 0.38, "#8fd4ea", 0.54],   // 薄荷蓝（左）
+                    [0.50, 0.75, 0.42, "#7fdce0", 0.50],   // 青（中下）
+                    [0.90, 0.42, 0.38, "#9ae2ac", 0.50],   // 嫩绿（右）
+                    [0.45, 0.20, 0.42, "#ffffff", 0.62],   // 白：上中
+                    [0.60, 1.00, 0.34, "#ffffff", 0.50]    // 白：底部
                 ]
             }
         // 默认 mint：薄荷 × 紫 × 粉（初版定稿）

@@ -96,6 +96,7 @@ Column {
         Item { width: 1; height: 1 }
         CuteButton {
             tone: "primary"
+            fillScheme: "aquarose"          // 原型长条按钮 22（水红浅青）
             text: "＋ 新增奖励"
             anchors.verticalCenter: parent.verticalCenter
             onClicked: mainWin.dlgReward.openDialog()
@@ -157,6 +158,7 @@ Column {
                 Item { width: 1; height: 1 }
                 CuteButton {
                     tone: "primary"
+                    fillScheme: "aquarose"      // 原型长条按钮 22（水红浅青）
                     text: "兑换"
                     implicitWidth: 64
                     implicitHeight: 30
@@ -209,6 +211,7 @@ Column {
         }
         CuteButton {
             tone: "primary"
+            fillScheme: "sunsetcream"       // 原型长条按钮 24（橘黄水红）
             text: "兑换盲盒"
             anchors.right: parent.right; anchors.rightMargin: 12
             anchors.verticalCenter: parent.verticalCenter

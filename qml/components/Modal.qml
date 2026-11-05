@@ -72,7 +72,9 @@ Rectangle {
                 // 原来是自绘的 28px 圆角方块 + 文字"✕"，观感和主界面不搭。
                 CircleButton {
                     size: 30
-                    raised: true
+                    // 弹窗面板是浅色半透明：raised 的白色外球会把 × 洗淡/看起来缺一截，
+                    // 这里用普通玻璃圆面 + 深色 ×，保证图标完整清晰
+                    raised: false
                     shadow: false
                     icon: "close"
                     onClicked: root.hide()

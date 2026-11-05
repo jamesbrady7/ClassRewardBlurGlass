@@ -170,22 +170,8 @@ Column {
                         contentHeight: height
                         clip: true
                         boundsBehavior: Flickable.StopAtBounds
-                        // 细而淡的滚动条：3px 圆角、半透明白；默认样式又粗又带箭头，很土
-                        ScrollBar.horizontal: ScrollBar {
-                            id: hbar
-                            policy: ScrollBar.AsNeeded
-                            background: Rectangle {
-                                implicitHeight: 3
-                                radius: 1.5
-                                color: "#26ffffff"
-                            }
-                            contentItem: Rectangle {
-                                implicitHeight: 3
-                                radius: 1.5
-                                color: hbar.pressed ? "#8cffffff" : "#66ffffff"
-                                Behavior on color { ColorAnimation { duration: 120 } }
-                            }
-                        }
+                        // 与全站一致的细圆角滚动条（静止隐藏，滑动时出现）
+                        ScrollBar.horizontal: ThinScrollBar { orientation: Qt.Horizontal }
                         TrendChart {
                             id: trendChart
                             width: trendScroll.contentWidth

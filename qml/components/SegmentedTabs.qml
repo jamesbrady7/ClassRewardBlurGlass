@@ -103,13 +103,31 @@ Item {
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     acceptedButtons: Qt.LeftButton | Qt.RightButton
+
+                    // 触摸屏没有右键：长按 = 弹出改名/删除菜单。
+                    // `holdMenu` 用来吞掉长按松手后紧跟的那次 clicked，避免"开了菜单又切了班级"。
+                    property int lastButton: 0
+                    property bool holdMenu: false
+
                     onPressed: function(m) {
+                        lastButton = m.button
                         // 右键：交给页面弹班级菜单（改名/删除）——原型没有这个，是本应用原有的能力
                         if (m.button === Qt.RightButton)
                             root.rightClicked(tab.index, tab)
                     }
+                    onPressAndHold: {
+                        // 触摸/鼠标左键长按（触摸事件在 Qt 里合成为左键）
+                        if (lastButton === Qt.LeftButton) {
+                            holdMenu = true
+                            root.rightClicked(tab.index, tab)
+                        }
+                    }
+                    onCanceled: holdMenu = false
+                    // 长按后松手可能不产生 clicked（例如被菜单抢走焦点）→ 兜底重置
+                    onReleased: Qt.callLater(function() { holdMenu = false })
                     onClicked: function(m) {
                         if (m.button !== Qt.LeftButton) return   // 右键不切页
+                        if (holdMenu) { holdMenu = false; return } // 长按菜单：不切页
                         root.currentIndex = tab.index
                         root.activated(tab.index)
                     }

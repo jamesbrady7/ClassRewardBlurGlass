@@ -89,6 +89,7 @@ ColumnLayout {
 
         CuteButton {
             tone: "primary"
+            fillScheme: "mintcyan"          // 原型长条按钮 21（薄荷青绿）
             text: "＋ 添加学生"
             height: 34
             onClicked: mainWin.dlgStudent.openDialog("")
@@ -153,13 +154,12 @@ ColumnLayout {
                 spacing: 8
 
                 // 姓名的首字圆（Avatar）已去掉：姓名就在右边，圆里那个字没带任何信息
-                // 学号：**无底色 + 透白描边**（原来是 accentSoft 实底）。
-                // 底色留空让玻璃卡透上来，靠一圈亮边把它和卡片分开。
+                // 学号：半透明克莱因蓝胶囊 + 白字（Klein blue = RGB(0,0,255)，约 50% 不透明）
                 Pill {
                     text: "#" + card.student.studentId
-                    bg: "transparent"
-                    fg: Theme.accentDark
-                    borderColor: Theme.chipFace
+                    bg: "#800000ff"
+                    fg: "#ffffff"
+                    borderColor: "transparent"
                     bold: true
                     anchors.verticalCenter: parent.verticalCenter
                 }
@@ -171,24 +171,21 @@ ColumnLayout {
                     font.family: Theme.fontFamily
                     anchors.verticalCenter: parent.verticalCenter
                 }
-                // 分组：**透白底 + 无边框**（原来是 blueSoft 实底）
-                // 用 chipFace 而不是 glassIdle：卡片本身已经是 30% 白，再叠 33% 白等于没变；
-                // chipFace（白天 85% / 夜间 17%）才压得出层次，且昼夜都有对应值。
+                // 分组：浅粉红底 + 深粉字（groupPillBg / pinkDeep；昼夜各有对应值）
                 Pill {
                     text: card.student.group
-                    bg: Theme.chipFace
-                    fg: Theme.blue
+                    bg: Theme.groupPillBg
+                    fg: Theme.pinkDeep
                     borderColor: "transparent"
                     anchors.verticalCenter: parent.verticalCenter
                 }
 
-                // 总分 / 可用分：**透白玻璃胶囊 + 无边框**（原来是纯白实底 + 灰边，
-                // 是整行唯一的实心盒子，跟旁边的玻璃胶囊不是一套）。
+                // 总分 / 可用分：**半透明白胶囊 + 无边框**（fillGlass：白 50%，不是近实白）。
                 // 配色：总分=中性深灰（只读的累计值）、可用=主题青绿加粗（能花的钱，全行唯一强调色）。
                 Rectangle {
                     height: 34
                     radius: Theme.radiusPill
-                    color: Theme.chipFace
+                    color: Theme.fillGlass
                     width: scoreRow.implicitWidth + 26
                     anchors.verticalCenter: parent.verticalCenter
                     Row {
@@ -200,7 +197,7 @@ ColumnLayout {
                             anchors.verticalCenter: parent.verticalCenter
                             Text {
                                 text: "总分"
-                                color: Theme.textMuted
+                                color: "#000000"
                                 font.pixelSize: 9
                                 font.family: Theme.fontFamily
                                 anchors.horizontalCenter: parent.horizontalCenter
@@ -219,7 +216,7 @@ ColumnLayout {
                             anchors.verticalCenter: parent.verticalCenter
                             Text {
                                 text: "可用"
-                                color: Theme.textMuted
+                                color: "#000000"
                                 font.pixelSize: 9
                                 font.family: Theme.fontFamily
                                 anchors.horizontalCenter: parent.horizontalCenter

@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Controls
 import "../components"
 
 // 小组排行榜：顶部领奖台（纯展示前三名）；下方所有小组平铺成方块。
@@ -8,6 +9,7 @@ Flickable {
     clip: true
     contentWidth: width
     contentHeight: col.implicitHeight
+    ScrollBar.vertical: ThinScrollBar {}
 
     // ===== 数据同步：把 bridge 的 groups 增量搬进本地 ListModel =====
     // ⚠️ 为什么不用 `model: reward.groups`：
@@ -75,7 +77,8 @@ Flickable {
 
     Column {
         id: col
-        width: root.width
+        // 右侧留 14px 给自动隐藏的滚动条，避免细条压在小组成绩卡上
+        width: root.width - 14
         spacing: 12
 
         // ===== 标题行（新建小组在右）=====
@@ -151,7 +154,7 @@ Flickable {
 
         // ===== 全部小组方块（含前三名）=====
         Text {
-            text: "全部小组（右键小组可改名/删除）"
+            text: "全部小组（右键 / 长按小组可改名、删除）"
             color: Theme.textSecondary
             font.pixelSize: Theme.fontBody
             font.bold: true
@@ -174,6 +177,13 @@ Flickable {
                     borderColor: "transparent"
                     shadow: true
                     liftOnHover: true
+
+                    // 触摸屏没有右键：长按小组卡片 = 弹出改名/删除菜单。
+                    // 用 TapHandler（不是 MouseArea）：不会抢走卡片里 +/− 按钮和滑块的正常点击。
+                    TapHandler {
+                        acceptedButtons: Qt.LeftButton
+                        onLongPressed: mainWin.openGroupMenu(gCard, model.gid, model.name)
+                    }
 
                     // 组员(学号+姓名)全量展示：卡片随组员行数自动长高，不裁剪
                     Column {
@@ -258,7 +268,8 @@ Flickable {
                             }
                             Item { width: 2; height: 1 }
                             // 与批量操作完全同款：加分 / 扣分 文字按钮（原来是自己画的两个圆钮）
-                            CuteButton { tone: "primary"; text: "加分"; anchors.verticalCenter: parent.verticalCenter; onClicked: reward.addGroupPoints(model.gid, gCard.val) }
+                            // 加分：原型长条按钮 21（薄荷青绿）
+                            CuteButton { tone: "primary"; fillScheme: "mintcyan"; text: "加分"; anchors.verticalCenter: parent.verticalCenter; onClicked: reward.addGroupPoints(model.gid, gCard.val) }
                             CuteButton { tone: "danger"; text: "扣分"; anchors.verticalCenter: parent.verticalCenter; onClicked: reward.subtractGroupPoints(model.gid, gCard.val) }
                         }
                     }

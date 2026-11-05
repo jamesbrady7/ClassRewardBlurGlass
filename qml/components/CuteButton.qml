@@ -8,6 +8,11 @@ Item {
     id: root
 
     property string tone: "secondary"
+    // 显式指定渐变方案（优先于 tone）：如原型长条按钮的 "butterblush"(20) / "mintcyan"(21)
+    // / "aquarose"(22) / "sunsetcream"(24)，配色见 IridescentFill.pal()
+    property string fillScheme: ""
+    // 白色高亮面：用于"标签维度"这类只需要选中高亮、不要彩色面的次级按钮
+    property bool whiteHighlight: false
     property string text: ""
     property real fontSize: Theme.fontBody
     property bool usable: true
@@ -16,8 +21,9 @@ Item {
     implicitWidth: txt.implicitWidth + 40
     implicitHeight: 38
 
-    // tone → 原型的 scheme（未列出的 tone 走默认 mint）
-    readonly property string scheme: tone === "pink" ? "orchid"
+    // tone → 原型的 scheme（未列出的 tone 走默认 mint）；fillScheme 显式指定时优先
+    readonly property string scheme: root.fillScheme !== "" ? root.fillScheme
+                                    : tone === "pink" ? "orchid"
                                     : tone === "blue" ? "marine"
                                     : tone === "danger" ? "scarlet"
                                     : "mint"
@@ -48,7 +54,10 @@ Item {
         anchors.fill: parent
         radius: height / 2
         opacity: root.filled ? 0 : 1
-        color: hovered ? "#bdffffff" : "#80ffffff"
+        // 白色高亮 = 近乎实白（原型 CheckPill 选中态 0.9 白的同款做法）；
+        // 普通次级 = 半透明白玻璃（悬停再提亮一档）
+        color: root.whiteHighlight ? (hovered ? "#ffffffff" : "#f2ffffff")
+                                   : (hovered ? "#bdffffff" : "#80ffffff")
         Behavior on color { ColorAnimation { duration: 140 } }
         Behavior on opacity { NumberAnimation { duration: 140 } }
     }
@@ -70,7 +79,9 @@ Item {
         text: root.text
         anchors.centerIn: parent
         // 浅色面上白字对比不足 → 用深字（与原型同一条规则，由 IridescentFill.lightFace 判定）
-        color: root.filled ? (fill.lightFace ? "#3f4660" : "#ffffff") : Theme.textPrimary
+        // 白色高亮面同理：夜晚主题 textPrimary 是浅色，落在白面上会糊掉 → 固定深字
+        color: root.filled ? (fill.lightFace ? "#3f4660" : "#ffffff")
+                           : (root.whiteHighlight ? "#3f4660" : Theme.textPrimary)
         font.pixelSize: root.fontSize
         font.weight: Font.DemiBold
         font.family: Theme.fontFamily

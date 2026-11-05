@@ -48,6 +48,45 @@ Window {
                                     : mode === 3 ? 430
                                     : mode === 6 ? 400 : 132
     property real cardScale: 1.0
+    // 本次会话的卡片锚点（屏幕坐标，右下角）：
+    //   第一次打开卡片 → 以球心居中并夹回屏幕，随后把这次卡片的右下角记为锚点；
+    //   之后打开其它卡片 → 右边/下边对齐锚点；拖动/缩放卡片会更新锚点。
+    //   卡片与球从此不再位置绑定；重启程序时这些属性随 QML 一起重置。
+    property bool cardAnchorValid: false
+    property real cardAnchorX: 0
+    property real cardAnchorY: 0
+    // 卡片标题拖动中：直接移动窗口，不改 ballX/ballY
+    property bool draggingCard: false
+    property real _cardDragX: 0
+    property real _cardDragY: 0
+    property real _cardDragGrabX: 0
+    property real _cardDragGrabY: 0
+    property real _cardDragStartX: 0
+    property real _cardDragStartY: 0
+    // 屏幕可用边界：底部留 48px 给任务栏（和悬浮球默认位置同一策略）
+    readonly property real _screenL: Screen.virtualX
+    readonly property real _screenT: Screen.virtualY
+    readonly property real _screenR: Screen.virtualX + Screen.width
+    readonly property real _screenB: Screen.virtualY + Screen.height - 48
+    function clampCardX(v) { return Math.max(_screenL, Math.min(v, _screenR - width)) }
+    function clampCardY(v) { return Math.max(_screenT, Math.min(v, _screenB - height)) }
+    // 球心的屏幕坐标（ballX/ballY 是球左上角，球 100）
+    readonly property real ballCenterX: ballX + 50
+    readonly property real ballCenterY: ballY + 50
+    // 缩放手势进行中：冻结窗口左上角，避免 x/y 绑定"以球心为中心"跟着尺寸一起移动。
+    // 原实现里窗口一边变大、手柄一边跟着窗口跑，缩放公式又用会移动的坐标 → 正反馈抖动。
+    // 缩放规则：卡片**出现时**以球心为中心（见下面的 x 绑定）；
+    // 一旦开始拖右下角缩放，就按标准窗口逻辑——除右下角外**左上角固定不动**，
+    // 不再为了贴屏幕边而移动窗口（那会让整卡看起来在围着球心缩放）。
+    property bool resizingCard: false
+    property real _rsWinX: 0      // 手势开始时的窗口左上角（缩放期间固定）
+    property real _rsWinY: 0
+    property real _rsCurX: 0
+    property real _rsCurY: 0
+    property real _rsStartScale: 1
+    // 最小缩放：原最小 0.8 的 60%，即再小 40%
+    readonly property real minCardScale: 0.48
+    property int _rsTicks: 0
     Component.onCompleted: {
         if (typeof floatPrefs !== 'undefined' && floatPrefs)
             win.cardScale = floatPrefs.cardScale
@@ -62,14 +101,63 @@ Window {
                 floatPrefs.saveCardScale(win.cardScale)
         }
     }
+    // 缩放手势结束：把球心平移到新卡片中心，再解除左上角冻结。
+    // 这样 x/y 绑定重新接管时算出来仍是同一个位置，窗口不会在松手瞬间跳一下。
+    function finishResize() {
+        if (!resizingCard) return
+        // 卡片位置由右下角锚点定义：缩放保持左上角不动，结束后把锚点更新为新右下角；
+        // 悬浮球位置完全不动。
+        cardAnchorX = win.x + win.width
+        cardAnchorY = win.y + win.height
+        cardAnchorValid = true
+        resizingCard = false
+    }
+    // 松手/取消：最后补齐一次光标位置再收尾
+    function endResize() {
+        if (resizingCard) {
+            console.log("[resize] end scale=" + cardScale.toFixed(3)
+                        + " win=" + Math.round(win.x) + "," + Math.round(win.y)
+                        + " " + Math.round(win.width) + "x" + Math.round(win.height)
+                        + " ticks=" + _rsTicks)
+        }
+        finishResize()
+    }
+    // 按"屏幕光标的绝对位置"计算缩放；只读冻结的起点，不读会移动的窗口/手柄坐标。
+    // 标准窗口缩放：左上角固定，只让右下角跟着光标；不因贴屏幕边而移动窗口。
+    function applyResize(cx, cy) {
+        if (!resizingCard) return
+        var dsx = (cx - _rsCurX) / cardBaseW
+        var dsy = (cy - _rsCurY) / cardBaseH
+        // 两轴**相加**会让斜拖时的缩放速度翻倍（窗口跑得比鼠标快，看起来不跟手）。
+        // 取相对位移更大的那个轴作为驱动：横拖跟鼠标 X，竖拖跟鼠标 Y，
+        // 斜拖时谁占比大听谁的——这是等比缩放窗口的标准手感。
+        var ds = Math.abs(dsx) >= Math.abs(dsy) ? dsx : dsy
+        cardScale = Math.max(minCardScale, Math.min(1.3, _rsStartScale + ds))
+        var w = cardBaseW * cardScale
+        var h = cardBaseH * cardScale
+        _rsTicks++
+        // 诊断日志：每 15 帧记一次（约 4 次/秒）
+        if (_rsTicks % 15 === 1) {
+            console.log("[resize] tick=" + _rsTicks + " cursor=" + Math.round(cx) + "," + Math.round(cy)
+                        + " scale=" + cardScale.toFixed(3)
+                        + " win=" + Math.round(_rsWinX) + "," + Math.round(_rsWinY)
+                        + " " + Math.round(w) + "x" + Math.round(h))
+        }
+    }
     // 球/气泡态用 340×340 的方窗，球居中 → 气泡可以按球的屏幕位置往四个方向翻
     width: mode <= 1 ? 340 : cardBaseW * cardScale
     height: mode <= 1 ? 340 : cardBaseH * cardScale
 
     // ── 球在屏幕上的位置（唯一真源；窗口位置由它 + 形态偏移推出）──
-    // 默认：屏幕右边、任务栏上沿（desktopAvailableHeight 已排除任务栏）
-    property real ballX: Math.max(0, Screen.width - 100)
-    property real ballY: Math.max(0, Screen.desktopAvailableHeight - 100)
+    // 默认：当前屏幕右下角、任务栏上沿。
+    // ⚠️ 必须带 Screen.virtualX/Y，而且高度用 Screen.height 而不是 desktopAvailableHeight：
+    //    后者在多屏时是整个虚拟桌面的尺寸（本机 1920），会把球放到主屏下方/副屏上，
+    //    进入悬浮球后看到的就是"位置奇怪、被裁错"的样子。
+    //    48px 是任务栏留白；球本身在 340 窗口内，窗口超出屏幕的部分由遮罩裁掉。
+    property real ballX: Math.max(Screen.virtualX,
+                                  Screen.virtualX + Screen.width - 100)
+    property real ballY: Math.max(Screen.virtualY,
+                                  Screen.virtualY + Screen.height - 100 - 48)
 
     // 球在窗口内的偏移：球态/气泡态=(120,120)（340 方窗正中，气泡可向四边镜像）；
     // 卡片态=让卡片**中心落在球心上** → 小窗口就出现在球的位置，而不是从球往左上展开
@@ -79,10 +167,37 @@ Window {
     // 气泡弹出方向：只在球贴左/上边时镜像到右边/下边。
     // ⚠️ 右/下边不要再镜像——镜像会把整组推向更没空间的一侧（之前往下拖时
     //    气泡反而继续往下跑、越拖越看不见的根因）。
-    readonly property int bubbleSignX: (ballX + 50 < 140) ? -1 : 1
-    readonly property int bubbleSignY: (ballY + 50 < 140) ? -1 : 1
-    onBubbleSignXChanged: win.maskVersion++
-    onBubbleSignYChanged: win.maskVersion++
+    // 气泡镜像阈值必须相对**当前屏幕**的左/上边（球坐标是虚拟桌面坐标）。
+    readonly property int bubbleSignX: (ballX + 50 < Screen.virtualX + 140) ? -1 : 1
+    readonly property int bubbleSignY: (ballY + 50 < Screen.virtualY + 140) ? -1 : 1
+    onBubbleSignXChanged: {
+        console.log("[float] bubbleSignX -> " + bubbleSignX + " ballX=" + Math.round(ballX))
+        win.maskVersion++
+    }
+    onBubbleSignYChanged: {
+        console.log("[float] bubbleSignY -> " + bubbleSignY + " ballY=" + Math.round(ballY))
+        win.maskVersion++
+    }
+
+    // 屏幕/DPI 变化时重算窗口遮罩。
+    // 悬浮球被拖到 125%/150% 的副屏（学校投影常见）后，原生遮罩仍可能按旧 DPR
+    // 解释，表现就是"圆形左上角 + 非圆区域"这种裁错的样子；强制重设一次。
+    Connections {
+        target: Screen
+        function onDevicePixelRatioChanged() {
+            console.log("[float] screen dpr -> " + Screen.devicePixelRatio
+                        + " (" + Screen.name + ")")
+            win.maskVersion++
+        }
+        function onVirtualXChanged() {
+            console.log("[float] screen vx -> " + Screen.virtualX + " (" + Screen.name + ")")
+            win.maskVersion++
+        }
+        function onVirtualYChanged() {
+            console.log("[float] screen vy -> " + Screen.virtualY + " (" + Screen.name + ")")
+            win.maskVersion++
+        }
+    }
 
     // 四个气泡的图标固定顺序（从上到下）：计时器 → 批量 → 随机 → 关闭
     readonly property var bubbleIcons: [
@@ -110,13 +225,33 @@ Window {
         return arr
     }
 
-    // 窗口位置 = 球的位置 − 球在窗口内的偏移。
-    // 球/气泡态**不夹屏幕边界**：球要能拖到任意边缘，窗口超出屏幕的部分由遮罩/透明区域处理；
-    // 卡片态才夹回屏内（卡片内容必须完整可见）。
-    x: mode <= 1 ? Math.round(ballX - ballOffX)
-                 : Math.round(Math.max(0, Math.min(ballX - ballOffX, Screen.width - width)))
-    y: mode <= 1 ? Math.round(ballY - ballOffY)
-                 : Math.round(Math.max(0, Math.min(ballY - ballOffY, Screen.height - height)))
+    // 窗口位置：
+    //   球/气泡态 = 球的位置 − 球在窗口内的偏移（不夹屏，超出部分由遮罩处理）；
+    //   卡片态 = 本次会话的右下角锚点反推（第一次没有锚点时以球心居中）；
+    //   退出确认（mode 5）始终以球心居中，不跟随卡片锚点。
+    x: draggingCard ? Math.round(_cardDragX)
+       : resizingCard ? Math.round(_rsWinX)
+       : mode <= 1 ? Math.round(ballX - ballOffX)
+       : mode === 5 ? Math.round(clampCardX(ballCenterX - width / 2))
+       : Math.round(clampCardX(cardAnchorValid ? cardAnchorX - width
+                                               : ballCenterX - width / 2))
+    y: draggingCard ? Math.round(_cardDragY)
+       : resizingCard ? Math.round(_rsWinY)
+       : mode <= 1 ? Math.round(ballY - ballOffY)
+       : mode === 5 ? Math.round(clampCardY(ballCenterY - height / 2))
+       : Math.round(clampCardY(cardAnchorValid ? cardAnchorY - height
+                                               : ballCenterY - height / 2))
+
+    // 第一次打开常规卡片：窗口已经按球心居中/夹取后，把右下角记成本次会话的锚点。
+    function captureCardAnchor() {
+        if (mode >= 2 && mode !== 5 && !cardAnchorValid) {
+            cardAnchorX = win.x + win.width
+            cardAnchorY = win.y + win.height
+            cardAnchorValid = true
+            console.log("[float] card anchor=" + Math.round(cardAnchorX)
+                        + "," + Math.round(cardAnchorY))
+        }
+    }
 
     // ── 状态 ──
     property bool cardLocked: false       // 默认**不锁定**：点开小界面就能直接拖；点锁图标才钉住位置
@@ -140,6 +275,10 @@ Window {
     // 否则一关就切成"只有球"的遮罩 → 气泡被瞬间裁掉，看不到收回动画。
     property int maskMode: 0
     onModeChanged: {
+        console.log("[float] mode -> " + mode
+                    + " size=" + Math.round(width) + "x" + Math.round(height)
+                    + " cardScale=" + cardScale.toFixed(2)
+                    + " maskMode=" + maskMode)
         if (mode === 0) {
             win.maskMode = 1
             closeHold.restart()
@@ -147,6 +286,9 @@ Window {
             win.maskMode = mode
             if (mode >= 2) win.cardLocked = false     // 每次打开小界面都从不锁定开始
             maskTimer.restart()
+            // 第一次打开常规卡片：等 x/y/width 绑定落定后记录右下角锚点
+            if (mode >= 2 && mode !== 5 && !win.cardAnchorValid)
+                Qt.callLater(win.captureCardAnchor)
         }
     }
     Timer {
@@ -157,6 +299,25 @@ Window {
     // 形态变了 → 让 Python 重算窗口遮罩（Acrylic 只糊遮罩范围内）
     Timer { id: maskTimer; interval: 0; onTriggered: win.maskVersion++ }
     property int maskVersion: 0
+    // 每次重新显示都强制重设一次窗口遮罩：窗口隐藏期间系统/DPI 可能变化，
+    // 避免"再次进入悬浮球时遮罩还是旧的"。
+    onVisibleChanged: if (visible) {
+        console.log("[float] show -> mask refresh mode=" + win.mode + " maskMode=" + win.maskMode)
+        win.maskVersion++
+    }
+    // 低频心跳：出"画面卡住/被裁错"时，日志能看出窗口是活的、当前模式/遮罩/屏幕是什么。
+    Timer {
+        interval: 30000
+        repeat: true
+        running: true
+        onTriggered: console.log("[float] alive mode=" + win.mode
+                                 + " maskMode=" + win.maskMode
+                                 + " ball=" + Math.round(win.ballX) + "," + Math.round(win.ballY)
+                                 + " win=" + Math.round(win.x) + "," + Math.round(win.y)
+                                 + " " + Math.round(win.width) + "x" + Math.round(win.height)
+                                 + " screen=" + Screen.name
+                                 + " dpr=" + Screen.devicePixelRatio)
+    }
     // ⚠️ 由 Python 在 load **之前**用 context property 传入：窗口创建后再改 flags 会让 Qt 重建窗口，
     //    之前设好的窗口遮罩就丢了（表现为 Acrylic 又糊满整个矩形）。
     property bool floatNoActivateCtx: true
@@ -166,19 +327,36 @@ Window {
     property bool leavingCard: false
     property int leaveTarget: 1
     function leaveCard(toMode) {
-        if (win.mode <= 1 || win.leavingCard) return
+        if (win.mode <= 1 || win.leavingCard || win.enteringCard) return
         win.leaveTarget = toMode
         win.leavingCard = true
         cardLeave.start()
     }
+    // 卡片 → 球/气泡：先淡出+微缩，窗口在不可见时切回小尺寸，再让球/气泡淡入+回弹。
+    // 旧实现最后一步是直接 opacity=1，所以返回悬浮球时完全生硬。
     SequentialAnimation {
         id: cardLeave
-        NumberAnimation { target: win.contentItem; property: "opacity"
-                          to: 0; duration: 90; easing.type: Easing.InQuad }
-        PauseAnimation { duration: 70 }        // 同理：透明帧先上屏，再缩窗口
+        ParallelAnimation {
+            NumberAnimation { target: win.contentItem; property: "opacity"
+                              to: 0; duration: 150; easing.type: Easing.InQuad }
+            NumberAnimation { target: win.contentItem; property: "scale"
+                              to: 0.94; duration: 150; easing.type: Easing.InQuad }
+        }
+        PauseAnimation { duration: 50 }        // 透明帧先上屏，再缩窗口
         ScriptAction { script: win.mode = win.leaveTarget }
-        PauseAnimation { duration: 50 }
-        ScriptAction { script: win.contentItem.opacity = 1 }
+        PauseAnimation { duration: 40 }
+        ScriptAction {
+            script: {
+                win.contentItem.opacity = 0
+                win.contentItem.scale = 0.92
+            }
+        }
+        ParallelAnimation {
+            NumberAnimation { target: win.contentItem; property: "opacity"
+                              to: 1; duration: 200; easing.type: Easing.OutCubic }
+            NumberAnimation { target: win.contentItem; property: "scale"
+                              to: 1; duration: 220; easing.type: Easing.OutCubic }
+        }
         onFinished: win.leavingCard = false
     }
 
@@ -189,6 +367,7 @@ Window {
     property int enterTarget: 2
     function enterCard(m) {
         if (win.enteringCard || win.leavingCard) return
+        console.log("[float] bubble -> m=" + m + " (maskMode " + win.maskMode + " -> " + m + ")")
         win.enterTarget = m
         win.enteringCard = true
         win.maskMode = m          // 提前切整窗遮罩（Python 会立即重算）
@@ -197,16 +376,30 @@ Window {
     }
     SequentialAnimation {
         id: cardEnter
-        NumberAnimation { target: win.contentItem; property: "opacity"
-                          to: 0; duration: 60; easing.type: Easing.InQuad }
+        ParallelAnimation {
+            NumberAnimation { target: win.contentItem; property: "opacity"
+                              to: 0; duration: 90; easing.type: Easing.InQuad }
+            NumberAnimation { target: win.contentItem; property: "scale"
+                              to: 0.94; duration: 90; easing.type: Easing.InQuad }
+        }
         // ⚠️ 关键：等"全透明"那一帧真正上屏后再改窗口几何。
         //    否则窗口先移动/放大，合成器会把上一帧（球+气泡）连同旧位置一起带过去，
         //    在左上角闪一下残影。
-        PauseAnimation { duration: 80 }
+        PauseAnimation { duration: 60 }
         ScriptAction { script: win.mode = win.enterTarget }
-        PauseAnimation { duration: 50 }        // 等窗口尺寸/遮罩落定
-        NumberAnimation { target: win.contentItem; property: "opacity"
-                          to: 1; duration: 110; easing.type: Easing.OutQuad }
+        PauseAnimation { duration: 40 }        // 等窗口尺寸/遮罩落定
+        ScriptAction {
+            script: {
+                win.contentItem.opacity = 0
+                win.contentItem.scale = 0.92
+            }
+        }
+        ParallelAnimation {
+            NumberAnimation { target: win.contentItem; property: "opacity"
+                              to: 1; duration: 200; easing.type: Easing.OutCubic }
+            NumberAnimation { target: win.contentItem; property: "scale"
+                              to: 1; duration: 220; easing.type: Easing.OutCubic }
+        }
         onFinished: win.enteringCard = false
     }
 
@@ -399,8 +592,9 @@ Window {
         // 点击涟漪：三圈白色细环从星芒开始依次扩散、淡出（水面涟漪）
         Canvas {
             id: sparkRipple
+            objectName: "sparkRipple"
             anchors.centerIn: parent
-            // 画布 240：星形几何一直画到 100px；屏幕显示由 82 的圆形遮罩裁掉尖尖
+            // 画布 240：星形几何一直画到 100px；屏幕显示由 45 的渐变遮罩柔和裁掉尖尖
             width: 240; height: 240
             property real progress: 0
             onProgressChanged: requestPaint()
@@ -423,7 +617,7 @@ Window {
                     cc.closePath()
                 }
                 // [延迟, 单圈时长, 亮度系数, 最远半径, 扩散曲线指数, 淡出指数]
-                // 前两圈冲得很远（100/96），由圆形遮罩把尖尖切掉；
+                // 前两圈冲得很远（100/96），由渐变遮罩把尖尖柔化；
                 // 后两圈只到中途（62/48），在各自最远处淡出消失。
                 var rings = [
                     [0.00, 0.78, 0.90, 100, 0.65, 0.40],
@@ -455,14 +649,17 @@ Window {
                         c.stroke()
                     }
                 }
-                // 视觉遮罩（QML 内裁）：以球心为圆心的同心圆，半径 43——
-                // 约 42px 以内是实的，42→43 极短渐隐，43 以外完全擦掉。
+                // 视觉遮罩（QML 内裁）：34px 以内实心，34→45px 柔和渐隐，45px 外擦掉。
+                // 原生窗口遮罩半径 52，渐变终点 45 在其内，不会被二次硬切。
                 // ⚠️ 窗口 setMask 只负责点击穿透/窗口区域，不能依赖它做视觉裁切。
                 c.globalCompositeOperation = "destination-in"
-                var mg = c.createRadialGradient(cx, cy, 0, cx, cy, 43)
+                var mg = c.createRadialGradient(cx, cy, 0, cx, cy, 45)
                 mg.addColorStop(0, "rgba(0,0,0,1)")
-                mg.addColorStop(0.98, "rgba(0,0,0,1)")
-                mg.addColorStop(1, "rgba(0,0,0,0)")
+                mg.addColorStop(0.7556, "rgba(0,0,0,1)")       // 34px：仍是实心
+                mg.addColorStop(0.8333, "rgba(0,0,0,0.75)")    // 37.5px
+                mg.addColorStop(0.9111, "rgba(0,0,0,0.36)")    // 41px
+                mg.addColorStop(0.9667, "rgba(0,0,0,0.12)")    // 43.5px
+                mg.addColorStop(1, "rgba(0,0,0,0)")            // 45px：完全消失
                 c.fillStyle = mg
                 c.fillRect(0, 0, width, height)
                 c.globalCompositeOperation = "source-over"
@@ -662,8 +859,12 @@ Window {
                 moved = true
                 // 球可以贴到屏幕任意一边（窗口超出屏幕的部分由遮罩处理）；
                 // 气泡会根据球的屏幕位置自动镜像到有空间的一侧
-                win.ballX = Math.max(0, Math.min(bx0 + (gx - grab.x), Screen.width - 100))
-                win.ballY = Math.max(0, Math.min(by0 + (gy - grab.y), Screen.height - 100))
+                win.ballX = Math.max(Screen.virtualX,
+                                     Math.min(bx0 + (gx - grab.x),
+                                              Screen.virtualX + Screen.width - 100))
+                win.ballY = Math.max(Screen.virtualY,
+                                     Math.min(by0 + (gy - grab.y),
+                                              Screen.virtualY + Screen.height - 100))
             }
             onReleased: {
                 holdRing.stop(); holdTimer.stop(); win.holdP = 0
@@ -856,11 +1057,12 @@ Window {
                         font.bold: sc.on
                         font.family: Theme.fontFamily
                     }
-                    // 选中勾：右上角一个白色小圆圈 + 勾，微微外扩
+                    // 选中勾：右上角一个紫色小圆圈 + 勾，微微外扩
+                    // 紫色同批量操作页的勾选圆球（原型小组积分 CheckPill 的 #6f66d8）
                     Rectangle {
                         width: 14; height: 14; radius: 7
                         visible: sc.on
-                        color: Theme.accent
+                        color: "#6f66d8"
                         anchors.right: parent.right
                         anchors.top: parent.top
                         anchors.rightMargin: -2
@@ -937,7 +1139,8 @@ Window {
             }
             PointsPill { id: pts; from: 1; to: 20; value: 2; anchors.verticalCenter: parent.verticalCenter }
             CuteButton {
-                tone: "primary"; text: "加分"
+                tone: "primary"; fillScheme: "mintcyan"    // 原型长条按钮 21（薄荷青绿）
+                text: "加分"
                 implicitWidth: 88; implicitHeight: 42; fontSize: 16
                 anchors.verticalCenter: parent.verticalCenter
                 onClicked: win.applyStudents(true)
@@ -1010,8 +1213,9 @@ Window {
                 anchors.verticalCenter: parent.verticalCenter
                 color: "#d9ffffff"; font.pixelSize: 16; font.family: Theme.fontFamily
             }
+            // 学生 / 小组共用这一颗抽取按钮 → 两个模式都是原型长条 08 雾面青粉（mist）
             CuteButton {
-                tone: "primary"; text: "抽取"
+                tone: "primary"; fillScheme: "mist"; text: "抽取"
                 implicitWidth: 104; implicitHeight: 50; fontSize: 18
                 anchors.verticalCenter: parent.verticalCenter
                 onClicked: win.doPick()
@@ -1068,7 +1272,8 @@ Window {
             }
             PointsPill { id: pickPts; from: 1; to: 20; value: 1; anchors.verticalCenter: parent.verticalCenter }
             CuteButton {
-                tone: "primary"; text: "加分"
+                tone: "primary"; fillScheme: "mintcyan"    // 原型长条按钮 21（薄荷青绿）
+                text: "加分"
                 implicitWidth: 88; implicitHeight: 42; fontSize: 16
                 usable: win.picked.length > 0
                 onClicked: win.applyPicked(true)
@@ -1170,7 +1375,7 @@ Window {
             anchors.horizontalCenter: parent.horizontalCenter
             spacing: 12
             CuteButton {
-                tone: "primary"
+                tone: "primary"; fillScheme: "soda"        // 原型长条按钮 03（薄荷苏打）
                 text: timerHub.timerRunning ? "暂停"
                       : timerHub.timerDone ? "再来一次"
                       : (timerHub.timerLeft > 0 && timerHub.timerLeft < timerHub.timerTotal
@@ -1208,7 +1413,7 @@ Window {
             anchors.horizontalCenter: parent.horizontalCenter
             spacing: 10
             CuteButton {
-                tone: "primary"
+                tone: "primary"; fillScheme: "soda"        // 原型长条按钮 03（薄荷苏打）
                 text: timerHub.swRunning ? "暂停"
                       : (timerHub.swElapsed > 0 ? "继续" : "开始")
                 implicitWidth: 118; implicitHeight: 50; fontSize: 18
@@ -1316,38 +1521,50 @@ Window {
             }
         }
     }
-    }   // cardLayer
-
-    // 右下角缩放手柄：只在卡片态出现；拖动改 cardScale，双击复位
+    // 右下角缩放按钮：圆底 + 左上↔右下双向箭头；
+    // 悬停/按下高亮与左上角返回按钮同一套逻辑。拖动逻辑保持不变。
+    // ⚠️ 必须放在 cardLayer **内部**：和卡片内容共享同一套缩放/布局，贴着面板右下角。
+    //    放在外面再单独 scale + 按窗口锚点缩放时，窗口原生尺寸更新会慢一帧 → 缩小时抖动。
     Item {
         id: resizeGrip
         objectName: "resizeGrip"
-        visible: win.isCard
-        width: 24; height: 24
+        // 退出确认（mode 5）不需要缩放，隐藏把手
+        visible: win.isCard && win.mode !== 5
+        width: 44; height: 44
         anchors.right: parent.right
         anchors.bottom: parent.bottom
         anchors.rightMargin: 14
         anchors.bottomMargin: 14
-        property real startScale: 1
-        property real startGX: 0
-        property real startGY: 0
+
+        Rectangle {
+            anchors.fill: parent
+            radius: width / 2
+            color: gma.pressed ? "#59ffffff" : (gma.containsMouse ? "#3dffffff" : "#20ffffff")
+            Behavior on color { ColorAnimation { duration: 160; easing.type: Easing.OutQuad } }
+        }
 
         Canvas {
-            anchors.fill: parent
-            property bool hov: gma.containsMouse
-            onHovChanged: requestPaint()
+            anchors.centerIn: parent
+            width: 24; height: 24
+            property color ink: gma.containsMouse ? "#ffffff" : "#f2ffffff"
+            onInkChanged: requestPaint()
             onPaint: {
                 var c = getContext("2d"); c.reset()
-                c.strokeStyle = "rgba(255,255,255," + (hov ? 0.85 : 0.45) + ")"
-                c.lineWidth = 1.6
+                c.strokeStyle = String(Qt.rgba(ink.r, ink.g, ink.b, ink.a))
+                c.lineWidth = 2.2
                 c.lineCap = "round"
-                for (var i = 0; i < 3; i++) {
-                    var o = 6 + i * 5
-                    c.beginPath()
-                    c.moveTo(width - o, height - 2)
-                    c.lineTo(width - 2, height - o)
-                    c.stroke()
-                }
+                c.lineJoin = "round"
+                c.fillStyle = c.strokeStyle
+                // 连接两个三角箭头底边的斜线
+                c.beginPath()
+                c.moveTo(7, 7); c.lineTo(17, 17)
+                c.stroke()
+                // 左上：实心三角箭头（略放大）
+                c.beginPath()
+                c.moveTo(4, 4); c.lineTo(10, 4); c.lineTo(4, 10); c.closePath(); c.fill()
+                // 右下：实心三角箭头（略放大）
+                c.beginPath()
+                c.moveTo(20, 20); c.lineTo(14, 20); c.lineTo(20, 14); c.closePath(); c.fill()
             }
         }
         MouseArea {
@@ -1356,22 +1573,36 @@ Window {
             hoverEnabled: true
             cursorShape: Qt.SizeFDiagCursor
             onPressed: function(m) {
-                resizeGrip.startScale = win.cardScale
-                resizeGrip.startGX = win.x + resizeGrip.x + m.x
-                resizeGrip.startGY = win.y + resizeGrip.y + m.y
+                // 触摸/鼠标都使用触点（不是可能过期的 QCursor）
+                var p = mapToItem(null, m.x, m.y)
+                win._rsStartScale = win.cardScale
+                win._rsCurX = win.x + p.x
+                win._rsCurY = win.y + p.y
+                // 冻结当前窗口左上角：拖动期间不再按"球心居中"重新定位
+                win._rsWinX = win.x
+                win._rsWinY = win.y
+                win._rsTicks = 0
+                win.resizingCard = true
+                console.log("[resize] start cursor=" + p.x + "," + p.y
+                            + " win=" + Math.round(win.x) + "," + Math.round(win.y)
+                            + " " + Math.round(win.width) + "x" + Math.round(win.height)
+                            + " scale=" + win.cardScale.toFixed(3))
             }
             onPositionChanged: function(m) {
                 if (!pressed) return
-                var gx = win.x + resizeGrip.x + m.x
-                var gy = win.y + resizeGrip.y + m.y
-                var ns = resizeGrip.startScale
-                       + (gx - resizeGrip.startGX) / win.cardBaseW
-                       + (gy - resizeGrip.startGY) / win.cardBaseH
-                win.cardScale = Math.max(0.8, Math.min(1.3, ns))
+                // 和主界面缩放一样：每个移动事件立即应用；触摸点映射到屏幕坐标。
+                var p = mapToItem(null, m.x, m.y)
+                win.applyResize(win.x + p.x, win.y + p.y)
             }
-            onDoubleClicked: win.cardScale = 1.0
+            onReleased: win.endResize()
+            onCanceled: win.endResize()
+            onDoubleClicked: {
+                win.endResize()
+                win.cardScale = 1.0
+            }
         }
     }
+    }   // cardLayer
 
     // ══════════════════════════════════════════════════════════
     Timer { id: flashTimer; interval: 1600; onTriggered: win.flashMsg = "" }
@@ -1503,20 +1734,50 @@ Window {
         MouseArea {
             anchors.fill: parent
             enabled: !win.cardLocked
-            cursorShape: win.cardLocked ? Qt.ArrowCursor : Qt.SizeAllCursor
+            cursorShape: Qt.ArrowCursor
             property point grab: Qt.point(0, 0)
             property real bx0: 0
             property real by0: 0
+            property int dragTicks: 0
             onPressed: function(m) {
-                // 卡片层被缩放过，局部坐标要乘 cardScale 才是屏幕位移
-                grab = Qt.point(win.x + m.x * win.cardScale, win.y + m.y * win.cardScale)
-                bx0 = win.ballX; by0 = win.ballY
+                // 卡片拖动 = 直接移动窗口本身，悬浮球位置完全不动（两者已经解耦）。
+                var p = mapToItem(null, m.x, m.y)
+                var gx = win.x + p.x, gy = win.y + p.y
+                win._cardDragGrabX = gx
+                win._cardDragGrabY = gy
+                win._cardDragStartX = win.x
+                win._cardDragStartY = win.y
+                win._cardDragX = win.x
+                win._cardDragY = win.y
+                win.draggingCard = true
+                dragTicks = 0
+                console.log("[float-drag] start touch=" + Math.round(gx) + "," + Math.round(gy)
+                            + " win=" + Math.round(win.x) + "," + Math.round(win.y)
+                            + " " + Math.round(win.width) + "x" + Math.round(win.height)
+                            + " scale=" + win.cardScale.toFixed(2))
             }
             onPositionChanged: function(m) {
-                var gx = win.x + m.x * win.cardScale
-                var gy = win.y + m.y * win.cardScale
-                win.ballX = Math.max(0, Math.min(bx0 + (gx - grab.x), Screen.width - win.width + win.ballOffX))
-                win.ballY = Math.max(0, Math.min(by0 + (gy - grab.y), Screen.height - win.height + win.ballOffY))
+                if (!pressed) return
+                // 窗口移动后局部坐标会反向补偿，win.x + mapToItem 始终等于真实触点。
+                var p = mapToItem(null, m.x, m.y)
+                var gx = win.x + p.x, gy = win.y + p.y
+                win._cardDragX = win.clampCardX(win._cardDragStartX
+                                                + (gx - win._cardDragGrabX))
+                win._cardDragY = win.clampCardY(win._cardDragStartY
+                                                + (gy - win._cardDragGrabY))
+                dragTicks++
+                if (dragTicks % 15 === 1)
+                    console.log("[float-drag] touch=" + Math.round(gx) + "," + Math.round(gy)
+                                + " win=" + Math.round(win.x) + "," + Math.round(win.y))
+            }
+            onReleased: {
+                // 拖动结束：卡片右下角成为新的锚点，之后的卡片继续对齐它
+                win.cardAnchorX = win.x + win.width
+                win.cardAnchorY = win.y + win.height
+                win.cardAnchorValid = true
+                win.draggingCard = false
+                console.log("[float-drag] end anchor=" + Math.round(win.cardAnchorX)
+                            + "," + Math.round(win.cardAnchorY) + " ticks=" + dragTicks)
             }
         }
 

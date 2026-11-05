@@ -16,7 +16,13 @@ Item {
     // 调用方若显式设了 iconWeight，则它优先（会覆盖下面的悬停绑定）
     property real iconWeightBase: 1.6
     property real iconWeightHover: 3.0
-    property real iconWeight: mouse.containsMouse ? iconWeightHover : iconWeightBase
+    property bool iconWeightOnHover: true
+    property real iconWeight: iconWeightOnHover
+                              ? (mouse.containsMouse ? iconWeightHover : iconWeightBase)
+                              : iconWeightBase
+    // 交互效果开关：部分按钮不要"悬停放大 / 图标加粗"，改用按下轻微变暗
+    property bool interactiveScale: true
+    property bool pressDim: false
     // 彩色杂糅面（= 原型 CircleButton 的 accent 模式）：多色弥散渐变，代替单一底色
     property bool accent: false
     property string scheme: "mint"
@@ -32,6 +38,8 @@ Item {
 
     width: root.size
     height: root.size
+    opacity: (root.pressDim && mouse.pressed) ? 0.82 : 1.0
+    Behavior on opacity { NumberAnimation { duration: 100; easing.type: Easing.OutQuad } }
 
     // 柔光晕投影（照搬原型：径向渐变、边缘真正模糊）。
     // 原来是一块 #26000000 的**硬边黑圆**下移 2px —— 边缘生硬，且和"玻璃"语言不搭
@@ -54,8 +62,9 @@ Item {
         border.color: root.borderOverride !== "transparent" ? root.borderOverride : "transparent"
         border.width: root.borderOverride !== "transparent"
                      ? (mouse.containsMouse ? 2.4 : root.borderW) : 0
-        // 按压缩放沿用（原型的按压反馈也是缩到 ~0.94）
-        scale: mouse.pressed ? 0.92 : (mouse.containsMouse ? 1.06 : 1.0)
+        // 按压缩放沿用（原型的按压反馈也是缩到 ~0.94）；可被 interactiveScale 关闭
+        scale: !root.interactiveScale ? 1.0
+             : (mouse.pressed ? 0.92 : (mouse.containsMouse ? 1.06 : 1.0))
         Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
         Behavior on color { ColorAnimation { duration: 140 } }
         Behavior on border.width { NumberAnimation { duration: 120 } }

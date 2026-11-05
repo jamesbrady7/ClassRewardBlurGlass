@@ -5,6 +5,9 @@ import "../components"
 Modal {
     id: root
 
+    // 半透明面板：50% 白玻璃（和花名册分数胶囊同档），能透出被压暗的页面
+    panelColor: Theme.fillGlass
+
     property int gradeIdx: 2
     property string classNo: "1"
     property var onAccept: null
@@ -46,40 +49,18 @@ Modal {
                 font.pixelSize: Theme.fontSmall
                 font.family: Theme.fontFamily
             }
+            // 年级选择：与批量/随机页「操作分类」的六个维度标签完全同款
+            // （CuteButton + whiteHighlight：选中近实白 + 深字，未选半透明白玻璃）
             Flow {
                 width: parent.width
                 spacing: 8
                 Repeater {
                     model: root.grades
-                    delegate: Rectangle {
-                        property bool hov: false
-                        readonly property bool on: index === root.gradeIdx
-                        width: 68
-                        height: 32
-                        radius: Theme.radiusPill
-                        // 全部走白色系（用户要求"高亮不要用绿色，白色即可，和整体风格一致"）：
-                        //   未选 = 33% 白玻璃；悬停 = 66% 白；选中 = **纯白**（亮度差本身就够区分）
-                        // ⚠️ 选中**不加粗、不放大** —— 只靠底色高亮表达选中（用户明确要求）。
-                        //    原来选中用的是 Theme.accent 绿底 + 白字加粗，两者都不对。
-                        color: on ? "#ffffff" : (hov ? Theme.glassHover : Theme.glassIdle)
-                        Behavior on color { ColorAnimation { duration: 140 } }
-                        Text {
-                            text: modelData
-                            anchors.centerIn: parent
-                            // 纯白底上用深字；未选仍在浅玻璃上用次要色
-                            color: on ? Theme.textPrimary : Theme.textSecondary
-                            font.pixelSize: Theme.fontBody
-                            font.family: Theme.fontFamily
-                            Behavior on color { ColorAnimation { duration: 140 } }
-                        }
-                        MouseArea {
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onEntered: parent.hov = true
-                            onExited: parent.hov = false
-                            onClicked: root.gradeIdx = index
-                        }
+                    delegate: CuteButton {
+                        tone: "secondary"
+                        whiteHighlight: index === root.gradeIdx
+                        text: modelData
+                        onClicked: root.gradeIdx = index
                     }
                 }
             }
@@ -108,6 +89,7 @@ Modal {
                 CuteButton { text: "取消"; onClicked: root.hide() }
                 CuteButton {
                     tone: "primary"
+                    fillScheme: "soda"          // 原型长条按钮 03（薄荷苏打）
                     text: "确定"
                     onClicked: {
                         var no = root.classNo.trim()

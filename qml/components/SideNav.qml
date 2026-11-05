@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Controls
 
 // 左侧导航：**照搬毛玻璃原型 NavRail 的效果**——"灯从玻璃后亮起"。
 //   静止=灭；悬停=半亮(0.48)；点击=最亮(1.0)。没有实底胶囊，选中靠**光**表达。
@@ -67,12 +68,24 @@ Item {
         return Math.max(0, (root.titleColumnWidth - naturalWidth) / (n - 1))
     }
 
-    Column {
+    // 窗口高度不够时，导航条本身也可以滚动（细圆角滚动条）
+    Flickable {
+        id: navScroll
         anchors.fill: parent
         anchors.topMargin: 10
-        spacing: 4
+        anchors.bottomMargin: 10
+        contentWidth: width
+        contentHeight: navCol.implicitHeight
+        clip: true
+        boundsBehavior: Flickable.StopAtBounds
+        ScrollBar.vertical: ThinScrollBar {}
 
-        Repeater {
+        Column {
+            id: navCol
+            width: parent.width
+            spacing: 4
+
+            Repeater {
             model: root.titles.length
 
             delegate: Item {
@@ -116,16 +129,12 @@ Item {
                         var w = width, h = height
                         if (w < 4 || h < 4) return
                         if (p <= 0.002) return       // 完全无光，不必构造退化渐变
-                        // 形状固定为满尺寸（圆角矩形裁切），只有里面的光在涨：
-                        // p 小=中间一小团虚边光斑，p=1=铺满整条并"填实"
+                        // 形状固定为满尺寸的**直角矩形**（Tab 点亮/悬停不用圆角），
+                        // 只有里面的光在涨：p 小=中间一小团虚边光斑，p=1=铺满整条并"填实"
                         var k = p
-                        var r = 12
                         ctx.beginPath()
-                        ctx.moveTo(r, 0); ctx.lineTo(w - r, 0); ctx.quadraticCurveTo(w, 0, w, r)
-                        ctx.lineTo(w, h - r); ctx.quadraticCurveTo(w, h, w - r, h)
-                        ctx.lineTo(r, h); ctx.quadraticCurveTo(0, h, 0, h - r)
-                        ctx.lineTo(0, r); ctx.quadraticCurveTo(0, 0, r, 0)
-                        ctx.closePath(); ctx.clip()
+                        ctx.rect(0, 0, w, h)
+                        ctx.clip()
                         var cMain = "rgba(255,255,255,0.74)"
                         var cMid  = "rgba(230,234,255,0.24)"
                         var cLamp = "rgba(255,255,255,0.50)"
@@ -212,5 +221,6 @@ Item {
                 }
             }
         }
+    }
     }
 }

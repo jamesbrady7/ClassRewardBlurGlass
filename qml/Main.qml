@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Effects
 import QtQuick.Dialogs
+import Qt.labs.platform 1.1 as Platform
 import "components"
 import "dialogs"
 import "tabs"
@@ -21,19 +22,64 @@ Window {
     readonly property int designW: 1600
     readonly property int designH: 1020
 
+    // ⚠️ 这里必须用**当前屏幕**的 Screen.width/height，不能用 desktopAvailableWidth/Height：
+    //    后者在多显示器环境下是**整个虚拟桌面**的尺寸（本机实测 3640，而主屏只有 2560），
+    //    拿它算窗口大小/居中会把主窗放到虚拟桌面的中点 → 学校双屏/投影场景下会严重偏位。
+    //    高度用 0.88 给任务栏留余量（宽度 0.94）。
     readonly property real fitRatio: Math.min(1.0,
-        (Screen.desktopAvailableWidth  * 0.94) / designW,
-        (Screen.desktopAvailableHeight * 0.94) / designH)
+        (Screen.width  * 0.94) / designW,
+        (Screen.height * 0.88) / designH)
+
+    // 首次真正 show 时再用当时的屏幕校正一次（QML 加载时 Window 可能还没落到目标屏）。
+    property bool _firstShown: false
+
+    // 以**当前屏幕**的虚拟原点 + 当前屏尺寸居中（多屏时 x/y 是虚拟桌面坐标）。
+    function centerMain() {
+        var sx = Screen.virtualX
+        var sy = Screen.virtualY
+        x = Math.round(sx + (Screen.width - width) / 2)
+        y = Math.round(sy + (Screen.height - height) / 2)
+        console.log("[main] center -> x=" + x + " y=" + y
+                    + " " + Math.round(width) + "x" + Math.round(height)
+                    + " screen=" + Screen.name + " vx=" + sx + " vy=" + sy
+                    + " sw=" + Screen.width + " sh=" + Screen.height)
+    }
+
+    // 只检查"标题栏是否还够得着"：窗口可以被用户放到边上，但不能整个飞出屏幕，
+    // 否则就像之前那样只剩右下角、没有按钮可点、也无法拖动。
+    function ensureTitleBarVisible() {
+        var sx = Screen.virtualX
+        var sy = Screen.virtualY
+        var sw = Screen.width
+        var sh = Screen.height
+        var topOK = (y + 82 > sy) && (y < sy + sh - 40)
+        var xOK = (x + width > sx + 120) && (x < sx + sw - 120)
+        if (!topOK || !xOK) {
+            console.log("[main] off-screen x=" + Math.round(x) + " y=" + Math.round(y)
+                        + " " + Math.round(width) + "x" + Math.round(height)
+                        + " -> recenter")
+            centerMain()
+        }
+    }
+
+    // 显示器布局变化（插拔投影、改缩放、跨屏）时，窗口可能被系统丢到屏幕外。
+    // 等属性绑定（新屏幕的 width/height）结算完再检查，避免用旧尺寸误判。
+    Connections {
+        target: Screen
+        function onWidthChanged() { Qt.callLater(mainWin.ensureTitleBarVisible) }
+        function onHeightChanged() { Qt.callLater(mainWin.ensureTitleBarVisible) }
+        function onVirtualXChanged() { Qt.callLater(mainWin.ensureTitleBarVisible) }
+        function onVirtualYChanged() { Qt.callLater(mainWin.ensureTitleBarVisible) }
+    }
 
     width: Math.round(designW * fitRatio)
     height: Math.round(designH * fitRatio)
-    // 最小尺寸按**设计的最小尺寸等比缩**（不是取当前尺寸！）。
-    // ⚠️ 踩过的坑：写成 Math.min(1100, width) / Math.min(750, height) 时，
-    //    小屏上（本机 fitRatio=0.70）最小值会等于当前尺寸 —— minimumHeight 变成 714
-    //    而当前高度就是 714 → **窗口根本缩不小**，一拖毫无反应，看着像缩放功能整个坏了。
-    //    设计基准里最小值是 1100x750（占设计尺寸 68.75% / 73.5%），等比缩放才保持同样的收缩余量。
-    minimumWidth: Math.round(1100 * fitRatio)
-    minimumHeight: Math.round(750 * fitRatio)
+    // 固定小值，不要再乘 fitRatio：屏幕切换时 QML 属性绑定求值顺序不保证 ——
+    // 实测从主屏移到 150% 副屏后，width 跟随 fitRatio 变成 677，但 height 被
+    // **旧屏幕的 minimumHeight=750** 卡住（新 fit 高度本应 431），跨屏后尺寸就不对。
+    // 固定 min 同时保证小屏/竖屏能缩到 fit 尺寸。
+    minimumWidth: 700
+    minimumHeight: 450
 
     // 启动时在可用区居中 —— 见下面那个（唯一的）Component.onCompleted。
     // ⚠️ QML 不允许同一个对象有两个 Component.onCompleted（会报
@@ -65,10 +111,60 @@ Window {
     onClosing: function(close) {
         if (forceClose) return
         close.accepted = false
-        dlgConfirmBox.openConfirm("退出软件", "确定要退出吗？", function() {
+        dlgConfirmBox.openConfirm("退出软件",
+            "确定要退出吗？\n退出后可安全拔出 U 盘。", function() {
             forceClose = true
-            mainWin.close()
+            // 走统一退出入口：关闭悬浮球/启动页 + 结束事件循环（不再只 close 主窗，
+            // 否则隐藏的悬浮球窗口可能让进程继续占着 U 盘上的 exe）
+            appControl.quitApp()
         }, "退出")
+    }
+
+    // ── 系统托盘图标（通知区域）──────────────────────────────────
+    // 这就是 Steam / QQ 那种小图标：主界面隐藏、只剩悬浮球时它仍在，
+    // 随时可以右键「彻底退出」，避免进程残留占着 U 盘。
+    function trayShowMain() {
+        try {
+            if (typeof floatBridge !== 'undefined' && floatBridge)
+                floatBridge.showMain()
+        } catch (e) {}
+        mainWin.showNormal()
+        mainWin.show()
+        // 即使主窗已经可见但飞出了屏幕，托盘「打开主界面」也要能把它拉回来
+        mainWin.ensureTitleBarVisible()
+        mainWin.raise()
+        mainWin.requestActivate()
+    }
+    function trayEnterFloat() {
+        try {
+            if (typeof floatBridge !== 'undefined' && floatBridge)
+                floatBridge.enterFloatMode()
+            else
+                toastBox.show("悬浮球暂不可用", 2000, true)
+        } catch (e) {
+            toastBox.show("悬浮球暂不可用", 2000, true)
+        }
+    }
+
+    Platform.SystemTrayIcon {
+        id: trayIcon
+        visible: true
+        tooltip: "班级激励助手"
+        icon.source: Qt.resolvedUrl("../assets/app_icon.png")
+        menu: Platform.Menu {
+            Platform.MenuItem { text: "打开主界面"; onTriggered: trayShowMain() }
+            Platform.MenuItem { text: "进入悬浮球"; onTriggered: trayEnterFloat() }
+            Platform.MenuSeparator {}
+            Platform.MenuItem { text: "彻底退出"; onTriggered: appControl.quitApp() }
+        }
+        // 单击 / 双击 → 回到主界面；右键由 menu 自己处理
+        onActivated: function(reason) {
+            if (reason === Platform.SystemTrayIcon.Trigger
+                    || reason === Platform.SystemTrayIcon.DoubleClick)
+                trayShowMain()
+        }
+        Component.onCompleted: console.log("[tray] available=" + available
+                                           + " trigger=" + Platform.SystemTrayIcon.Trigger)
     }
 
     // 背景层暴露给子页面的毛玻璃面板（FrostedPanel.source）
@@ -86,6 +182,8 @@ Window {
     property alias dlgBackpack: dlgBackpackBox
     property alias dlgHistory: dlgHistoryBox
     property alias dlgGradeClass: dlgGradeClassBox
+    // 今日分数截图预览（独立置顶小窗，历史页的「保存今日分数截图」打开它）
+    property alias scorePreview: scorePreviewWin
 
     // ============================================================
     // 共享计时器（主界面「工具箱」↔ 悬浮球）
@@ -147,11 +245,23 @@ Window {
 
         MouseArea {
             anchors.fill: parent
-            // 走 Python 的节流拖动（穿透模式）；自绘模式内部会退回 startSystemMove。
-            // 不用 mainWin.startSystemMove() 直接拖：系统拖动把鼠标**每个输入事件**都变成一次
+            cursorShape: Qt.ArrowCursor
+            // 统一走 Python 自绘拖动（按屏幕光标绝对位移，Win10 / Win11 同一套）。
+            // 不用 startSystemMove 直接拖：系统拖动把鼠标**每个输入事件**都变成一次
             // 窗口移动，Win10 的 acrylic 每步都要重模糊整窗 → DWM 饱和、窗体跟不上光标。
             // 节流到 DRAG_HZ(60) 次/秒后，模糊保住了，拖动也跟手。
-            onPressed: glassDrag.start()
+            // ⚠️ 不能把 QCursor 交给 Python：一体机触摸时 QCursor 是旧鼠标位置。
+            // 把 MouseArea 点击点映射到屏幕坐标；窗口移动后局部坐标会反向补偿，
+            // 两者相加始终等于真实触点 → 鼠标和手指都能保持点击时的绝对位置。
+            onPressed: function(m) {
+                var p = mapToItem(null, m.x, m.y)
+                glassDrag.startAt(mainWin.x + p.x, mainWin.y + p.y)
+            }
+            onPositionChanged: function(m) {
+                if (!pressed) return
+                var p = mapToItem(null, m.x, m.y)
+                glassDrag.moveTo(mainWin.x + p.x, mainWin.y + p.y)
+            }
             onReleased: glassDrag.stop()   // 保险：不能只靠 Python 侧判松手
             onDoubleClicked: mainWin.visibility === Window.Maximized ? mainWin.showNormal() : mainWin.showMaximized()
         }
@@ -285,10 +395,14 @@ Window {
             }
             RoundBtn {
                 size: 34
-                accent: true; scheme: "aurora"   // 加号：原型圆形按钮 16（极光杂糅）
+                accent: true; scheme: "mintcyan"  // 加号：长条按钮 21 色（薄荷青绿）
                 fg: "#ffffff"
                 icon: "plus"
                 hint: "新建班级"
+                // 不要"悬停放大 + 图标加粗"的反馈；按下改为轻微变暗
+                interactiveScale: false
+                iconWeightOnHover: false
+                pressDim: true
                 anchors.verticalCenter: parent.verticalCenter
                 onClicked: dlgGradeClassBox.openClassDialog(function(name) { reward.addClass(name) })
             }
@@ -377,18 +491,46 @@ Window {
                 height: contentRow.height - (30 + Theme.spacing)   // 直接绑 id，避开 Column implicitHeight 循环
                 clip: true
 
-                RosterTab { id: page0; anchors.fill: parent; visible: false; opacity: 1; z: 0 }
+                // 页面级滚动：窗口缩小到内容放不下时，整页可上下滚动，滚动条为全站细圆角样式。
+                PageScroll {
+                    id: page0
+                    anchors.fill: parent
+                    visible: false; opacity: 1; z: 0
+                    RosterTab { anchors.fill: parent }
+                }
+                // 小组榜本身就是 Flickable（内部滚动条见 GroupTab）
                 GroupTab { id: page1; anchors.fill: parent; visible: false; opacity: 1; z: 0 }
-                RandomPickTab { id: page2; anchors.fill: parent; visible: false; opacity: 1; z: 0 }
-                BatchTab { id: page3; anchors.fill: parent; visible: false; opacity: 1; z: 0 }
-                ShopTab { id: page4; anchors.fill: parent; visible: false; opacity: 1; z: 0 }
+                PageScroll {
+                    id: page2
+                    anchors.fill: parent
+                    visible: false; opacity: 1; z: 0
+                    RandomPickTab { anchors.fill: parent }
+                }
+                PageScroll {
+                    id: page3
+                    anchors.fill: parent
+                    visible: false; opacity: 1; z: 0
+                    BatchTab { anchors.fill: parent }
+                }
+                PageScroll {
+                    id: page4
+                    anchors.fill: parent
+                    visible: false; opacity: 1; z: 0
+                    ShopTab { anchors.fill: parent }
+                }
+                // 每日历史：列表自己滚动（不要再套 PageScroll，否则两层滚动条重叠）
                 HistoryTab { id: page5; anchors.fill: parent; visible: false; opacity: 1; z: 0 }
-                AnalysisTab { id: page6; anchors.fill: parent; visible: false; opacity: 1; z: 0 }
-                ToolboxTab {
+                PageScroll {
+                    id: page6
+                    anchors.fill: parent
+                    visible: false; opacity: 1; z: 0
+                    AnalysisTab { anchors.fill: parent }
+                }
+                PageScroll {
                     id: page7
                     anchors.fill: parent
                     visible: false; opacity: 1; z: 0
-                    hub: mainWin.timerHub
+                    ToolboxTab { anchors.fill: parent; hub: mainWin.timerHub }
                 }
             }
         }
@@ -505,18 +647,30 @@ Window {
     }
     // 用形参接收，别用注入的 visibility（后者已废弃，会在 _run.log 里刷告警）
     onVisibilityChanged: (vis) => {
-        if (vis !== Window.Minimized && vis !== Window.Hidden)
-            restoreAnim.start()
+        if (vis === Window.Minimized || vis === Window.Hidden)
+            return
+        console.log("[main] visible vis=" + vis
+                    + " x=" + Math.round(x) + " y=" + Math.round(y)
+                    + " " + Math.round(width) + "x" + Math.round(height)
+                    + " screen=" + Screen.name)
+        if (!_firstShown) {
+            // 首次上屏：用真正的屏幕尺寸/原点再居中一次
+            _firstShown = true
+            centerMain()
+        } else {
+            // 从悬浮球/最小化回来：如果主窗已经飞出屏幕，拉回屏幕中心
+            ensureTitleBarVisible()
+        }
+        restoreAnim.start()
     }
 
     // 页面交叉淡化调度：新页淡入与旧页淡出同时进行，避免切换"闪"。
     property var _pages: []
     property int _curPage: -1
     Component.onCompleted: {
-        // 窗口在可用区居中。⚠️ **必须命令式赋值，不能写成 x:/y: 绑定** —— x 依赖 width，
-        // 写成绑定后拉右边/下边改 width 会让绑定重算，窗口一边变宽一边被重新居中，整窗跟着漂。
-        x = Math.round((Screen.desktopAvailableWidth - width) / 2)
-        y = Math.round((Screen.desktopAvailableHeight - height) / 2)
+        // ⚠️ 必须命令式赋值，不能写成 x:/y: 绑定 —— x 依赖 width，
+        //    写成绑定后拉右边/下边改 width 会让绑定重算，窗口一边变宽一边被重新居中，整窗跟着漂。
+        centerMain()
         _pages = [page0, page1, page2, page3, page4, page5, page6, page7]
         showPage(0)
         // 首次 show() 时由 restoreAnim 从 0 淡入；先置 0，避免 show 的第一帧整窗闪一下
@@ -831,6 +985,9 @@ Window {
     HistoryDialog { id: dlgHistoryBox }
     GradeClassDialog { id: dlgGradeClassBox }
 
+    // 今日分数截图预览窗（独立 Window；默认置顶，开关持久化）
+    ScorePreviewWindow { id: scorePreviewWin }
+
     // ============================================================
     // 导出 / 导入文件选择
     // ============================================================
@@ -865,6 +1022,11 @@ Window {
     property int _rsy
     property int _rsmx
     property int _rsmy
+    // 屏幕上光标的绝对起点（逻辑像素）。缩放必须用它，不能用 MouseArea 的局部坐标：
+    // 左/上边缘拖动时窗口本身在移动，局部坐标会跟着窗口变 → 自己和自己的位移叠加，
+    // 产生"甩飞/抖动"（与悬浮球缩放手柄同一个根因）。
+    property real _rsCurX: 0
+    property real _rsCurY: 0
 
     // 拉边节流（仅 Win10）：原来 onPositionChanged **每个鼠标事件**都改一次窗口几何。
     // Win10 的 acrylic 每改一次就要重算整窗模糊，1000Hz 鼠标 = 每秒 1000 次 → DWM 饱和、
@@ -883,19 +1045,39 @@ Window {
         onTriggered: mainWin._resizeApply(mainWin._rsMode, mainWin._rsLastX, mainWin._rsLastY)
     }
 
+    // 从 MouseArea 的触点拿到**屏幕逻辑坐标**（触摸/鼠标都可靠，不用 QCursor）
+    // ⚠️ Qt 6 的 MouseArea **没有 `area.mouse` 属性**（那是 Qt 5 才有）→ 必须用信号参数 m.x/m.y。
+    //    原来这里读 area.mouse.x 会抛 "Cannot read property 'x' of undefined"，
+    //    症状就是主界面完全拉不动边（放大缩小失效）。
+    function _resizeScreen(area, m) {
+        var p = area.mapToItem(null, m.x, m.y)
+        return Qt.point(mainWin.x + p.x, mainWin.y + p.y)
+    }
     function _resizeBegin(mx, my) {
         _rsw = mainWin.width; _rsh = mainWin.height
         _rsx = mainWin.x; _rsy = mainWin.y
-        _rsmx = mx; _rsmy = my
+        _rsCurX = mx; _rsCurY = my
         _rsMode = ""
+        console.log("[resize-main] start touch=" + mx + "," + my
+                    + " win=" + _rsx + "," + _rsy + " " + _rsw + "x" + _rsh)
     }
     function _resizeApply(mode, mx, my) {
-        var dx = mx - _rsmx
-        var dy = my - _rsmy
-        if (mode.indexOf("L") >= 0) { mainWin.x = _rsx + dx; mainWin.width = Math.max(mainWin.minimumWidth, _rsw - dx) }
-        if (mode.indexOf("R") >= 0) { mainWin.width = Math.max(mainWin.minimumWidth, _rsw + dx) }
-        if (mode.indexOf("T") >= 0) { mainWin.y = _rsy + dy; mainWin.height = Math.max(mainWin.minimumHeight, _rsh - dy) }
-        if (mode.indexOf("B") >= 0) { mainWin.height = Math.max(mainWin.minimumHeight, _rsh + dy) }
+        var dx = mx - _rsCurX
+        var dy = my - _rsCurY
+        // 左/上边缘：先算新尺寸，再按"右/下边缘不动"反推 x/y。
+        // 直接写 x=_rsx+dx 的话，宽度碰到最小值后右边缘还会继续跟着鼠标跑。
+        if (mode.indexOf("L") >= 0) {
+            var nw = Math.max(mainWin.minimumWidth, _rsw - dx)
+            mainWin.width = nw
+            mainWin.x = _rsx + (_rsw - nw)
+        }
+        if (mode.indexOf("R") >= 0) mainWin.width = Math.max(mainWin.minimumWidth, _rsw + dx)
+        if (mode.indexOf("T") >= 0) {
+            var nh = Math.max(mainWin.minimumHeight, _rsh - dy)
+            mainWin.height = nh
+            mainWin.y = _rsy + (_rsh - nh)
+        }
+        if (mode.indexOf("B") >= 0) mainWin.height = Math.max(mainWin.minimumHeight, _rsh + dy)
     }
     // 拖动中：节流开启时只记最新位置，交给 Timer 按帧应用；关闭时逐事件（原行为）
     function _resizeDrag(mode, mx, my) {
@@ -905,6 +1087,9 @@ Window {
     // 松手：把最后一帧补上（鼠标最后一小段移动可能还没被 Timer 应用），再停表
     function _resizeEnd() {
         if (throttleResize && _rsMode !== "") _resizeApply(_rsMode, _rsLastX, _rsLastY)
+        console.log("[resize-main] end mode=" + _rsMode
+                    + " win=" + Math.round(mainWin.x) + "," + Math.round(mainWin.y)
+                    + " " + Math.round(mainWin.width) + "x" + Math.round(mainWin.height))
         _rsMode = ""
     }
 
@@ -912,28 +1097,37 @@ Window {
     //    规律是**左上/右下同向（\）、右上/左下同向（/）**。
     //    原来左上角写成了 B、右上角写成了 F —— 两处互换，所以左上角显示「/」、
     //    右上角显示「\」，全是反的（左下/右下是对的）。
-    MouseArea { x: mainWin.width - 5; y: 5; width: 5; height: mainWin.height - 10; cursorShape: Qt.SizeHorCursor
-        onPressed: _resizeBegin(mouse.x, mouse.y)
-        onPositionChanged: _resizeDrag("R", mouse.x, mouse.y); onReleased: _resizeEnd() }
-    MouseArea { x: 5; y: mainWin.height - 5; width: mainWin.width - 10; height: 5; cursorShape: Qt.SizeVerCursor
-        onPressed: _resizeBegin(mouse.x, mouse.y)
-        onPositionChanged: _resizeDrag("B", mouse.x, mouse.y); onReleased: _resizeEnd() }
-    MouseArea { x: mainWin.width - 5; y: mainWin.height - 5; width: 5; height: 5; cursorShape: Qt.SizeFDiagCursor
-        onPressed: _resizeBegin(mouse.x, mouse.y)
-        onPositionChanged: _resizeDrag("RB", mouse.x, mouse.y); onReleased: _resizeEnd() }
-    MouseArea { x: 0; y: mainWin.height - 5; width: 8; height: 5; cursorShape: Qt.SizeBDiagCursor
-        onPressed: _resizeBegin(mouse.x, mouse.y)
-        onPositionChanged: _resizeDrag("LB", mouse.x, mouse.y); onReleased: _resizeEnd() }
-    MouseArea { x: 0; y: 5; width: 5; height: mainWin.height - 10; cursorShape: Qt.SizeHorCursor
-        onPressed: _resizeBegin(mouse.x, mouse.y)
-        onPositionChanged: _resizeDrag("L", mouse.x, mouse.y); onReleased: _resizeEnd() }
-    MouseArea { x: 5; y: 0; width: mainWin.width - 10; height: 5; cursorShape: Qt.SizeVerCursor
-        onPressed: _resizeBegin(mouse.x, mouse.y)
-        onPositionChanged: _resizeDrag("T", mouse.x, mouse.y); onReleased: _resizeEnd() }
-    MouseArea { x: mainWin.width - 5; y: 0; width: 5; height: 8; cursorShape: Qt.SizeBDiagCursor
-        onPressed: _resizeBegin(mouse.x, mouse.y)
-        onPositionChanged: _resizeDrag("TR", mouse.x, mouse.y); onReleased: _resizeEnd() }
-    MouseArea { x: 0; y: 0; width: 8; height: 8; cursorShape: Qt.SizeFDiagCursor
-        onPressed: _resizeBegin(mouse.x, mouse.y)
-        onPositionChanged: _resizeDrag("LT", mouse.x, mouse.y); onReleased: _resizeEnd() }
+    // 触摸屏上 5px 很难按住 → 边缘加宽到 10px、四角 14px（页面本身有 24px 外边距，不会挡住内容）
+    MouseArea { id: rzR; x: mainWin.width - 10; y: 10; width: 10; height: mainWin.height - 20; cursorShape: Qt.SizeHorCursor
+        onPressed: function(m) { var p = _resizeScreen(rzR, m); _resizeBegin(p.x, p.y) }
+        onPositionChanged: function(m) { var p = _resizeScreen(rzR, m); _resizeDrag("R", p.x, p.y) }
+        onReleased: _resizeEnd() }
+    MouseArea { id: rzB; x: 10; y: mainWin.height - 10; width: mainWin.width - 20; height: 10; cursorShape: Qt.SizeVerCursor
+        onPressed: function(m) { var p = _resizeScreen(rzB, m); _resizeBegin(p.x, p.y) }
+        onPositionChanged: function(m) { var p = _resizeScreen(rzB, m); _resizeDrag("B", p.x, p.y) }
+        onReleased: _resizeEnd() }
+    MouseArea { id: rzRB; x: mainWin.width - 14; y: mainWin.height - 14; width: 14; height: 14; cursorShape: Qt.SizeFDiagCursor
+        onPressed: function(m) { var p = _resizeScreen(rzRB, m); _resizeBegin(p.x, p.y) }
+        onPositionChanged: function(m) { var p = _resizeScreen(rzRB, m); _resizeDrag("RB", p.x, p.y) }
+        onReleased: _resizeEnd() }
+    MouseArea { id: rzLB; x: 0; y: mainWin.height - 14; width: 14; height: 14; cursorShape: Qt.SizeBDiagCursor
+        onPressed: function(m) { var p = _resizeScreen(rzLB, m); _resizeBegin(p.x, p.y) }
+        onPositionChanged: function(m) { var p = _resizeScreen(rzLB, m); _resizeDrag("LB", p.x, p.y) }
+        onReleased: _resizeEnd() }
+    MouseArea { id: rzL; x: 0; y: 10; width: 10; height: mainWin.height - 20; cursorShape: Qt.SizeHorCursor
+        onPressed: function(m) { var p = _resizeScreen(rzL, m); _resizeBegin(p.x, p.y) }
+        onPositionChanged: function(m) { var p = _resizeScreen(rzL, m); _resizeDrag("L", p.x, p.y) }
+        onReleased: _resizeEnd() }
+    MouseArea { id: rzT; x: 10; y: 0; width: mainWin.width - 20; height: 10; cursorShape: Qt.SizeVerCursor
+        onPressed: function(m) { var p = _resizeScreen(rzT, m); _resizeBegin(p.x, p.y) }
+        onPositionChanged: function(m) { var p = _resizeScreen(rzT, m); _resizeDrag("T", p.x, p.y) }
+        onReleased: _resizeEnd() }
+    MouseArea { id: rzTR; x: mainWin.width - 14; y: 0; width: 14; height: 14; cursorShape: Qt.SizeBDiagCursor
+        onPressed: function(m) { var p = _resizeScreen(rzTR, m); _resizeBegin(p.x, p.y) }
+        onPositionChanged: function(m) { var p = _resizeScreen(rzTR, m); _resizeDrag("TR", p.x, p.y) }
+        onReleased: _resizeEnd() }
+    MouseArea { id: rzLT; x: 0; y: 0; width: 14; height: 14; cursorShape: Qt.SizeFDiagCursor
+        onPressed: function(m) { var p = _resizeScreen(rzLT, m); _resizeBegin(p.x, p.y) }
+        onPositionChanged: function(m) { var p = _resizeScreen(rzLT, m); _resizeDrag("LT", p.x, p.y) }
+        onReleased: _resizeEnd() }
 }

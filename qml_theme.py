@@ -33,7 +33,8 @@ _DAY = {
     'divider': '#e8edf3', 'inputBorder': '#d9dfe9',
     'textPrimary': '#1f2937', 'textSecondary': '#5b6472', 'textMuted': '#98a1b0',
     'accent': '#0fa88f', 'accentDark': '#0c8f7a', 'accentSoft': '#e3f6f1',
-    'pink': '#e76a9e', 'pinkSoft': '#fde9f0',
+    'pink': '#e76a9e', 'pinkSoft': '#fde9f0', 'pinkDeep': '#b23a67',
+    'groupPillBg': '#f6ccde',
     'blue': '#4c8de5', 'blueSoft': '#e8f1fd',
     'purple': '#8b6fe8', 'purpleSoft': '#efeafb',
     'amber': '#e8a93c', 'amberSoft': '#fcf3e0',
@@ -67,7 +68,8 @@ _NIGHT = {
     'divider': '#262c3c', 'inputBorder': '#333a4d',
     'textPrimary': '#eef1f8', 'textSecondary': '#d8dce8', 'textMuted': '#98a0b8',
     'accent': '#2ec5a4', 'accentDark': '#3fd6b4', 'accentSoft': '#12332c',
-    'pink': '#f07fae', 'pinkSoft': '#3a2330',
+    'pink': '#f07fae', 'pinkSoft': '#3a2330', 'pinkDeep': '#ffb0d0',
+    'groupPillBg': '#4a2a3a',
     'blue': '#6ba3f0', 'blueSoft': '#1d2a3d',
     'purple': '#a58cf5', 'purpleSoft': '#2a2440',
     'amber': '#f0b958', 'amberSoft': '#3a3220',
@@ -229,6 +231,14 @@ class Theme(QObject):
     @Property(str, notify=themeChanged)
     def pinkSoft(self):
         return self._c('pinkSoft')
+
+    @Property(str, notify=themeChanged)
+    def pinkDeep(self):
+        return self._c('pinkDeep')
+
+    @Property(str, notify=themeChanged)
+    def groupPillBg(self):
+        return self._c('groupPillBg')
 
     @Property(str, notify=themeChanged)
     def blue(self):

@@ -4,7 +4,7 @@ import "components"
 // 启动动画：一个**透明底**的悬浮球（与课堂快捷悬浮球里的球完全同款）。
 // 自动播一次「点击」：四芒星放大回弹 + 四圈四芒星涟漪。
 // 图层顺序也与悬浮球一致：球色 → 涟漪 → 白色四芒星；
-// 涟漪由 43px 同心圆遮罩裁切（只在球内可见，尖尖被球边截断）。
+// 涟漪由 34→45px 渐变遮罩柔和裁切（与悬浮球当前效果完全同步）。
 Window {
     id: win
 
@@ -13,8 +13,9 @@ Window {
     flags: Qt.SplashScreen | Qt.FramelessWindowHint
            | Qt.WindowStaysOnTopHint | Qt.WindowDoesNotAcceptFocus
     width: 240; height: 240
-    x: Math.round((Screen.width - width) / 2)
-    y: Math.round((Screen.desktopAvailableHeight - height) / 2)
+    // 用当前屏幕的虚拟原点/尺寸居中（与主界面一致；desktopAvailableHeight 在多屏时是虚拟桌面高度）
+    x: Math.round(Screen.virtualX + (Screen.width - width) / 2)
+    y: Math.round(Screen.virtualY + (Screen.height - height) / 2)
     title: "班级激励助手"
 
     // Python 在主界面准备就绪后置 true（此时才开始点击动画）
@@ -49,7 +50,7 @@ Window {
             }
         }
 
-        // ── 涟漪：在球色**之上**、星芒之下；由 43px 同心圆遮罩裁切 ──
+        // ── 涟漪：在球色**之上**、星芒之下；由 34→45px 渐变遮罩裁切 ──
         Canvas {
             id: ripple
             anchors.centerIn: parent
@@ -107,12 +108,16 @@ Window {
                     }
                 }
 
-                // 视觉遮罩：0~42 实、42→43 极短渐隐、43 外擦掉（与悬浮球一致）
+                // 视觉遮罩：34px 以内实心，34→45px 柔和渐隐，45px 外擦掉
+                // （与 FloatBall 的 sparkRipple 完全同一组参数）
                 c.globalCompositeOperation = "destination-in"
-                var mg = c.createRadialGradient(cx, cy, 0, cx, cy, 43)
+                var mg = c.createRadialGradient(cx, cy, 0, cx, cy, 45)
                 mg.addColorStop(0, "rgba(0,0,0,1)")
-                mg.addColorStop(0.98, "rgba(0,0,0,1)")
-                mg.addColorStop(1, "rgba(0,0,0,0)")
+                mg.addColorStop(0.7556, "rgba(0,0,0,1)")       // 34px：仍是实心
+                mg.addColorStop(0.8333, "rgba(0,0,0,0.75)")    // 37.5px
+                mg.addColorStop(0.9111, "rgba(0,0,0,0.36)")    // 41px
+                mg.addColorStop(0.9667, "rgba(0,0,0,0.12)")    // 43.5px
+                mg.addColorStop(1, "rgba(0,0,0,0)")            // 45px：完全消失
                 c.fillStyle = mg
                 c.fillRect(0, 0, width, height)
                 c.globalCompositeOperation = "source-over"

@@ -56,6 +56,9 @@ Column {
             contentWidth: width
             contentHeight: grid.height
             clip: true
+            // 这里只用来裁切固定 50 格网格，本身没有可滚动范围；
+            // 关掉 Flickable 的交互，让滚轮交给外层 PageScroll 滚整页。
+            interactive: false
             Grid {
                 id: grid
                 anchors.horizontalCenter: parent.horizontalCenter   // 整块居中（同原型）
@@ -148,7 +151,8 @@ Column {
             }
             Item { width: 12; height: 1 }
             // 应用：按上面的分值给所选学生加 / 扣
-            CuteButton { tone: "primary"; text: "加分"; anchors.verticalCenter: parent.verticalCenter; onClicked: root.op(true) }
+            // 加分：原型长条按钮 21（薄荷青绿）
+            CuteButton { tone: "primary"; fillScheme: "mintcyan"; text: "加分"; anchors.verticalCenter: parent.verticalCenter; onClicked: root.op(true) }
             CuteButton { tone: "danger"; text: "扣分"; anchors.verticalCenter: parent.verticalCenter; onClicked: root.op(false) }
             Item { width: 6; height: 1 }
         }
@@ -162,10 +166,10 @@ Column {
         Repeater {
             model: reward.categories
             delegate: CuteButton {
-                // ⚠️ 原来是 soft/secondary 两档 —— CuteButton 重写后两者都渲染成半透明玻璃，
-                //    选中根本看不出来。改用"选中=彩色实底(primary 的杂糅渐变) / 未选=玻璃"，
-                //    点击后一眼可辨（加减分前必须先选分类，这个高亮是操作前提）
-                tone: root.cat === modelData ? "primary" : "secondary"
+                // 选中 = 白色高亮面（近实白 + 深字），未选 = 半透明白玻璃。
+                // 不用彩色实底：这里只是"选维度"，白色高亮足够醒目且不抢加分按钮的色。
+                tone: "secondary"
+                whiteHighlight: root.cat === modelData
                 text: modelData
                 // 再次点击同一个分类 = 取消选中（op() 会提示"请先选择操作分类标签"）
                 onClicked: root.cat = (root.cat === modelData ? "" : modelData)

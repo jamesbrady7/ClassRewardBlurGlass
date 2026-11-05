@@ -12,12 +12,30 @@
 # ============================================================
 import ctypes
 import os
+import platform
 import sys
+import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-BASE = os.path.dirname(os.path.abspath(__file__))
-_logFile = os.path.join(BASE, '_run.log')
+
+def _res_base():
+    """资源目录（QML / 字体 / 图标）：源码运行=项目根；打包后=PyInstaller 解包目录"""
+    if getattr(sys, 'frozen', False):
+        return getattr(sys, '_MEIPASS', os.path.dirname(sys.executable))
+    return os.path.dirname(os.path.abspath(__file__))
+
+
+def _app_base():
+    """数据目录：源码运行=项目根；打包后=exe 所在目录"""
+    return os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) \
+        else os.path.dirname(os.path.abspath(__file__))
+
+
+BASE = _res_base()
+DATA_BASE = _app_base()
+# 日志写到数据目录（打包后别落进 onefile 的临时解包目录，否则进程结束就没了）
+_logFile = os.path.join(DATA_BASE, '_run.log')
 
 # 桌面穿透开关（默认开；GLASS_SYSTEM=0 可关，退回自绘底）
 SYSTEM_GLASS = os.environ.get('GLASS_SYSTEM', '1') == '1'
@@ -25,6 +43,7 @@ GLASS_SKIP_REASON = ''
 
 _LOG_MAX = 512 * 1024
 _log_repeat = {'last': None, 'n': 0}
+_shutting_down = False
 
 
 def _log(line):
@@ -94,11 +113,14 @@ if SYSTEM_GLASS_OK:
     if _backend:
         os.environ['QT_QUICK_BACKEND'] = _backend
 
+import PySide6
 from PySide6.QtCore import (QAbstractNativeEventFilter, QEasingCurve, QEventLoop, QObject,
-                            QPropertyAnimation, QTimer, QUrl, Slot, qInstallMessageHandler)
-from PySide6.QtGui import QGuiApplication, QIcon, QSurfaceFormat, QFont, QFontDatabase
+                            QPoint, QPropertyAnimation, QTimer, QUrl, Slot,
+                            qInstallMessageHandler, qVersion)
+from PySide6.QtGui import QGuiApplication, QIcon, QSurfaceFormat, QFont, QFontDatabase, QCursor
 from PySide6.QtQml import QQmlApplicationEngine, QQmlComponent
 from PySide6.QtQuick import QQuickWindow
+from PySide6.QtQuickControls2 import QQuickStyle
 
 # 启动动画/悬浮球都需要半透明窗口；主窗口本身也是透明圆角。
 # 统一在创建任何窗口前打开 alpha（不再只限桌面穿透模式）。
@@ -109,13 +131,17 @@ QSurfaceFormat.setDefaultFormat(_fmt)
 
 from controller.app_controller import AppController
 from model.storage import StorageManager
-from qml_bridge import RewardBridge
+from qml_bridge import PreviewPrefs, RewardBridge
 from qml_theme import Theme
 
 _FONT_WEIGHTS = ('Regular', 'Medium', 'Semibold', 'Bold')
 
 
 def _qt_message(mode, context, message):
+    # 退出阶段 QML 对象逐个销毁，绑定会读到已清空的 Theme/timerHub 并刷
+    # "Cannot read property ... of null" —— 无害，但会把日志淹没，直接忽略。
+    if _shutting_down:
+        return
     _log(message)
 
 
@@ -173,86 +199,197 @@ def _apply_accent(hwnd):
     ctypes.windll.dwmapi.DwmSetWindowAttribute(hwnd, 33, ctypes.byref(corner), 4)
 
 
+def _set_topmost(hwnd, on):
+    """无破窗地切换置顶（SetWindowPos，不改 Qt flags，避免窗口重建/闪烁）。"""
+    try:
+        user32 = ctypes.windll.user32
+        user32.SetWindowPos.argtypes = [
+            ctypes.c_void_p, ctypes.c_void_p,
+            ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_uint]
+        user32.SetWindowPos.restype = ctypes.c_int
+        ok = user32.SetWindowPos(
+            ctypes.c_void_p(int(hwnd)),
+            ctypes.c_void_p(-1 if on else -2),     # HWND_TOPMOST / HWND_NOTOPMOST
+            0, 0, 0, 0,
+            0x0001 | 0x0002 | 0x0010)              # NOSIZE | NOMOVE | NOACTIVATE
+        _log("[window] topmost=%s hwnd=%s ok=%s" % (on, hwnd, ok))
+        return bool(ok)
+    except Exception as e:
+        _log("[window] topmost 设置失败：%r" % (e,))
+        return False
+
+
 DRAG_HZ = max(1, int(os.environ.get("GLASS_DRAG_HZ", "60")))   # 拖动跟随频率
-VK_LBUTTON = 0x01
 
 
 class _GlassDrag(QObject):
-    """自管理节流拖动，替代 QWindow.startSystemMove()。
+    """自管理拖动：由 QML 传入**点击/触摸的屏幕坐标**驱动窗口移动。
 
-    为什么不用系统拖动：它把鼠标的**每一个**输入事件都变成一次窗口移动。Win10 的
-    acrylic 每移动一步都要重新模糊整个窗口表面 → DWM 被压饱和 → 窗体平滑地跟不上光标、
-    且拖动期间应用无响应。
+    ⚠️ 不能用 QCursor.pos()：学校一体机是触摸屏，QCursor 是"最后一个鼠标位置"，
+       手指触摸时它不会跟着手指走 → 主窗一按就按旧鼠标位置跳走、悬浮球拖拽
+       鼠标"跑到窗口中间"。QML 把 MouseArea 的点击点映射到屏幕坐标传进来，
+       鼠标和手指都跟随真实触点。
 
-    自己按固定频率跟随光标，把移动次数压到 DRAG_HZ（默认 60），模糊得以保留。
-    证据：用 SetWindowPos 驱动窗口的合成拖动（连 1000Hz 也不）在 acrylic 下不卡，
-    说明"移动窗口"本身廉价，贵的是系统拖动那条路的每事件一次重绘。
-
-    代价：失去系统窗口吸附（Aero Snap）；好处：拖动期间不再进 OS 模态循环，应用保持响应。
-    **只在 Win10 启用**（见 _needs_throttle）：Win11 没这个毛病，用原生拖动更好。
-    GLASS_DRAG_HZ 可调；GLASS_DRAG=system 可退回系统拖动。
+    坐标全是 Qt 逻辑像素（QML 的 win.x + mapToItem(null)），与 DPI 无关。
+    自绘节流到 DRAG_HZ；松手判定 QML onReleased + mouseGrabberItem() 兜底。
+    GLASS_DRAG=system 可退回系统拖动；GLASS_DRAG_HZ 可调跟随频率。
     """
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self._win = None
-        self._hwnd = 0
-        self._throttle = False
-        self._origin = None      # (窗体x, 窗体y, 光标x, 光标y) 物理像素
-        self._RECT = self._POINT = None
+        self._custom = True
+        self._origin = None      # (窗体x, 窗体y, 触点x, 触点y) 全是 Qt 逻辑像素
+        self._target = None      # 最新触点屏幕坐标
+        self._startedAt = 0.0
+        self._ticks = 0
         self._timer = QTimer(self)
         self._timer.setInterval(max(8, int(1000 / DRAG_HZ)))
         self._timer.timeout.connect(self._tick)
 
-    def attach(self, win, throttle):
+    def attach(self, win, custom=True):
         self._win = win
-        self._hwnd = int(win.winId())
-        self._throttle = throttle
-        _log("[glass] 拖动模式：%s"
-             % ("节流跟随 %dHz（保 Acrylic）" % DRAG_HZ if throttle
-                else "系统 startSystemMove（非穿透模式或 GLASS_DRAG=system）"))
+        self._custom = bool(custom)
+        _log("[drag] 拖动模式：%s"
+             % ("自绘跟随 %dHz（QML 触点绝对位移）" % DRAG_HZ
+                if custom else "系统 startSystemMove（GLASS_DRAG=system）"))
+
+    @Slot(result="QPoint")
+    def cursorPos(self):
+        """兼容旧调用：仅用于非触摸的辅助位置，不参与拖动/缩放。"""
+        return QCursor.pos()
 
     @Slot()
     def start(self):
-        if not self._throttle or self._win is None:
+        c = QCursor.pos()
+        self.startAt(c.x(), c.y())
+
+    @Slot(float, float)
+    def startAt(self, x, y):
+        if self._win is None:
+            return
+        if not self._custom:
             self._win.startSystemMove()
             return
-
-        class RECT(ctypes.Structure):
-            _fields_ = [("left", ctypes.c_long), ("top", ctypes.c_long),
-                        ("right", ctypes.c_long), ("bottom", ctypes.c_long)]
-
-        class POINT(ctypes.Structure):
-            _fields_ = [("x", ctypes.c_long), ("y", ctypes.c_long)]
-
-        self._RECT, self._POINT = RECT, POINT
-        r, pt = RECT(), POINT()
-        ctypes.windll.user32.GetWindowRect(self._hwnd, ctypes.byref(r))
-        ctypes.windll.user32.GetCursorPos(ctypes.byref(pt))
-        self._origin = (r.left, r.top, pt.x, pt.y)
+        p = self._win.position()
+        self._origin = (p.x(), p.y(), float(x), float(y))
+        self._target = (float(x), float(y))
+        self._startedAt = time.monotonic()
+        self._ticks = 0
+        _log("[drag] start win=(%d,%d) touch=(%.0f,%.0f) dpr=%.2f"
+             % (p.x(), p.y(), x, y, self._win.devicePixelRatio() or 1.0))
         self._timer.start()
 
+    @Slot(float, float)
+    def moveTo(self, x, y):
+        self._target = (float(x), float(y))
+
     def _tick(self):
-        user32 = ctypes.windll.user32
-        if not (user32.GetAsyncKeyState(VK_LBUTTON) & 0x8000):
+        w = self._win
+        if w is None or self._origin is None or self._target is None:
             self._timer.stop()
             return
-        pt = self._POINT()
-        user32.GetCursorPos(ctypes.byref(pt))
-        ox, oy, cx, cy = self._origin
-        dpr = self._win.devicePixelRatio() or 1.0
-        # 光标/窗口矩形都是物理像素，setPosition 要逻辑坐标
-        self._win.setPosition(round((ox + pt.x - cx) / dpr),
-                              round((oy + pt.y - cy) / dpr))
+        # 0.15s 宽限期：刚开始拖动/窗口还没稳定时不要误判
+        if time.monotonic() - self._startedAt > 0.15:
+            try:
+                if w.mouseGrabberItem() is None:      # QML MouseArea 已松手
+                    self._stop()
+                    return
+            except Exception:
+                pass
+        ox, oy, sx, sy = self._origin
+        tx, ty = self._target
+        nx = ox + (tx - sx)
+        ny = oy + (ty - sy)
+        # 至少留 160px 宽 + 顶部 80px 的标题栏，避免拖成"只剩右下角"
+        try:
+            scr = QGuiApplication.screenAt(QPoint(int(tx), int(ty)))
+            if scr is not None:
+                g = scr.geometry()
+                ww = w.width()
+                cx_ok = max(g.left() - ww + 160, min(nx, g.right() - 160))
+                cy_ok = max(g.top(), min(ny, g.bottom() - 80))
+                if (cx_ok, cy_ok) != (nx, ny) and self._ticks <= 1:
+                    _log("[drag] 边界限制 (%d,%d) -> (%d,%d) screen=%s"
+                         % (nx, ny, cx_ok, cy_ok, scr.name()))
+                nx, ny = cx_ok, cy_ok
+        except Exception:
+            pass
+        w.setPosition(round(nx), round(ny))
+        self._ticks += 1
+        if self._ticks == 1:
+            _log("[drag] first move -> win=(%d,%d) touch=(%.0f,%.0f)"
+                 % (w.x(), w.y(), tx, ty))
+        if self._ticks > DRAG_HZ * 120:              # 2 分钟安全上限
+            self._stop()
+
+    def _stop(self):
+        if self._timer.isActive():
+            _log("[drag] stop ticks=%d win=(%d,%d)"
+                 % (self._ticks, self._win.x() if self._win else -1,
+                    self._win.y() if self._win else -1))
+        self._timer.stop()
 
     @Slot()
     def stop(self):
-        """QML 松开鼠标时调用。
+        """QML 松开鼠标时调用（正常路径）。"""
+        self._stop()
 
-        ⚠️ 不能只靠 GetAsyncKeyState 判松手：它一旦失灵，窗口会**永远跟着光标走**。
-        QML 的 MouseArea 在按下时隐式抓取鼠标，onReleased 是可靠的第二道保险。
-        """
-        self._timer.stop()
+
+class _AppControl(QObject):
+    """托盘 / 主窗口共用的退出入口。
+
+    统一走这里的目的：保证关闭的是**整个进程**（主窗口 + 隐藏的悬浮球 + 启动页），
+    否则窗口看似关了、进程还在，U 盘上的 exe 就一直被占用。
+    """
+
+    @Slot()
+    def quitApp(self):
+        _log("[app] 收到退出请求（托盘/主窗口）")
+        app = QGuiApplication.instance()
+        if app is not None:
+            # ⚠️ 必须用 exit(0) 而不是 quit()：本应用（Qt 6.11 + 多个 QML Window）
+            #    实测 quit() 不会让 app.exec() 返回，进程会一直挂着、占住 U 盘上的 exe；
+            #    exit(0) 才能确实结束主事件循环（离屏探针已验证）。
+            app.exit(0)
+
+
+_SINGLE_MUTEX = None
+
+
+def _single_instance_guard():
+    """同名互斥体：防止重复启动多个进程分别占用 exe。
+
+    已有一个实例时不静默退出——先把现有窗口叫到前台；
+    找不到窗口就弹系统提示，告诉用户从托盘「彻底退出」。
+    GLASS_SINGLE_INSTANCE=0 可跳过（仅用于开发机同时跑源码/打包版做对比）。
+    """
+    global _SINGLE_MUTEX
+    if os.environ.get('GLASS_SINGLE_INSTANCE') == '0':
+        _log('[app] 单实例检查已跳过（GLASS_SINGLE_INSTANCE=0）')
+        return True
+    try:
+        k32 = ctypes.windll.kernel32
+        k32.CreateMutexW.restype = ctypes.c_void_p
+        _SINGLE_MUTEX = k32.CreateMutexW(None, False, "ClassRewardHelper.SingleInstance")
+        if k32.GetLastError() != 183:          # ERROR_ALREADY_EXISTS
+            return True
+        u32 = ctypes.windll.user32
+        hwnd = u32.FindWindowW(None, "班级激励助手")
+        if hwnd:
+            u32.ShowWindow(hwnd, 9)            # SW_RESTORE
+            u32.SetForegroundWindow(hwnd)
+        else:
+            u32.MessageBoxW(
+                None,
+                "班级激励助手已经在运行。\n\n"
+                "请在系统托盘图标上右键选择「彻底退出」，\n"
+                "或先在任务管理器里结束残留的「班级激励助手」进程。",
+                "班级激励助手", 0x40)          # MB_ICONINFORMATION
+        return False
+    except Exception as e:
+        _log("[app] 单实例检查失败：%r" % (e,))
+        return True
 
 
 WM_SYSCOMMAND = 0x0112
@@ -352,14 +489,18 @@ def _load_fonts(base):
     return family
 
 
-def _app_base():
-    """数据目录：源码运行=项目根；打包后=exe 所在目录"""
-    return os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) \
-        else os.path.dirname(os.path.abspath(__file__))
-
-
 def main():
+    # 单实例：重复启动时不再产生第二个进程（避免 exe 被多进程占用、U 盘弹不出）
+    if not _single_instance_guard():
+        sys.exit(0)
+
     qInstallMessageHandler(_qt_message)
+    # Windows 原生 Controls 样式不支持自定义 background/contentItem（细滚动条会被忽略并刷警告）。
+    # 全站用 Basic 样式，才能让 ThinScrollBar 和自绘 ToolTip/Popup 真正生效。
+    try:
+        QQuickStyle.setStyle("Basic")
+    except Exception as e:
+        _log('[ui] QtQuick Controls Basic 样式设置失败：%r' % (e,))
     app = QGuiApplication(sys.argv)
     app.setApplicationName("班级激励助手")
     app.setOrganizationName("ClassReward")
@@ -371,7 +512,7 @@ def main():
         pass
     # 应用图标（窗口 / 任务栏 / 快捷方式）：与标题栏左上角同一套 marine + 白四芒星
     try:
-        _icon = os.path.join(_app_base(), 'assets', 'app_icon.ico')
+        _icon = os.path.join(_res_base(), 'assets', 'app_icon.ico')
         if os.path.exists(_icon):
             app.setWindowIcon(QIcon(_icon))
     except Exception as e:
@@ -384,11 +525,48 @@ def main():
     except Exception as e:
         _log('[text] 曲线文字渲染不可用：%r' % (e,))
 
-    base = _app_base()
+    base = _app_base()      # 数据（班级 JSON / 日志）
+    res = _res_base()       # 资源（QML / 字体 / 图标）
 
     # 注册内置 MiSans 字体（成功则全局用它；失败回退微软雅黑）
-    family = _load_fonts(base)
+    family = _load_fonts(res)
     app.setFont(QFont(family or 'Microsoft YaHei', 13))
+
+    # ── 环境诊断日志：学校机器出问题时，这些信息决定能不能远程定位 ──
+    try:
+        _log('[sys] platform=%s' % platform.platform())
+        _log('[sys] windows=%r' % (sys.getwindowsversion(),))
+        _log('[sys] qt=%s pyside=%s frozen=%s' % (qVersion(), PySide6.__version__,
+                                                 getattr(sys, 'frozen', False)))
+        _log('[sys] app_dir=%s res_dir=%s' % (base, res))
+        try:
+            _src = sys.executable if getattr(sys, 'frozen', False) else os.path.abspath(__file__)
+            _log('[sys] build_mtime=%s'
+                 % time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(os.path.getmtime(_src))))
+        except Exception:
+            pass
+        _log('[sys] qt_graphics_api=%s'
+             % QQuickWindow.graphicsApi())
+        _log('[sys] transparency=%s acrylic_ok=%s drag_hz=%d glass=%s drag_mode=%s'
+             % (_transparency_enabled(), _acrylic_ok(), DRAG_HZ,
+                os.environ.get('GLASS_BACKEND', 'default'),
+                os.environ.get('GLASS_DRAG', 'custom')))
+        for s in QGuiApplication.screens():
+            g = s.geometry(); a = s.availableGeometry()
+            _log('[sys] screen "%s" geo=(%d,%d %dx%d) avail=(%d,%d %dx%d) '
+                 'dpr=%.2f primary=%s'
+                 % (s.name(), g.x(), g.y(), g.width(), g.height(),
+                    a.x(), a.y(), a.width(), a.height(),
+                    s.devicePixelRatio(), s is QGuiApplication.primaryScreen()))
+        try:
+            u = ctypes.windll.user32
+            vx = u.GetSystemMetrics(76); vy = u.GetSystemMetrics(77)
+            vw = u.GetSystemMetrics(78); vh = u.GetSystemMetrics(79)
+            _log('[sys] virtual_desktop=(%d,%d %dx%d)' % (vx, vy, vw, vh))
+        except Exception:
+            pass
+    except Exception as e:
+        _log('[sys] 环境信息收集失败：%r' % (e,))
 
     # MVC：controller 持数据，bridge 是 View-Model 适配器
     storage = StorageManager(os.path.join(base, 'class_reward_data.json'))
@@ -405,6 +583,12 @@ def main():
     engine.rootContext().setContextProperty("glassWin", minimize_anim)
     engine.rootContext().setContextProperty("reward", bridge)
     engine.rootContext().setContextProperty("Theme", theme)
+    # 今日分数预览窗口的持久化设置（置顶开关）：QSettings 存本机，重启/拔 U 盘后仍生效
+    preview_prefs = PreviewPrefs()
+    engine.rootContext().setContextProperty("scorePrefs", preview_prefs)
+    # 托盘 / 主窗口统一退出入口（必须持有引用，避免被 GC）
+    app_control = _AppControl()
+    engine.rootContext().setContextProperty("appControl", app_control)
     # QML 按它决定：桌面穿透模式（背景交给 DWM）还是自绘底
     engine.rootContext().setContextProperty("systemGlass", SYSTEM_GLASS_OK)
     # QML 按它决定：改窗口几何的操作（拖动 / 拉边缩放）要不要节流 —— 只有 Win10 需要。
@@ -427,7 +611,7 @@ def main():
     splash_comp = None
     try:
         splash_comp = QQmlComponent(
-            engine, QUrl.fromLocalFile(os.path.join(base, 'qml', 'Splash.qml')))
+            engine, QUrl.fromLocalFile(os.path.join(res, 'qml', 'Splash.qml')))
         splash = splash_comp.create()
         if splash is None:
             _log('[splash] 创建失败：' + splash_comp.errorString())
@@ -447,21 +631,22 @@ def main():
     except Exception as e:
         _log('[splash] 初始化失败：%r' % (e,))
 
-    engine.load(QUrl.fromLocalFile(os.path.join(base, 'qml', 'Main.qml')))
+    engine.load(QUrl.fromLocalFile(os.path.join(res, 'qml', 'Main.qml')))
     roots = engine.rootObjects()
     if not roots:
         _log('[glass] QML 加载失败')
         sys.exit(1)
+    # 图形后端已在上面用 QQuickWindow.graphicsApi() 记录（Qt 6 的
+    # QSGRendererInterface 在 PySide 里不是静态调用，别再传 window 进去）
 
     # 最小化过渡：窗口本身透明（layered），系统的最小化动画对它不生效 → 自己播一段。
     # 与是否桌面穿透无关，两种模式都要装。
     minimize_anim.attach(roots[0], app)
 
-    # 按系统版本适配：Win10 才节流（保 Acrylic 且跟手）；Win11 用原生拖动（保 Snap/贴边）。
-    # GLASS_DRAG=system 可在 Win10 上强制退回原生拖动做 A/B。
-    glass_drag.attach(roots[0],
-                      SYSTEM_GLASS_OK and _needs_throttle()
-                      and os.environ.get("GLASS_DRAG") != "system")
+    # 两条系统路径都兜住：默认一律走自绘拖动（按屏幕光标绝对位移），
+    # 只有显式 GLASS_DRAG=system 才交给系统 startSystemMove。
+    # （学校 Win10 + 非 100% 缩放 / 副屏，原来那套物理像素换算会拖不动或乱跳）
+    glass_drag.attach(roots[0], os.environ.get("GLASS_DRAG") != "system")
 
     if SYSTEM_GLASS_OK:
         try:
@@ -488,20 +673,39 @@ def main():
 
     # ── 课堂快捷悬浮球：在主窗口之外再挂一个窗口（同进程 → 共用数据，调主界面秒开）──
     #    设置里的「退出悬浮球」只关它自己，主程序继续运行。
+    float_win = None
     try:
         from float_window import FloatWindow
-        float_win = FloatWindow(engine, base, roots[0])
+        float_win = FloatWindow(engine, res, roots[0], log=_log)
         if not float_win.start():
             _log('[float] 悬浮球 QML 加载失败')
         else:
-            # 关主窗口 = 退出应用 → 连带关掉悬浮球（否则窗口都没了进程还赖着）
-            try:
-                roots[0].closing.connect(lambda: float_win.win and float_win.win.close())
-            except Exception:
-                pass
             _log('[float] 悬浮球已启动')
     except Exception as e:
+        float_win = None
         _log('[float] 悬浮球启动失败：%r' % (e,))
+
+    # ── 退出清理：不管从主窗口 X、悬浮球退出还是托盘「彻底退出」，都保证 ──
+    #    主窗 + 悬浮球 + 启动页全部关掉，事件循环真正返回，onefile 的父子进程
+    #    才会一起结束、释放 U 盘上的 exe。
+    #    ⚠️ 不要在主窗口的 closing 信号里关悬浮球：用户点 X 后如果点了「取消」，
+    #       悬浮球会被误关（原实现的问题）。
+    def _cleanup_before_quit():
+        global _shutting_down
+        _shutting_down = True          # 之后 QML 销毁阶段的 null 告警不再进日志
+        _log('[app] aboutToQuit：关闭全部窗口')
+        try:
+            if float_win is not None and float_win.win is not None:
+                float_win.win.close()
+        except Exception as e:
+            _log('[app] 关闭悬浮球失败：%r' % (e,))
+        try:
+            if splash is not None:
+                splash.close()
+        except Exception as e:
+            _log('[app] 关闭启动页失败：%r' % (e,))
+
+    app.aboutToQuit.connect(_cleanup_before_quit)
 
     # ── 启动动画收尾：透明底悬浮球 + 点击涟漪 ──
     #    启动页只显示球本身（透明窗口），主界面保持隐藏；
@@ -527,6 +731,12 @@ def main():
             except Exception:
                 pass
 
+    def _drop_topmost():
+        try:
+            _set_topmost(int(main_win.winId()), False)
+        except Exception:
+            pass
+
     def _present_main():
         if _presented[0]:
             return
@@ -539,6 +749,10 @@ def main():
             _log('[splash] 主窗口透明起步失败：%r' % (e,))
         try:
             main_win.show()
+            # 启动弹出瞬间置顶，避免被其它窗口压住；淡入结束后恢复普通层级。
+            # 用原生 SetWindowPos 而不是改 Qt flags，后者会重建窗口、闪一下。
+            _set_topmost(int(main_win.winId()), True)
+            QTimer.singleShot(1500, _drop_topmost)
             if SYSTEM_GLASS_OK:
                 try:
                     _apply_accent(int(main_win.winId()))
@@ -579,7 +793,18 @@ def main():
     else:
         _present_main()
 
-    sys.exit(app.exec())
+    # 诊断钩子：GLASS_AUTOQUIT_MS=3000 时自动退出（仅用于自动化验证退出/清理链路）
+    _autoquit = os.environ.get('GLASS_AUTOQUIT_MS')
+    if _autoquit:
+        def _auto_quit():
+            _log('[app] 测试钩子触发 appControl.quitApp()')
+            app_control.quitApp()
+        _log('[app] 测试钩子：%sms 后自动退出' % _autoquit)
+        QTimer.singleShot(int(_autoquit), _auto_quit)
+
+    rc = app.exec()
+    _log('[app] 事件循环已退出 rc=%d，进程即将结束' % rc)
+    sys.exit(rc)
 
 
 if __name__ == '__main__':

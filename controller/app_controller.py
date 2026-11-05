@@ -148,18 +148,26 @@ class AppController:
             if g: g.name=name; self.save()
 
     def add_direct_group_points(self, gid, pts):
-        """直接给小组加分"""
+        """直接给小组加分（同时记流水，供每日历史按日期汇总）"""
         cls=self.current_class()
         if cls:
             g=cls.get_group_by_id(gid)
-            if g: g.direct_points+=pts; self.save()
+            if g:
+                val=abs(pts)
+                g.direct_points+=val
+                g.transactions.append(Transaction(time.time(),'earn',val,'小组直接加分',g.id))
+                self.save()
 
     def subtract_direct_group_points(self, gid, pts):
-        """直接给小组扣分"""
+        """直接给小组扣分（同时记流水，供每日历史按日期汇总）"""
         cls=self.current_class()
         if cls:
             g=cls.get_group_by_id(gid)
-            if g: g.direct_points-=pts; self.save()
+            if g:
+                val=abs(pts)
+                g.direct_points-=val
+                g.transactions.append(Transaction(time.time(),'deduct',val,'小组直接扣分',g.id))
+                self.save()
 
     def compute_group_points(self):
         """计算所有小组总分"""

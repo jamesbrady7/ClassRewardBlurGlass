@@ -101,13 +101,14 @@ Item {
         }
     }
 
-    // 打勾：薄荷绿圆底 + 白色对勾（压在右上角）
+    // 打勾：紫色圆底 + 白色对勾（压在右上角）
+    // 紫色取值同原型 PlaygroundPage（小组积分页）CheckPill 的选中圆球 #6f66d8
     Rectangle {
         anchors.right: parent.right
         anchors.top: parent.top
         width: Math.round(chip.width * 0.38); height: width
         radius: width / 2
-        color: "#22bd8e"
+        color: "#6f66d8"
         opacity: chip.selected ? 1 : 0
         Behavior on opacity { NumberAnimation { duration: 130 } }
         CanvasIcon {
@@ -115,6 +116,9 @@ Item {
             name: "check"
             width: Math.round(chip.width * 0.24); height: width
             color: "white"
+            // 与悬浮球里的选中勾同粗（同为 10px 图标、strokeW 4.8 ≈ 实际 2px）；
+            // 默认 1.7 在 10px 尺寸下只有约 0.7px，太细
+            strokeW: 4.8
         }
     }
 
