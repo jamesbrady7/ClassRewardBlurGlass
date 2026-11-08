@@ -1035,44 +1035,46 @@ Window {
 
         CardHead { title: "批量加分" }   // 已选人数看标题栏右上的全选开关与高亮格即可（长标题会和开关重叠）
 
+        // 批量选择网格：**5 列 × 10 行的一行式「学号 姓名」**。
+        // 为什么不是原来的 10 列小方块：卡片最小比例 0.48 时窗口只有约 226×206
+        // 逻辑像素，10 列时姓名只有约 8 个物理像素，还放不下学号。
+        // 改成 5 列后每格约 41×12 逻辑像素，学号 + 姓名能保持可读，50 人一屏放下、不滚动。
         Grid {
             id: stuGrid
-            anchors.top: parent.top; anchors.topMargin: 70
-            anchors.left: parent.left; anchors.leftMargin: 20
-            columns: 10
-            spacing: 6
+            anchors.top: parent.top; anchors.topMargin: 58
+            anchors.left: parent.left; anchors.leftMargin: 10
+            columns: 5
+            spacing: 4
             Repeater {
                 model: reward.students
                 delegate: Rectangle {
                     id: sc
                     readonly property bool on: win.selStudents.indexOf(modelData.id) >= 0
-                    width: 38; height: 38; radius: 12
-                    color: sc.on ? "#b3ffffff" : (scma.pressed ? "#33ffffff" : "#1affffff")
+                    width: 86; height: 25; radius: 8
+                    color: sc.on ? "#e6ffffff" : (scma.pressed ? "#40ffffff" : "#26ffffff")
+                    // 选中态：白底 + 紫色描边（小尺寸下没有多余宽度放勾，勾在右上角
+                    // 会压住最后一个字；白底/紫边已经足够清楚）
+                    border.width: sc.on ? 2 : 0
+                    border.color: "#6f66d8"
                     Behavior on color { ColorAnimation { duration: 90 } }
-                    Text {
+                    Row {
                         anchors.centerIn: parent
-                        text: modelData.name.length > 3 ? modelData.name.slice(0, 3) : modelData.name
-                        color: sc.on ? "#1f2937" : "#ffffff"
-                        font.pixelSize: 11
-                        font.bold: sc.on
-                        font.family: Theme.fontFamily
-                    }
-                    // 选中勾：右上角一个紫色小圆圈 + 勾，微微外扩
-                    // 紫色同批量操作页的勾选圆球（原型小组积分 CheckPill 的 #6f66d8）
-                    Rectangle {
-                        width: 14; height: 14; radius: 7
-                        visible: sc.on
-                        color: "#6f66d8"
-                        anchors.right: parent.right
-                        anchors.top: parent.top
-                        anchors.rightMargin: -2
-                        anchors.topMargin: -2
-                        CanvasIcon {
-                            anchors.centerIn: parent
-                            name: "check"
-                            width: 10; height: 10
-                            strokeW: 4.8          // 24 网格坐标里的线宽；实际约 2px
-                            color: "#ffffff"
+                        spacing: 2
+                        Text {
+                            text: modelData.studentId
+                            color: sc.on ? "#6f66d8" : "#b3ffffff"
+                            font.pixelSize: 14
+                            font.weight: Font.Medium
+                            font.family: Theme.fontFamily
+                        }
+                        Text {
+                            text: modelData.name.length > 3
+                                  ? modelData.name.slice(0, 3) : modelData.name
+                            color: sc.on ? "#1f2937" : "#ffffff"
+                            // 三字姓名略收一点，给学号留出宽度；两字姓名可以大一号
+                            font.pixelSize: modelData.name.length >= 3 ? 17 : 19
+                            font.weight: sc.on ? Font.DemiBold : Font.Medium
+                            font.family: Theme.fontFamily
                         }
                     }
                     MouseArea {
@@ -1092,16 +1094,16 @@ Window {
         // 维度选择：放在界面**最下方并居中**（原来的「全选」胶囊已改为标题栏里的开关）
         Row {
             id: catRow
-            anchors.bottom: parent.bottom; anchors.bottomMargin: 84
+            anchors.bottom: parent.bottom; anchors.bottomMargin: 52
             anchors.horizontalCenter: parent.horizontalCenter
-            spacing: 8
+            spacing: 6
             Repeater {
                 model: reward.categories
                 delegate: Rectangle {
                     readonly property bool on: win.cat === modelData
                     readonly property bool hov: cm.containsMouse
-                    height: 40
-                    width: lbl2.implicitWidth + 24
+                    height: 30
+                    width: lbl2.implicitWidth + 18
                     radius: height / 2
                     color: on ? (hov ? "#d9ffffff" : "#b3ffffff")
                               : (cm.pressed ? "#40ffffff" : (hov ? "#33ffffff" : "#1affffff"))
@@ -1129,9 +1131,9 @@ Window {
         }
 
         Row {
-            anchors.bottom: parent.bottom; anchors.bottomMargin: 18
+            anchors.bottom: parent.bottom; anchors.bottomMargin: 10
             anchors.horizontalCenter: parent.horizontalCenter
-            spacing: 14
+            spacing: 12
             Text {
                 text: "分值"
                 anchors.verticalCenter: parent.verticalCenter
@@ -1141,13 +1143,13 @@ Window {
             CuteButton {
                 tone: "primary"; fillScheme: "mintcyan"    // 原型长条按钮 21（薄荷青绿）
                 text: "加分"
-                implicitWidth: 88; implicitHeight: 42; fontSize: 16
+                implicitWidth: 78; implicitHeight: 34; fontSize: 16
                 anchors.verticalCenter: parent.verticalCenter
                 onClicked: win.applyStudents(true)
             }
             CuteButton {
                 tone: "danger"; text: "扣分"
-                implicitWidth: 88; implicitHeight: 42; fontSize: 16
+                implicitWidth: 78; implicitHeight: 34; fontSize: 16
                 anchors.verticalCenter: parent.verticalCenter
                 onClicked: win.applyStudents(false)
             }
