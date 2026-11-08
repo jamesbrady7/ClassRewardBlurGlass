@@ -1051,18 +1051,16 @@ Window {
                     id: sc
                     readonly property bool on: win.selStudents.indexOf(modelData.id) >= 0
                     width: 86; height: 25; radius: 8
-                    color: sc.on ? "#e6ffffff" : (scma.pressed ? "#40ffffff" : "#26ffffff")
-                    // 选中态：白底 + 紫色描边（小尺寸下没有多余宽度放勾，勾在右上角
-                    // 会压住最后一个字；白底/紫边已经足够清楚）
-                    border.width: sc.on ? 2 : 0
-                    border.color: "#6f66d8"
+                    // 选中态：紫色实底 + 白色字
+                    color: sc.on ? (scma.pressed ? "#5c53c5" : "#6f66d8")
+                                 : (scma.pressed ? "#40ffffff" : "#26ffffff")
                     Behavior on color { ColorAnimation { duration: 90 } }
                     Row {
                         anchors.centerIn: parent
                         spacing: 2
                         Text {
                             text: modelData.studentId
-                            color: sc.on ? "#6f66d8" : "#b3ffffff"
+                            color: sc.on ? "#ffffff" : "#b3ffffff"
                             font.pixelSize: 14
                             font.weight: Font.Medium
                             font.family: Theme.fontFamily
@@ -1070,7 +1068,7 @@ Window {
                         Text {
                             text: modelData.name.length > 3
                                   ? modelData.name.slice(0, 3) : modelData.name
-                            color: sc.on ? "#1f2937" : "#ffffff"
+                            color: "#ffffff"
                             // 三字姓名略收一点，给学号留出宽度；两字姓名可以大一号
                             font.pixelSize: modelData.name.length >= 3 ? 17 : 19
                             font.weight: sc.on ? Font.DemiBold : Font.Medium
