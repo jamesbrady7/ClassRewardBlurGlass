@@ -289,14 +289,13 @@ class _GlassDrag(QObject):
         if w is None or self._origin is None or self._target is None:
             self._timer.stop()
             return
-        # 0.15s 宽限期：刚开始拖动/窗口还没稳定时不要误判
-        if time.monotonic() - self._startedAt > 0.15:
-            try:
-                if w.mouseGrabberItem() is None:      # QML MouseArea 已松手
-                    self._stop()
-                    return
-            except Exception:
-                pass
+        # ⚠️ 不能在这里靠 mouseGrabberItem() 判断松手：
+        #    窗口跟随移动时，QML 的 grabber 可能瞬间变成 None，
+        #    结果拖动约 0.15s 就被判成"已松手"，窗口只挪一小点。
+        #    松手以 QML 的 onReleased / onCanceled 为准（见 Main.qml 标题栏）。
+        if not w.isVisible():
+            self._stop("window-hidden")
+            return
         ox, oy, sx, sy = self._origin
         tx, ty = self._target
         nx = ox + (tx - sx)
@@ -321,19 +320,20 @@ class _GlassDrag(QObject):
             _log("[drag] first move -> win=(%d,%d) touch=(%.0f,%.0f)"
                  % (w.x(), w.y(), tx, ty))
         if self._ticks > DRAG_HZ * 120:              # 2 分钟安全上限
-            self._stop()
+            self._stop("timeout")
 
-    def _stop(self):
+    def _stop(self, reason="?"):
         if self._timer.isActive():
-            _log("[drag] stop ticks=%d win=(%d,%d)"
-                 % (self._ticks, self._win.x() if self._win else -1,
+            _log("[drag] stop reason=%s ticks=%d win=(%d,%d)"
+                 % (reason, self._ticks,
+                    self._win.x() if self._win else -1,
                     self._win.y() if self._win else -1))
         self._timer.stop()
 
     @Slot()
     def stop(self):
         """QML 松开鼠标时调用（正常路径）。"""
-        self._stop()
+        self._stop("qml-released")
 
 
 class _AppControl(QObject):

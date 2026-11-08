@@ -246,6 +246,8 @@ Window {
         MouseArea {
             anchors.fill: parent
             cursorShape: Qt.ArrowCursor
+            // 窗口跟随移动时不要让其他 item 抢走抓取；松手/取消都由这里显式通知 Python
+            preventStealing: true
             // 统一走 Python 自绘拖动（按屏幕光标绝对位移，Win10 / Win11 同一套）。
             // 不用 startSystemMove 直接拖：系统拖动把鼠标**每个输入事件**都变成一次
             // 窗口移动，Win10 的 acrylic 每步都要重模糊整窗 → DWM 饱和、窗体跟不上光标。
@@ -263,6 +265,7 @@ Window {
                 glassDrag.moveTo(mainWin.x + p.x, mainWin.y + p.y)
             }
             onReleased: glassDrag.stop()   // 保险：不能只靠 Python 侧判松手
+            onCanceled: glassDrag.stop()   // 触摸/焦点被系统打断时同样结束拖动
             onDoubleClicked: mainWin.visibility === Window.Maximized ? mainWin.showNormal() : mainWin.showMaximized()
         }
 
