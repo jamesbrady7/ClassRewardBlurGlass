@@ -1057,8 +1057,14 @@ Window {
                     Behavior on color { ColorAnimation { duration: 90 } }
                     Row {
                         anchors.centerIn: parent
+                        // 行高铺满格子，让学号与姓名的**文字中线**一致
+                        // （原来 Row 默认顶部对齐，14px 的学号会贴着格子上沿，
+                        //   看起来比 17/19px 的姓名高半行）。
+                        height: parent.height
                         spacing: 2
                         Text {
+                            height: parent.height
+                            verticalAlignment: Text.AlignVCenter
                             text: modelData.studentId
                             color: sc.on ? "#ffffff" : "#b3ffffff"
                             font.pixelSize: 14
@@ -1066,6 +1072,8 @@ Window {
                             font.family: Theme.fontFamily
                         }
                         Text {
+                            height: parent.height
+                            verticalAlignment: Text.AlignVCenter
                             text: modelData.name.length > 3
                                   ? modelData.name.slice(0, 3) : modelData.name
                             color: "#ffffff"
